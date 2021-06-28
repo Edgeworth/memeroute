@@ -1,0 +1,7 @@
+imports_granularity = "Module"
+max_width = 100 # 100 length lines
+newline_style = "Unix"
+width_heuristics = "Max" # Let arrays, fn chains, etc go up to max_width.
+# Mainly to let rustfmt get rid of unnecessary spaces between imports.
+# These are added when auto-removing unused import lines.
+group_imports = "StdExternalCrate"
