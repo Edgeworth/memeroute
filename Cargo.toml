@@ -1,0 +1,33 @@
+[package]
+authors = ["E <edgeworth.dev@gmail.com>"]
+edition = "2018"
+name = "memeroute"
+version = "0.1.0"
+
+[workspace]
+members = ["memeroute-gui"]
+
+[dependencies]
+approx = "*"
+colored = "*"
+derive_more = "*"
+eyre = "*"
+lazy_static = "*"
+log = "*"
+num-derive = "*"
+num-traits = "*"
+rust_decimal = {version = "*", features = ["maths", "std", "serde-str", "serde-arbitrary-precision"]}
+rust_decimal_macros = "*"
+serde = {version = "*", features = ["derive"]}
+serde_json = "*"
+strum = {version = "*", features = ["derive"]}
+tokio = {version = "*", features = ["full"]}
+tokio-test = "*"
+
+[dev-dependencies]
+criterion = {version = "*", features = ["real_blackbox"]}
+
+# Build dependencies with optimisations - debug builds will run faster
+# but dependencies don't change often.
+[profile.dev.package."*"]
+opt-level = 3

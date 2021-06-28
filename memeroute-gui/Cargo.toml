@@ -1,0 +1,16 @@
+[package]
+authors = ["E <edgeworth.dev@gmail.com>"]
+edition = "2018"
+name = "memeroute-gui"
+version = "0.1.0"
+
+[dependencies]
+color-eyre = "*"
+derive_more = "*"
+egui = "*"
+eyre = "*"
+log = "*"
+memeroute = {version = "*", path = ".."}
+pretty_env_logger = "*"
+structopt = "*"
+tokio = {version = "*", features = ["full"]}
