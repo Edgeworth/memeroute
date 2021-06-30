@@ -3,6 +3,7 @@
     array_chunks,
     array_windows,
     bool_to_option,
+    const_fn_trait_bound,
     destructuring_assignment,
     is_sorted,
     map_first_last,
@@ -11,3 +12,7 @@
     const_panic,
     trait_alias
 )]
+
+pub mod dsn;
+pub mod model;
+pub mod route;

@@ -14,8 +14,11 @@ derive_more = "*"
 eyre = "*"
 lazy_static = "*"
 log = "*"
+num = "*"
 num-derive = "*"
 num-traits = "*"
+paste = "*"
+regex = "*"
 rust_decimal = {version = "*", features = ["maths", "std", "serde-str", "serde-arbitrary-precision"]}
 rust_decimal_macros = "*"
 serde = {version = "*", features = ["derive"]}

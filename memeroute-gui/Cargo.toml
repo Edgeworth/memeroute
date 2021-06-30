@@ -7,7 +7,7 @@ version = "0.1.0"
 [dependencies]
 color-eyre = "*"
 derive_more = "*"
-egui = "*"
+eframe = "*"
 eyre = "*"
 log = "*"
 memeroute = {version = "*", path = ".."}

@@ -12,10 +12,20 @@
 )]
 
 use std::fmt::Debug;
-use std::path::PathBuf;
+use std::fs::read_to_string;
+use std::path::{Path, PathBuf};
 
 use eyre::Result;
+use memeroute::dsn::lexer::Lexer;
+use memeroute::dsn::parser::Parser;
 use structopt::StructOpt;
+
+use crate::gui::TemplateApp;
+
+pub mod gui;
+pub mod pcb;
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "memeroute", about = "Memeroute GUI")]
@@ -25,7 +35,18 @@ struct Args {
     data_path: PathBuf,
 }
 
+fn parse_test<P: AsRef<Path>>(path: P) -> Result<()> {
+    let data = read_to_string(path)?;
+    let lexer = Lexer::new(&data)?;
+    let parser = Parser::new(&lexer.lex()?);
+    parser.parse()?;
+    Ok(())
+}
+
 pub async fn run() -> Result<()> {
     let args = Args::from_args();
-    Ok(())
+    parse_test(&args.data_path)?;
+    let app = TemplateApp::default();
+    let native_options = eframe::NativeOptions::default();
+    eframe::run_native(Box::new(app), native_options)
 }
