@@ -4,4 +4,5 @@
 *.ses
 specctra.pdf
 /data
-
+*.cpp
+*.h
