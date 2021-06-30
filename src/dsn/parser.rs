@@ -5,17 +5,17 @@ use rust_decimal::Decimal;
 
 use crate::dsn::token::{Tok, Token};
 use crate::dsn::types::{
-    Circle, Circuit, Class, Clearance, Component, DimensionUnit, Image, Keepout, KeepoutType,
-    Layer, LayerType, Library, LockType, Net, Network, Padstack, PadstackShape, Path, Pcb, Pin,
-    PinRef, Placement, PlacementRef, Plane, Polygon, QArc, Rect, Resolution, Rule, Shape, Side,
-    Structure, Via, Window, Wire, Wiring,
+    DsnCircle, DsnCircuit, DsnClass, DsnClearance, DsnComponent, DsnDimensionUnit, DsnImage, DsnKeepout, DsnKeepoutType,
+    DsnLayer, DsnLayerType, DsnLibrary, DsnLockType, DsnNet, DsnNetwork, DsnPadstack, DsnPadstackShape, DsnPath, DsnPcb, DsnPin,
+    DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect, DsnResolution, DsnRule, DsnShape, DsnSide,
+    DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
 use crate::model::geom::{PtF, RtF};
 
 pub struct Parser {
     toks: Vec<Token>,
     idx: usize,
-    pcb: Pcb,
+    pcb: DsnPcb,
 }
 
 impl Parser {
@@ -23,7 +23,7 @@ impl Parser {
         Self { toks: toks.to_vec(), idx: 0, pcb: Default::default() }
     }
 
-    pub fn parse(mut self) -> Result<Pcb> {
+    pub fn parse(mut self) -> Result<DsnPcb> {
         self.pcb()?;
         Ok(self.pcb)
     }
@@ -96,8 +96,8 @@ impl Parser {
         Ok(())
     }
 
-    fn library(&mut self) -> Result<Library> {
-        let mut v = Library::default();
+    fn library(&mut self) -> Result<DsnLibrary> {
+        let mut v = DsnLibrary::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Library)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -112,8 +112,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn network(&mut self) -> Result<Network> {
-        let mut v = Network::default();
+    fn network(&mut self) -> Result<DsnNetwork> {
+        let mut v = DsnNetwork::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Network)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -128,8 +128,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn placement(&mut self) -> Result<Placement> {
-        let mut v = Placement::default();
+    fn placement(&mut self) -> Result<DsnPlacement> {
+        let mut v = DsnPlacement::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Placement)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -143,16 +143,16 @@ impl Parser {
         Ok(v)
     }
 
-    fn resolution(&mut self) -> Result<Resolution> {
-        let mut v = Resolution::default();
+    fn resolution(&mut self) -> Result<DsnResolution> {
+        let mut v = DsnResolution::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Resolution)?;
         v.dimension = match self.next()?.tok {
-            Tok::Inch => DimensionUnit::Inch,
-            Tok::Mil => DimensionUnit::Mil,
-            Tok::Cm => DimensionUnit::Cm,
-            Tok::Mm => DimensionUnit::Mm,
-            Tok::Um => DimensionUnit::Um,
+            Tok::Inch => DsnDimensionUnit::Inch,
+            Tok::Mil => DsnDimensionUnit::Mil,
+            Tok::Cm => DsnDimensionUnit::Cm,
+            Tok::Mm => DsnDimensionUnit::Mm,
+            Tok::Um => DsnDimensionUnit::Um,
             _ => return Err(eyre!("unknown dimension unit")),
         };
         v.amount = self.integer()?;
@@ -160,8 +160,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn structure(&mut self) -> Result<Structure> {
-        let mut v = Structure::default();
+    fn structure(&mut self) -> Result<DsnStructure> {
+        let mut v = DsnStructure::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Structure)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -194,8 +194,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn wiring(&mut self) -> Result<Wiring> {
-        let mut v = Wiring::default();
+    fn wiring(&mut self) -> Result<DsnWiring> {
+        let mut v = DsnWiring::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Wiring)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -208,8 +208,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn via(&mut self) -> Result<Via> {
-        let mut v = Via::default();
+    fn via(&mut self) -> Result<DsnVia> {
+        let mut v = DsnVia::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Via)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -222,8 +222,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn wire(&mut self) -> Result<Wire> {
-        let mut v = Wire::default();
+    fn wire(&mut self) -> Result<DsnWire> {
+        let mut v = DsnWire::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Wire)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -236,8 +236,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn layer(&mut self) -> Result<Layer> {
-        let mut v = Layer::default();
+    fn layer(&mut self) -> Result<DsnLayer> {
+        let mut v = DsnLayer::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Layer)?;
         v.layer_name = self.literal()?;
@@ -248,10 +248,10 @@ impl Parser {
                     self.expect(Tok::Lparen)?;
                     self.expect(Tok::Type)?;
                     match self.next()?.tok {
-                        Tok::Jumper => v.layer_type = LayerType::Jumper,
-                        Tok::Mixed => v.layer_type = LayerType::Mixed,
-                        Tok::Power => v.layer_type = LayerType::Power,
-                        Tok::Signal => v.layer_type = LayerType::Signal,
+                        Tok::Jumper => v.layer_type = DsnLayerType::Jumper,
+                        Tok::Mixed => v.layer_type = DsnLayerType::Mixed,
+                        Tok::Power => v.layer_type = DsnLayerType::Power,
+                        Tok::Signal => v.layer_type = DsnLayerType::Signal,
                         _ => return Err(eyre!("unrecognised layer type")),
                     }
                     self.expect(Tok::Rparen)?;
@@ -264,8 +264,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn plane(&mut self) -> Result<Plane> {
-        let mut v = Plane::default();
+    fn plane(&mut self) -> Result<DsnPlane> {
+        let mut v = DsnPlane::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Plane)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -278,8 +278,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn component(&mut self) -> Result<Component> {
-        let mut v = Component::default();
+    fn component(&mut self) -> Result<DsnComponent> {
+        let mut v = DsnComponent::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Component)?;
         v.image_id = self.literal()?;
@@ -294,8 +294,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn placement_ref(&mut self) -> Result<PlacementRef> {
-        let mut v = PlacementRef::default();
+    fn placement_ref(&mut self) -> Result<DsnPlacementRef> {
+        let mut v = DsnPlacementRef::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Place)?;
         v.component_id = self.literal()?;
@@ -309,8 +309,8 @@ impl Parser {
                     self.expect(Tok::Lparen)?;
                     self.expect(Tok::LockType)?;
                     match self.next()?.tok {
-                        Tok::Gate => v.lock_type = LockType::Gate,
-                        Tok::Position => v.lock_type = LockType::Position,
+                        Tok::Gate => v.lock_type = DsnLockType::Gate,
+                        Tok::Position => v.lock_type = DsnLockType::Position,
                         _ => return Err(eyre!("unrecognised layer type")),
                     }
                     self.expect(Tok::Rparen)?;
@@ -328,8 +328,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn image(&mut self) -> Result<Image> {
-        let mut v = Image::default();
+    fn image(&mut self) -> Result<DsnImage> {
+        let mut v = DsnImage::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Image)?;
         v.image_id = self.literal()?;
@@ -353,13 +353,13 @@ impl Parser {
         Ok(v)
     }
 
-    fn keepout(&mut self) -> Result<Keepout> {
-        let mut v = Keepout::default();
+    fn keepout(&mut self) -> Result<DsnKeepout> {
+        let mut v = DsnKeepout::default();
         self.expect(Tok::Lparen)?;
         v.keepout_type = match self.next()?.tok {
-            Tok::Keepout => KeepoutType::Keepout,
-            Tok::ViaKeepout => KeepoutType::ViaKeepout,
-            Tok::WireKeepout => KeepoutType::WireKeepout,
+            Tok::Keepout => DsnKeepoutType::Keepout,
+            Tok::ViaKeepout => DsnKeepoutType::ViaKeepout,
+            Tok::WireKeepout => DsnKeepoutType::WireKeepout,
             _ => return Err(eyre!("unrecognised keepout type")),
         };
         while self.peek(0)?.tok != Tok::Rparen {
@@ -375,8 +375,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn pin(&mut self) -> Result<Pin> {
-        let mut v = Pin::default();
+    fn pin(&mut self) -> Result<DsnPin> {
+        let mut v = DsnPin::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Keepout)?;
         v.padstack_id = self.literal()?;
@@ -393,8 +393,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn padstack(&mut self) -> Result<Padstack> {
-        let mut v = Padstack::default();
+    fn padstack(&mut self) -> Result<DsnPadstack> {
+        let mut v = DsnPadstack::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Padstack)?;
         v.padstack_id = self.literal()?;
@@ -415,8 +415,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn padstack_shape(&mut self) -> Result<PadstackShape> {
-        let mut v = PadstackShape::default();
+    fn padstack_shape(&mut self) -> Result<DsnPadstackShape> {
+        let mut v = DsnPadstackShape::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Shape)?;
         v.shape = self.shape()?;
@@ -431,8 +431,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn clearance(&mut self) -> Result<Clearance> {
-        let mut v = Clearance::default();
+    fn clearance(&mut self) -> Result<DsnClearance> {
+        let mut v = DsnClearance::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Clearance)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -445,8 +445,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn window(&mut self) -> Result<Window> {
-        let mut v = Window::default();
+    fn window(&mut self) -> Result<DsnWindow> {
+        let mut v = DsnWindow::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Window)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -459,19 +459,19 @@ impl Parser {
         Ok(v)
     }
 
-    fn shape(&mut self) -> Result<Shape> {
+    fn shape(&mut self) -> Result<DsnShape> {
         match self.peek(1)?.tok {
-            Tok::Circle => Ok(Shape::Circle(self.circle()?)),
-            Tok::Path => Ok(Shape::Path(self.path()?)),
-            Tok::Polygon => Ok(Shape::Polygon(self.polygon()?)),
-            Tok::Qarc => Ok(Shape::QArc(self.qarc()?)),
-            Tok::Rect => Ok(Shape::Rect(self.rect()?)),
+            Tok::Circle => Ok(DsnShape::Circle(self.circle()?)),
+            Tok::Path => Ok(DsnShape::Path(self.path()?)),
+            Tok::Polygon => Ok(DsnShape::Polygon(self.polygon()?)),
+            Tok::Qarc => Ok(DsnShape::QArc(self.qarc()?)),
+            Tok::Rect => Ok(DsnShape::Rect(self.rect()?)),
             _ => Err(eyre!("unrecognised shape type")),
         }
     }
 
-    fn rect(&mut self) -> Result<Rect> {
-        let mut v = Rect::default();
+    fn rect(&mut self) -> Result<DsnRect> {
+        let mut v = DsnRect::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Rect)?;
         v.layer_id = self.literal()?;
@@ -482,8 +482,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn circle(&mut self) -> Result<Circle> {
-        let mut v = Circle::default();
+    fn circle(&mut self) -> Result<DsnCircle> {
+        let mut v = DsnCircle::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Circle)?;
         v.layer_id = self.literal()?;
@@ -495,8 +495,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn polygon(&mut self) -> Result<Polygon> {
-        let mut v = Polygon::default();
+    fn polygon(&mut self) -> Result<DsnPolygon> {
+        let mut v = DsnPolygon::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Polygon)?;
         v.layer_id = self.literal()?;
@@ -508,8 +508,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn path(&mut self) -> Result<Path> {
-        let mut v = Path::default();
+    fn path(&mut self) -> Result<DsnPath> {
+        let mut v = DsnPath::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Path)?;
         v.layer_id = self.literal()?;
@@ -521,8 +521,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn qarc(&mut self) -> Result<QArc> {
-        let mut v = QArc::default();
+    fn qarc(&mut self) -> Result<DsnQArc> {
+        let mut v = DsnQArc::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Qarc)?;
         v.layer_id = self.literal()?;
@@ -534,8 +534,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn class(&mut self) -> Result<Class> {
-        let mut v = Class::default();
+    fn class(&mut self) -> Result<DsnClass> {
+        let mut v = DsnClass::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Class)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -548,8 +548,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn circuit(&mut self) -> Result<Circuit> {
-        let mut v = Circuit::default();
+    fn circuit(&mut self) -> Result<DsnCircuit> {
+        let mut v = DsnCircuit::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Circuit)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -562,8 +562,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn net(&mut self) -> Result<Net> {
-        let mut v = Net::default();
+    fn net(&mut self) -> Result<DsnNet> {
+        let mut v = DsnNet::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Net)?;
         v.net_id = self.literal()?;
@@ -586,8 +586,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn rule(&mut self) -> Result<Rule> {
-        let mut v = Rule::default();
+    fn rule(&mut self) -> Result<DsnRule> {
+        let mut v = DsnRule::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Rule)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -604,8 +604,8 @@ impl Parser {
         Ok(PtF::new(self.number()?, self.number()?))
     }
 
-    fn unit(&mut self) -> Result<DimensionUnit> {
-        let mut v = DimensionUnit::default();
+    fn unit(&mut self) -> Result<DsnDimensionUnit> {
+        let mut v = DsnDimensionUnit::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Unit)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -618,10 +618,10 @@ impl Parser {
         Ok(v)
     }
 
-    fn pin_ref(&mut self) -> Result<PinRef> {
+    fn pin_ref(&mut self) -> Result<DsnPinRef> {
         let p = self.literal()?;
         let (a, b) = p.split_once('-').ok_or_else(|| eyre!("invalid pin reference {}", p))?;
-        Ok(PinRef { component_id: a.to_owned(), pin_id: b.to_owned() })
+        Ok(DsnPinRef { component_id: a.to_owned(), pin_id: b.to_owned() })
     }
 
     fn onoff(&mut self) -> Result<bool> {
@@ -632,11 +632,11 @@ impl Parser {
         }
     }
 
-    fn side(&mut self) -> Result<Side> {
+    fn side(&mut self) -> Result<DsnSide> {
         match self.next()?.tok {
-            Tok::Back => Ok(Side::Back),
-            Tok::Both => Ok(Side::Both),
-            Tok::Front => Ok(Side::Front),
+            Tok::Back => Ok(DsnSide::Back),
+            Tok::Both => Ok(DsnSide::Both),
+            Tok::Front => Ok(DsnSide::Front),
             _ => Err(eyre!("unrecognised side type")),
         }
     }
