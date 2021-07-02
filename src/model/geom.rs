@@ -337,11 +337,11 @@ impl<T: Number> Pt2D<T> {
         Self { x, y }
     }
 
-    pub fn to_arr(&self) -> [T; 2] {
+    pub fn as_array(&self) -> [T; 2] {
         [self.x, self.y]
     }
 
-    pub fn to_sz(&self) -> Sz2D<T> {
+    pub fn as_sz(&self) -> Sz2D<T> {
         Sz2D::new(self.x, self.y)
     }
 
@@ -432,10 +432,6 @@ impl<T: Number> From<Sz2D<T>> for (T, T) {
 binop_vec2_vec2!(Sz2D<T>, w, h; Sz2D<T>, w, h; Add, add, +; Sub, sub, -; Div, div, /;);
 binop_vec2_scalar!(Sz2D<T>, w, h; Decimal, i64, u64, i32, u32; Mul, mul, *; Div, div, /;);
 
-pub type Rt = Rt2D<i64>;
-pub type Pt = Pt2D<i64>;
-pub type Sz = Sz2D<i64>;
-
-pub type RtF = Rt2D<Decimal>;
-pub type PtF = Pt2D<Decimal>;
-pub type SzF = Sz2D<Decimal>;
+pub type Rt = Rt2D<Decimal>;
+pub type Pt = Pt2D<Decimal>;
+pub type Sz = Sz2D<Decimal>;
