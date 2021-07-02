@@ -5,12 +5,13 @@ use rust_decimal::Decimal;
 
 use crate::dsn::token::{Tok, Token};
 use crate::dsn::types::{
-    DsnCircle, DsnCircuit, DsnClass, DsnClearance, DsnComponent, DsnDimensionUnit, DsnImage, DsnKeepout, DsnKeepoutType,
-    DsnLayer, DsnLayerType, DsnLibrary, DsnLockType, DsnNet, DsnNetwork, DsnPadstack, DsnPadstackShape, DsnPath, DsnPcb, DsnPin,
-    DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect, DsnResolution, DsnRule, DsnShape, DsnSide,
-    DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
+    DsnCircle, DsnCircuit, DsnClass, DsnClearance, DsnClearanceType, DsnComponent,
+    DsnDimensionUnit, DsnImage, DsnKeepout, DsnKeepoutType, DsnLayer, DsnLayerType, DsnLibrary,
+    DsnLockType, DsnNet, DsnNetwork, DsnPadstack, DsnPadstackShape, DsnPath, DsnPcb, DsnPin,
+    DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect,
+    DsnResolution, DsnRule, DsnShape, DsnSide, DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
-use crate::model::geom::{PtF, RtF};
+use crate::model::geom::{Pt, Rt};
 
 pub struct Parser {
     toks: Vec<Token>,
@@ -178,7 +179,7 @@ impl Parser {
                 }
                 Tok::Layer => v.layers.push(self.layer()?),
                 Tok::Plane => v.planes.push(self.plane()?),
-                Tok::Rule => v.rules.push(self.rule()?),
+                Tok::Rule => v.rules.extend(self.rule()?),
                 Tok::Via => {
                     self.expect(Tok::Lparen)?;
                     self.expect(Tok::Via)?;
@@ -378,7 +379,7 @@ impl Parser {
     fn pin(&mut self) -> Result<DsnPin> {
         let mut v = DsnPin::default();
         self.expect(Tok::Lparen)?;
-        self.expect(Tok::Keepout)?;
+        self.expect(Tok::Pin)?;
         v.padstack_id = self.literal()?;
         if self.peek(0)?.tok == Tok::Lparen {
             // Rotation.
@@ -435,11 +436,17 @@ impl Parser {
         let mut v = DsnClearance::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Clearance)?;
+        v.amount = self.number()?;
+
         while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            match t.tok {
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
-            }
+            self.expect(Tok::Lparen)?;
+            self.expect(Tok::Type)?;
+            v.types.push(match self.next()?.tok {
+                Tok::DefaultSmd => DsnClearanceType::DefaultSmd,
+                Tok::SmdSmd => DsnClearanceType::SmdSmd,
+                _ => return Err(eyre!("unrecognised clearance type")),
+            });
+            self.expect(Tok::Rparen)?;
         }
         self.expect(Tok::Rparen)?;
         Ok(v)
@@ -477,7 +484,7 @@ impl Parser {
         v.layer_id = self.literal()?;
         let a = self.vertex()?;
         let b = self.vertex()?;
-        v.rect = RtF::enclosing(&a, &b); // Opposite points but can be in either order.
+        v.rect = Rt::enclosing(&a, &b); // Opposite points but can be in either order.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -538,10 +545,18 @@ impl Parser {
         let mut v = DsnClass::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Class)?;
+        v.class_id = self.literal()?;
         while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            match t.tok {
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
+            let pt = self.peek(0)?;
+            if pt.tok == Tok::Lparen {
+                let t = self.peek(1)?;
+                match t.tok {
+                    Tok::Circuit => v.circuits.push(self.circuit()?),
+                    Tok::Rule => v.rules.extend(self.rule()?),
+                    _ => return Err(eyre!("unrecognised token '{}'", t)),
+                }
+            } else {
+                v.net_ids.push(self.literal()?);
             }
         }
         self.expect(Tok::Rparen)?;
@@ -555,6 +570,12 @@ impl Parser {
         while self.peek(0)?.tok != Tok::Rparen {
             let t = self.peek(1)?;
             match t.tok {
+                Tok::UseVia => {
+                    self.expect(Tok::Lparen)?;
+                    self.expect(Tok::UseVia)?;
+                    v.use_via = self.literal()?;
+                    self.expect(Tok::Rparen)?;
+                }
                 _ => return Err(eyre!("unrecognised token '{}'", t)),
             }
         }
@@ -572,12 +593,11 @@ impl Parser {
             match t.tok {
                 Tok::Pins => {
                     self.expect(Tok::Lparen)?;
-                    self.expect(Tok::Net)?;
+                    self.expect(Tok::Pins)?;
                     while self.peek(0)?.tok != Tok::Rparen {
                         v.pins.push(self.pin_ref()?);
                     }
                     self.expect(Tok::Rparen)?;
-                    break;
                 }
                 _ => return Err(eyre!("unrecognised token '{}'", t)),
             }
@@ -586,13 +606,21 @@ impl Parser {
         Ok(v)
     }
 
-    fn rule(&mut self) -> Result<DsnRule> {
-        let mut v = DsnRule::default();
+    fn rule(&mut self) -> Result<Vec<DsnRule>> {
+        let mut v = Vec::new();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Rule)?;
         while self.peek(0)?.tok != Tok::Rparen {
             let t = self.peek(1)?;
             match t.tok {
+                Tok::Width => {
+                    self.expect(Tok::Lparen)?;
+                    self.expect(Tok::Width)?;
+                    let width = self.number()?;
+                    v.push(DsnRule::Width(width));
+                    self.expect(Tok::Rparen)?;
+                }
+                Tok::Clearance => v.push(DsnRule::Clearance(self.clearance()?)),
                 _ => return Err(eyre!("unrecognised token '{}'", t)),
             }
         }
@@ -600,8 +628,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn vertex(&mut self) -> Result<PtF> {
-        Ok(PtF::new(self.number()?, self.number()?))
+    fn vertex(&mut self) -> Result<Pt> {
+        Ok(Pt::new(self.number()?, self.number()?))
     }
 
     fn unit(&mut self) -> Result<DsnDimensionUnit> {

@@ -1,6 +1,6 @@
 use rust_decimal::Decimal;
 
-use crate::model::geom::{PtF, RtF};
+use crate::model::geom::{Pt, Rt};
 
 // File-format independent representation of a PCB.
 
@@ -9,32 +9,32 @@ pub type Id = String;
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Circle {
     r: Decimal,
-    p: PtF,
+    p: Pt,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Polygon {
     width: Decimal,
-    pts: Vec<PtF>,
+    pts: Vec<Pt>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Path {
     width: Decimal,
-    pts: Vec<PtF>,
+    pts: Vec<Pt>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Arc {
     width: Decimal,
-    start: PtF,
-    end: PtF,
-    center: PtF,
+    start: Pt,
+    end: Pt,
+    center: Pt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShapeType {
-    Rect(RtF),
+    Rect(Rt),
     Circle(Circle),
     Polygon(Polygon),
     Path(Path),
