@@ -13,6 +13,7 @@ use crate::dsn::types::{
 };
 use crate::model::geom::{Pt, Rt};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parser {
     toks: Vec<Token>,
     idx: usize,

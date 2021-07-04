@@ -532,6 +532,24 @@ impl Default for DsnResolution {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, EnumString, EnumDisplay)]
+#[strum(serialize_all = "snake_case")]
+pub enum DsnWireType {
+    Fix,
+    Route,
+    Normal,
+    Protect,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumString, EnumDisplay)]
+#[strum(serialize_all = "snake_case")]
+pub enum DsnWireAttr {
+    Test,
+    Fanout,
+    Bus,
+    Jumper,
+}
+
 // <wire_shape_descriptor> = (wire
 //    <shape_descriptor>
 //    [(net <net_id>)]
@@ -545,22 +563,6 @@ impl Default for DsnResolution {
 //        (terminal <object_type> [<pin_reference>]))]
 //    [(supply)])
 // Describes a trace. Traces may have any shape.
-#[derive(Debug, Clone, PartialEq, Eq, EnumString, EnumDisplay)]
-#[strum(serialize_all = "snake_case")]
-pub enum DsnWireType {
-    Fix,
-    Route,
-    Normal,
-    Protect,
-}
-#[derive(Debug, Clone, PartialEq, Eq, EnumString, EnumDisplay)]
-#[strum(serialize_all = "snake_case")]
-pub enum DsnWireAttr {
-    Test,
-    Fanout,
-    Bus,
-    Jumper,
-}
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DsnWire {}
 

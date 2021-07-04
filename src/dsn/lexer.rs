@@ -92,7 +92,7 @@ impl Lexer {
     fn push(&mut self) -> Result<()> {
         if !self.token.is_empty() {
             let token = Token {
-                tok: Tok::from_str(&self.token).unwrap_or(Tok::Literal),
+                tok: Tok::from_str(&self.token.to_lowercase()).unwrap_or(Tok::Literal),
                 s: self.token.clone(),
             };
             self.tokens.push(token);
