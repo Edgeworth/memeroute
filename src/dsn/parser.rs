@@ -11,7 +11,7 @@ use crate::dsn::types::{
     DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect,
     DsnResolution, DsnRule, DsnShape, DsnSide, DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
-use crate::model::geom::{Pt, Rt};
+use crate::model::geom::{PtF, RtF};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parser {
@@ -89,7 +89,7 @@ impl Parser {
                 Tok::Placement => self.pcb.placement = self.placement()?,
                 Tok::Resolution => self.pcb.resolution = self.resolution()?,
                 Tok::Structure => self.pcb.structure = self.structure()?,
-                Tok::Unit => self.ignore()?, // Ignore for now.
+                Tok::Unit => self.pcb.unit.dimension = self.unit()?, // Ignore for now.
                 Tok::Wiring => self.pcb.wiring = self.wiring()?,
                 _ => return Err(eyre!("unrecognised token '{}'", t)),
             }
@@ -149,14 +149,7 @@ impl Parser {
         let mut v = DsnResolution::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Resolution)?;
-        v.dimension = match self.next()?.tok {
-            Tok::Inch => DsnDimensionUnit::Inch,
-            Tok::Mil => DsnDimensionUnit::Mil,
-            Tok::Cm => DsnDimensionUnit::Cm,
-            Tok::Mm => DsnDimensionUnit::Mm,
-            Tok::Um => DsnDimensionUnit::Um,
-            _ => return Err(eyre!("unknown dimension unit")),
-        };
+        v.dimension = self.dimension()?;
         v.amount = self.integer()?;
         self.expect(Tok::Rparen)?;
         Ok(v)
@@ -422,13 +415,6 @@ impl Parser {
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Shape)?;
         v.shape = self.shape()?;
-        while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            match t.tok {
-                Tok::Window => v.windows.push(self.window()?),
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
-            }
-        }
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -485,7 +471,7 @@ impl Parser {
         v.layer_id = self.literal()?;
         let a = self.vertex()?;
         let b = self.vertex()?;
-        v.rect = Rt::enclosing(&a, &b); // Opposite points but can be in either order.
+        v.rect = RtF::enclosing(&a, &b); // Opposite points but can be in either order.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -629,20 +615,14 @@ impl Parser {
         Ok(v)
     }
 
-    fn vertex(&mut self) -> Result<Pt> {
-        Ok(Pt::new(self.number()?, self.number()?))
+    fn vertex(&mut self) -> Result<PtF> {
+        Ok(PtF::new(self.number()?, self.number()?))
     }
 
     fn unit(&mut self) -> Result<DsnDimensionUnit> {
-        let mut v = DsnDimensionUnit::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Unit)?;
-        while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            match t.tok {
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
-            }
-        }
+        let v = self.dimension()?;
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -668,6 +648,17 @@ impl Parser {
             Tok::Front => Ok(DsnSide::Front),
             _ => Err(eyre!("unrecognised side type")),
         }
+    }
+
+    fn dimension(&mut self) -> Result<DsnDimensionUnit> {
+        Ok(match self.next()?.tok {
+            Tok::Inch => DsnDimensionUnit::Inch,
+            Tok::Mil => DsnDimensionUnit::Mil,
+            Tok::Cm => DsnDimensionUnit::Cm,
+            Tok::Mm => DsnDimensionUnit::Mm,
+            Tok::Um => DsnDimensionUnit::Um,
+            _ => return Err(eyre!("unknown dimension unit")),
+        })
     }
 
     fn number(&mut self) -> Result<Decimal> {

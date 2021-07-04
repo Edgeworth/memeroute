@@ -16,6 +16,7 @@ use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
 use eyre::Result;
+use memeroute::dsn::convert::Converter;
 use memeroute::dsn::lexer::Lexer;
 use memeroute::dsn::parser::Parser;
 use structopt::StructOpt;
@@ -39,7 +40,8 @@ fn parse_test<P: AsRef<Path>>(path: P) -> Result<()> {
     let data = read_to_string(path)?;
     let lexer = Lexer::new(&data)?;
     let parser = Parser::new(&lexer.lex()?);
-    parser.parse()?;
+    let pcb = parser.parse()?;
+    let pcb = Converter::new(pcb).convert()?;
     Ok(())
 }
 
