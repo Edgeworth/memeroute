@@ -8,25 +8,25 @@ pub type Id = String;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Circle {
-    pub r: u64,
+    pub r: Decimal,
     pub p: Pt,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Polygon {
-    pub width: u64,
+    pub width: Decimal,
     pub pts: Vec<Pt>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Path {
-    pub width: u64,
+    pub width: Decimal,
     pub pts: Vec<Pt>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Arc {
-    pub width: u64,
+    pub width: Decimal,
     pub start: Pt,
     pub end: Pt,
     pub center: Pt,
@@ -89,7 +89,9 @@ pub struct Pin {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Component {
     pub id: Id,
+    pub p: Pt,
     pub side: Side,
+    pub rotation: Decimal,
     pub outlines: Vec<Shape>,
     pub keepouts: Vec<Keepout>,
     pub pins: Vec<Pin>,
@@ -153,17 +155,11 @@ pub struct Pcb {
     wires: Vec<Wire>,
     vias: Vec<Via>,
     nets: Vec<Net>,
-
-    resolution: Decimal, // Stores how many millimetres each unit value represents.
 }
 
 impl Pcb {
     pub fn set_id(&mut self, id: &str) {
         self.id = id.to_owned();
-    }
-
-    pub fn set_resolution(&mut self, resolution: Decimal) {
-        self.resolution = resolution;
     }
 
     pub fn add_layer(&mut self, l: Layer) {

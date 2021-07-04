@@ -1,7 +1,7 @@
 use rust_decimal::Decimal;
 use strum::{Display as EnumDisplay, EnumString};
 
-use crate::model::geom::{PtF, RtF};
+use crate::model::geom::{Pt, Rt};
 
 // Types defined in DSN specification.
 
@@ -38,7 +38,7 @@ pub type DsnLayerId = DsnId;
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DsnRect {
     pub layer_id: DsnLayerId,
-    pub rect: RtF,
+    pub rect: Rt,
 }
 
 // <circle_descriptor> = (circle <layer_id> <diameter> [<vertex>])
@@ -46,7 +46,7 @@ pub struct DsnRect {
 pub struct DsnCircle {
     pub layer_id: DsnLayerId,
     pub diameter: Decimal,
-    pub p: PtF, // Defaults to PCB origin.
+    pub p: Pt, // Defaults to PCB origin.
 }
 
 // <polygon_descriptor> = (polygon <layer_id> <aperture_width> {<vertex>}
@@ -55,7 +55,7 @@ pub struct DsnCircle {
 pub struct DsnPolygon {
     pub layer_id: DsnLayerId,
     pub aperture_width: Decimal,
-    pub pts: Vec<PtF>,
+    pub pts: Vec<Pt>,
 }
 
 // <path_descriptor> = (path <layer_id> <aperture_width> {<vertex>}
@@ -64,7 +64,7 @@ pub struct DsnPolygon {
 pub struct DsnPath {
     pub layer_id: DsnLayerId,
     pub aperture_width: Decimal,
-    pub pts: Vec<PtF>,
+    pub pts: Vec<Pt>,
 }
 
 // <qarc_descriptor> = (qarc <layer_id> <aperture_width>
@@ -73,9 +73,9 @@ pub struct DsnPath {
 pub struct DsnQArc {
     pub layer_id: DsnLayerId,
     pub aperture_width: Decimal,
-    pub start: PtF,
-    pub end: PtF,
-    pub center: PtF,
+    pub start: Pt,
+    pub end: Pt,
+    pub center: Pt,
 }
 
 // <shape_descriptor> = = [<rectangle_descriptor> | <circle_descriptor> |
@@ -176,7 +176,7 @@ pub struct DsnPin {
     pub padstack_id: DsnId, // Padstack describes the shape of the pin
     pub rotation: Decimal,  // Rotation in degrees. Default to 0
     pub pin_id: DsnId,      // Describes TODO e.g. 1@1
-    pub p: PtF,             // Location of the pin relative to the parent component (placement).
+    pub p: Pt,             // Location of the pin relative to the parent component (placement).
 }
 
 // Keepout: No routing whatsoever.
@@ -259,7 +259,7 @@ impl Default for DsnLockType {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DsnPlacementRef {
     pub component_id: DsnId,
-    pub p: PtF,
+    pub p: Pt,
     pub side: DsnSide,
     pub rotation: Decimal,
     pub lock_type: DsnLockType,
