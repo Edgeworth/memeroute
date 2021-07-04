@@ -3,6 +3,7 @@ use rust_decimal::Decimal;
 use crate::model::geom::{Pt, Rt};
 
 // File-format independent representation of a PCB.
+// Units are in millimetres.
 
 pub type Id = String;
 
@@ -184,5 +185,41 @@ impl Pcb {
 
     pub fn add_net(&mut self, n: Net) {
         self.nets.push(n);
+    }
+
+    pub fn id(&self) -> &Id {
+        &self.id
+    }
+
+    pub fn layers(&self) -> &[Layer] {
+        &self.layers
+    }
+
+    pub fn boundaries(&self) -> &[Shape] {
+        &self.boundaries
+    }
+
+    pub fn keepouts(&self) -> &[Keepout] {
+        &self.keepouts
+    }
+
+    pub fn via_padstacks(&self) -> &[Padstack] {
+        &self.via_padstacks
+    }
+
+    pub fn components(&self) -> &[Component] {
+        &self.components
+    }
+
+    pub fn wires(&self) -> &[Wire] {
+        &self.wires
+    }
+
+    pub fn vias(&self) -> &[Via] {
+        &self.vias
+    }
+
+    pub fn nets(&self) -> &[Net] {
+        &self.nets
     }
 }

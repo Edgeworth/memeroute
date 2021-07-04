@@ -34,7 +34,7 @@ impl Converter {
             DsnDimensionUnit::Mil => dec!(0.0254),
             DsnDimensionUnit::Cm => dec!(10),
             DsnDimensionUnit::Mm => dec!(1),
-            DsnDimensionUnit::Um => dec!(1000),
+            DsnDimensionUnit::Um => dec!(0.001),
         }
     }
 
