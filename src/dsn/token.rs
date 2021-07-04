@@ -46,7 +46,6 @@ pub enum Tok {
     Place,
     Placement,
     Plane,
-    #[strum(serialize = "PN")]
     Pn,
     Polygon,
     Position,
