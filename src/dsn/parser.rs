@@ -11,7 +11,7 @@ use crate::dsn::types::{
     DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect,
     DsnResolution, DsnRule, DsnShape, DsnSide, DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
-use crate::model::geom::{PtF, RtF};
+use crate::model::geom::{Pt, Rt};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parser {
@@ -471,7 +471,7 @@ impl Parser {
         v.layer_id = self.literal()?;
         let a = self.vertex()?;
         let b = self.vertex()?;
-        v.rect = RtF::enclosing(&a, &b); // Opposite points but can be in either order.
+        v.rect = Rt::enclosing(&a, &b); // Opposite points but can be in either order.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -615,8 +615,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn vertex(&mut self) -> Result<PtF> {
-        Ok(PtF::new(self.number()?, self.number()?))
+    fn vertex(&mut self) -> Result<Pt> {
+        Ok(Pt::new(self.number()?, self.number()?))
     }
 
     fn unit(&mut self) -> Result<DsnDimensionUnit> {
