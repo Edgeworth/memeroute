@@ -19,9 +19,10 @@ use eyre::Result;
 use memeroute::dsn::convert::Converter;
 use memeroute::dsn::lexer::Lexer;
 use memeroute::dsn::parser::Parser;
+use memeroute::model::pcb::Pcb;
 use structopt::StructOpt;
 
-use crate::gui::TemplateApp;
+use crate::gui::MemerouteGui;
 
 pub mod gui;
 pub mod pcb;
@@ -36,19 +37,19 @@ struct Args {
     data_path: PathBuf,
 }
 
-fn parse_test<P: AsRef<Path>>(path: P) -> Result<()> {
+fn load_pcb<P: AsRef<Path>>(path: P) -> Result<Pcb> {
     let data = read_to_string(path)?;
     let lexer = Lexer::new(&data)?;
     let parser = Parser::new(&lexer.lex()?);
     let pcb = parser.parse()?;
     let pcb = Converter::new(pcb).convert()?;
-    Ok(())
+    Ok(pcb)
 }
 
 pub async fn run() -> Result<()> {
     let args = Args::from_args();
-    parse_test(&args.data_path)?;
-    let app = TemplateApp::default();
+    let pcb = load_pcb(&args.data_path)?;
+    let app = MemerouteGui::new(pcb);
     let native_options = eframe::NativeOptions::default();
     eframe::run_native(Box::new(app), native_options)
 }

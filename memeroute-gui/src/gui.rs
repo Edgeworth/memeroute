@@ -1,48 +1,59 @@
+use eframe::egui::Widget;
 use eframe::{egui, epi};
+use memeroute::model::geom::Rt;
+use memeroute::model::pcb::Pcb;
+use rust_decimal_macros::dec;
+use serde::{Deserialize, Serialize};
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
-pub struct TemplateApp {
-    // Example stuff:
-    label: String,
+use crate::pcb::pcb_view::PcbView;
 
-    // this how you opt-out of serialization of a member
-    #[cfg_attr(feature = "persistence", serde(skip))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(default)]
+struct State {
+    filename: String,
     value: f32,
 }
 
-impl Default for TemplateApp {
+impl Default for State {
     fn default() -> Self {
-        Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
-        }
+        Self { filename: "data/left.dsn".to_string(), value: 2.7 }
     }
 }
 
-impl epi::App for TemplateApp {
+#[derive(Debug, Clone, PartialEq)]
+pub struct MemerouteGui {
+    s: State,
+    pcb: Pcb,
+}
+
+impl MemerouteGui {
+    pub fn new(pcb: Pcb) -> Self {
+        Self { s: Default::default(), pcb }
+    }
+}
+
+impl epi::App for MemerouteGui {
     fn name(&self) -> &str {
-        "egui template"
+        "Memeroute"
     }
 
-    /// Called by the framework to load old app state (if any).
-    #[cfg(feature = "persistence")]
-    fn load(&mut self, storage: &dyn epi::Storage) {
-        *self = epi::get_value(storage, epi::APP_KEY).unwrap_or_default()
+    fn setup(
+        &mut self,
+        _ctx: &egui::CtxRef,
+        _frame: &mut epi::Frame<'_>,
+        storage: Option<&dyn epi::Storage>,
+    ) {
+        if let Some(storage) = storage {
+            self.s = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
+        }
     }
 
-    /// Called by the frame work to save state before shutdown.
-    #[cfg(feature = "persistence")]
     fn save(&mut self, storage: &mut dyn epi::Storage) {
-        epi::set_value(storage, epi::APP_KEY, self);
+        epi::set_value(storage, epi::APP_KEY, &self.s);
     }
 
-    /// Called each time the UI needs repainting, which may be many times per second.
-    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
-        let Self { label, value } = self;
+        let State { filename, value, .. } = &mut self.s;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -65,7 +76,7 @@ impl epi::App for TemplateApp {
 
             ui.horizontal(|ui| {
                 ui.label("Write something: ");
-                ui.text_edit_singleline(label);
+                ui.text_edit_singleline(filename);
             });
 
             ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
@@ -81,24 +92,11 @@ impl epi::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-
-            ui.heading("egui template");
-            ui.hyperlink("https://github.com/emilk/egui_template");
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/egui_template/blob/master/",
-                "Source code."
-            ));
-            egui::warn_if_debug_build(ui);
+            let pcb_view = PcbView::new(
+                &self.pcb,
+                Rt::new(dec!(-20.0), dec!(-200.0), dec!(200.0), dec!(200.0)),
+            );
+            pcb_view.ui(ui);
         });
-
-        if false {
-            egui::Window::new("Window").show(ctx, |ui| {
-                ui.label("Windows can be moved by dragging them.");
-                ui.label("They are automatically sized based on contents.");
-                ui.label("You can turn on resizing and scrolling if you like.");
-                ui.label("You would normally chose either panels OR windows.");
-            });
-        }
     }
 }
