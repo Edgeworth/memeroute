@@ -9,8 +9,8 @@ pub type Id = String;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Circle {
-    pub r: Decimal,  // Radius
-    pub p: Pt,  // Center
+    pub r: Decimal, // Radius
+    pub p: Pt,      // Center
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -27,7 +27,7 @@ pub struct Path {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Arc {
-    pub width: Decimal,
+    pub width: Decimal, // TODO: Change to pt, radius, radian range, width.
     pub start: Pt,
     pub end: Pt,
     pub center: Pt,
