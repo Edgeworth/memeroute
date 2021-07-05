@@ -83,18 +83,12 @@ impl epi::App for MemerouteGui {
             if ui.button("Increment").clicked() {
                 *value += 1.0;
             }
-
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
-                ui.add(
-                    egui::Hyperlink::new("https://github.com/emilk/egui/").text("powered by egui"),
-                );
-            });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let pcb_view = PcbView::new(
                 &self.pcb,
-                Rt::new(dec!(-20.0), dec!(-200.0), dec!(200.0), dec!(200.0)),
+                Rt::new(dec!(-20.0), dec!(-20.0), dec!(200.0), dec!(200.0)),
             );
             pcb_view.ui(ui);
         });

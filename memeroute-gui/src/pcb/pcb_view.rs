@@ -3,8 +3,9 @@ use eframe::egui::{epaint, Color32, Painter, Pos2, Rect, Response, Sense, Ui, Wi
 use lazy_static::lazy_static;
 use memeroute::model::geom::{Pt, Rt};
 use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Shape, ShapeType};
-use rust_decimal_macros::dec;
+use rust_decimal::Decimal;
 
+use crate::pcb::primitives::{fill_circle, fill_polygon, stroke_path, stroke_polygon};
 use crate::pcb::{to_pos2, to_rect};
 
 lazy_static! {
@@ -57,31 +58,27 @@ impl<'a> PcbView<'a> {
 
     fn set_screen_area(&mut self, screen_area: &Rect) {
         self.screen_area = *screen_area;
-        self.tf = RectTransform::from_to(to_rect(&self.local_area), self.screen_area);
+        self.tf = RectTransform::from_to(to_rect(self.local_area), self.screen_area);
     }
 
-    fn pt(&self, v: &Pt) -> Pos2 {
+    fn pt(&self, v: Pt) -> Pos2 {
         self.tf.transform_pos(to_pos2(v))
     }
 
-    fn rect(&self, v: &Rt) -> Rect {
+    fn rect(&self, v: Rt) -> Rect {
         self.tf.transform_rect(to_rect(v))
     }
 
     fn draw_shape(&self, p: &Painter, v: &Shape) {
         match &v.shape {
-            ShapeType::Rect(s) => p.rect_filled(self.rect(s), 0.0, PRIMARY[0]),
-            ShapeType::Circle(_) => {}
+            ShapeType::Rect(s) => p.rect_filled(self.rect(*s), 0.0, PRIMARY[0]),
+            ShapeType::Circle(s) => fill_circle(p, self.tf, s.p, s.r, PRIMARY[0]),
             ShapeType::Polygon(s) => {
-                p.add(epaint::Shape::Path {
-                    points: s.pts.iter().map(|pt| self.pt(pt)).collect(),
-                    closed: true,
-                    fill: SECONDARY[1],
-                    stroke: epaint::Stroke::new(2.0, SECONDARY[0]),
-                });
+                fill_polygon(p, self.tf, &s.pts, SECONDARY[1]);
+                stroke_polygon(p, self.tf, &s.pts, s.width, SECONDARY[0]);
             }
-            ShapeType::Path(_) => {}
-            ShapeType::Arc(_) => {}
+            ShapeType::Path(s) => stroke_path(p, self.tf, &s.pts, s.width, SECONDARY[0]),
+            ShapeType::Arc(s) => todo!(),
         };
     }
 

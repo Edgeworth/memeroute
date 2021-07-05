@@ -471,7 +471,7 @@ impl Parser {
         v.layer_id = self.literal()?;
         let a = self.vertex()?;
         let b = self.vertex()?;
-        v.rect = Rt::enclosing(&a, &b); // Opposite points but can be in either order.
+        v.rect = Rt::enclosing(a, b); // Opposite points but can be in either order.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
