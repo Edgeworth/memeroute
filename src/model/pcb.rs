@@ -9,8 +9,8 @@ pub type Id = String;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Circle {
-    pub r: Decimal,
-    pub p: Pt,
+    pub r: Decimal,  // Radius
+    pub p: Pt,  // Center
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]

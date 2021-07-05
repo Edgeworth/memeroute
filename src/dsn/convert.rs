@@ -45,14 +45,15 @@ impl Converter {
     fn rect(&self, v: &DsnRect) -> Rt {
         Rt {
             x: self.coord(v.rect.x),
-            y: self.coord(v.rect.y),
+            y: -self.coord(v.rect.y), // Convert to positive y is up axes.
             w: self.coord(v.rect.w),
             h: self.coord(v.rect.h),
         }
     }
 
-    fn pt(&self, v: &Pt) -> Pt {
-        Pt { x: self.coord(v.x), y: self.coord(v.y) }
+    fn pt(&self, v: Pt) -> Pt {
+        // Convert to positive y is up axes.
+        Pt { x: self.coord(v.x), y: -self.coord(v.y) }
     }
 
 
@@ -65,30 +66,30 @@ impl Converter {
                 layer: v.layer_id.clone(),
                 shape: ShapeType::Circle(Circle {
                     r: self.coord(v.diameter / dec!(2)),
-                    p: self.pt(&v.p),
+                    p: self.pt(v.p),
                 }),
             },
             DsnShape::Polygon(v) => Shape {
                 layer: v.layer_id.clone(),
                 shape: ShapeType::Polygon(Polygon {
                     width: self.coord(v.aperture_width),
-                    pts: v.pts.iter().map(|v| self.pt(v)).collect(),
+                    pts: v.pts.iter().map(|&v| self.pt(v)).collect(),
                 }),
             },
             DsnShape::Path(v) => Shape {
                 layer: v.layer_id.clone(),
                 shape: ShapeType::Path(Path {
                     width: self.coord(v.aperture_width),
-                    pts: v.pts.iter().map(|v| self.pt(v)).collect(),
+                    pts: v.pts.iter().map(|&v| self.pt(v)).collect(),
                 }),
             },
             DsnShape::QArc(v) => Shape {
                 layer: v.layer_id.clone(),
                 shape: ShapeType::Arc(Arc {
                     width: self.coord(v.aperture_width),
-                    start: self.pt(&v.start),
-                    end: self.pt(&v.end),
-                    center: self.pt(&v.center),
+                    start: self.pt(v.start),
+                    end: self.pt(v.end),
+                    center: self.pt(v.center),
                 }),
             },
         }
@@ -122,7 +123,7 @@ impl Converter {
                 .ok_or_else(|| eyre!("missing padstack with id {}", v.padstack_id))?
                 .clone(),
             rotation: v.rotation,
-            p: self.pt(&v.p),
+            p: self.pt(v.p),
         })
     }
 
@@ -146,7 +147,7 @@ impl Converter {
                 .clone();
             let component = Component {
                 id: pl.component_id.clone(),
-                p: self.pt(&pl.p),
+                p: self.pt(pl.p),
                 side: match pl.side {
                     DsnSide::Front => Side::Front,
                     DsnSide::Back => Side::Back,
