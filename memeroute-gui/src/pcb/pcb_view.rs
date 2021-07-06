@@ -1,10 +1,11 @@
-use eframe::egui::{Color32, Painter, Response, Sense, Ui, Widget};
+use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
+use eframe::egui::{epaint, Color32, Context, Painter, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
 use memeroute::model::geom::{Pt, Rt};
 use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Shape, ShapeType};
 use memeroute::model::transform::Tf;
 
-use crate::pcb::primitives::{fill_circle, fill_polygon, stroke_path, stroke_polygon};
+use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
 use crate::pcb::{to_rect, to_rt};
 
 lazy_static! {
@@ -26,26 +27,34 @@ lazy_static! {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct PcbView<'a> {
-    pcb: &'a Pcb,
+pub struct PcbView {
+    pcb: Pcb,
     screen_area: Rt,
     local_area: Rt,
     tf: Tf,
+    mesh: Mesh,
 }
 
-impl<'a> Widget for PcbView<'a> {
-    fn ui(mut self, ui: &mut Ui) -> Response {
+impl Widget for &mut PcbView {
+    fn ui(self, ui: &mut Ui) -> Response {
         let (response, painter) =
             ui.allocate_painter(ui.available_size_before_wrap_finite(), Sense::click_and_drag());
         self.set_screen_area(to_rt(response.rect));
-        self.render(&painter);
+        let mesh = self.render(ui.ctx());
+        painter.add(epaint::Shape::Mesh(mesh));
         response
     }
 }
 
-impl<'a> PcbView<'a> {
-    pub fn new(pcb: &'a Pcb, local_area: Rt) -> Self {
-        Self { pcb, screen_area: Default::default(), local_area, tf: Tf::identity() }
+impl PcbView {
+    pub fn new(pcb: Pcb, local_area: Rt) -> Self {
+        Self {
+            pcb,
+            screen_area: Default::default(),
+            local_area,
+            tf: Tf::identity(),
+            mesh: Mesh::default(),
+        }
     }
 
     fn set_screen_area(&mut self, screen_area: Rt) {
@@ -53,46 +62,81 @@ impl<'a> PcbView<'a> {
         self.tf = Tf::affine(self.local_area, self.screen_area);
     }
 
-    fn draw_shape(&self, p: &Painter, tf: &Tf, v: &Shape) {
+    fn draw_shape(&self, tf: &Tf, v: &Shape) -> Vec<epaint::Shape> {
+        let mut shapes = Vec::new();
         match &v.shape {
-            ShapeType::Rect(s) => p.rect_filled(to_rect(tf.rt(*s)), 0.0, PRIMARY[0]),
-            ShapeType::Circle(s) => fill_circle(p, tf, s.p, s.r, PRIMARY[0]),
+            ShapeType::Rect(s) => shapes.push(fill_rect(tf, *s, PRIMARY[0])),
+            ShapeType::Circle(s) => shapes.push(fill_circle(tf, s.p, s.r, PRIMARY[0])),
             ShapeType::Polygon(s) => {
-                fill_polygon(p, tf, &s.pts, SECONDARY[1]);
-                stroke_polygon(p, tf, &s.pts, s.width, SECONDARY[0]);
+                shapes.push(fill_polygon(tf, &s.pts, SECONDARY[1]));
+                shapes.extend(stroke_polygon(tf, &s.pts, s.width, SECONDARY[0]));
             }
-            ShapeType::Path(s) => stroke_path(p, tf, &s.pts, s.width, SECONDARY[0]),
+            ShapeType::Path(s) => shapes.extend(stroke_path(tf, &s.pts, s.width, SECONDARY[0])),
             ShapeType::Arc(s) => todo!(),
-        };
+        }
+        shapes
     }
 
-    fn draw_keepout(&self, p: &Painter, tf: &Tf, v: &Keepout) {
-        self.draw_shape(p, tf, &v.shape);
+    fn draw_keepout(&self, tf: &Tf, v: &Keepout) -> Vec<epaint::Shape> {
+        self.draw_shape(tf, &v.shape)
     }
 
+    fn draw_padstack(&self, tf: &Tf, v: &Padstack) {}
 
-    fn draw_padstack(&self, p: &Painter, tf: &Tf, v: &Padstack) {}
-
-    fn draw_component(&self, p: &Painter, tf: &Tf, v: &Component) {
+    fn draw_component(&self, tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
+        let mut shapes = Vec::new();
         let tf = tf * Tf::translate(v.p);
         for outline in v.outlines.iter() {
-            self.draw_shape(p, &tf, outline);
+            shapes.extend(self.draw_shape(&tf, outline));
         }
         for keepout in v.keepouts.iter() {
-            self.draw_keepout(p, &tf, keepout);
+            shapes.extend(self.draw_keepout(&tf, keepout));
+        }
+        shapes
+    }
+
+    fn tessellate(
+        ctx: &Context,
+        tess: &mut Tessellator,
+        mesh: &mut Mesh,
+        shapes: Vec<epaint::Shape>,
+    ) {
+        for s in shapes.into_iter() {
+            tess.tessellate_shape(ctx.fonts().texture().size(), s, mesh);
         }
     }
 
-    fn render(&self, p: &Painter) {
-        p.rect_filled(to_rect(self.screen_area), 0.0, Color32::WHITE);
-        for boundary in self.pcb.boundaries() {
-            self.draw_shape(p, &self.tf, boundary);
+    fn render(&mut self, ctx: &Context) -> Mesh {
+        if self.mesh.is_empty() {
+            let mut mesh = Mesh::default();
+            let mut tess = Tessellator::from_options(TessellationOptions {
+                pixels_per_point: ctx.pixels_per_point(),
+                aa_size: 1.0 / ctx.pixels_per_point(),
+                anti_alias: false,
+                ..Default::default()
+            });
+            Self::tessellate(
+                ctx,
+                &mut tess,
+                &mut mesh,
+                vec![fill_rect(&Tf::new(), self.screen_area, Color32::WHITE)],
+            );
+            for boundary in self.pcb.boundaries() {
+                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_shape(&self.tf, boundary));
+            }
+            for keepout in self.pcb.keepouts() {
+                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_keepout(&self.tf, keepout));
+            }
+            for component in self.pcb.components() {
+                Self::tessellate(
+                    ctx,
+                    &mut tess,
+                    &mut mesh,
+                    self.draw_component(&self.tf, component),
+                );
+            }
+            self.mesh = mesh;
         }
-        for keepout in self.pcb.keepouts() {
-            self.draw_keepout(p, &self.tf, keepout);
-        }
-        for component in self.pcb.components() {
-            self.draw_component(p, &self.tf, component);
-        }
+        self.mesh.clone()
     }
 }

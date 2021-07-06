@@ -1,18 +1,27 @@
 use std::f32::consts::PI;
 
-use eframe::egui::{epaint, pos2, Color32, Painter};
-use memeroute::model::geom::Pt;
+use eframe::egui::{epaint, Color32};
+use memeroute::model::geom::{Pt, Rt};
 use memeroute::model::transform::Tf;
-use num_traits::{FromPrimitive, ToPrimitive};
+use num_traits::FromPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
-use crate::pcb::to_pos2;
+use crate::pcb::{to_pos2, to_rect};
 
 const NUM_POINTS: usize = 16;
 const EP: Decimal = dec!(1.0e-5);
 
-pub fn fill_circle(p: &Painter, tf: &Tf, pt: Pt, r: Decimal, col: Color32) {
+pub fn fill_rect(tf: &Tf, rt: Rt, col: Color32) -> epaint::Shape {
+    epaint::Shape::Rect {
+        rect: to_rect(tf.rt(rt)),
+        corner_radius: 0.0,
+        fill: col,
+        stroke: Default::default(),
+    }
+}
+
+pub fn fill_circle(tf: &Tf, pt: Pt, r: Decimal, col: Color32) -> epaint::Shape {
     let mut vert = Vec::new();
     for i in 0..NUM_POINTS {
         let rad = 2.0 * PI * i as f32 / NUM_POINTS as f32;
@@ -27,47 +36,39 @@ pub fn fill_circle(p: &Painter, tf: &Tf, pt: Pt, r: Decimal, col: Color32) {
             pt.y + Decimal::from_f32(rad_next.sin()).unwrap() * r,
         ))));
     }
-    p.add(epaint::Shape::Path {
-        points: vert,
-        closed: true,
-        fill: col,
-        stroke: Default::default(),
-    });
+    epaint::Shape::Path { points: vert, closed: true, fill: col, stroke: Default::default() }
 }
 
-pub fn fill_polygon(p: &Painter, tf: &Tf, pts: &[Pt], col: Color32) {
+pub fn fill_polygon(tf: &Tf, pts: &[Pt], col: Color32) -> epaint::Shape {
     let mut vert = Vec::new();
     for &pt in pts {
         vert.push(to_pos2(tf.pt(pt)));
     }
-    p.add(epaint::Shape::Path {
-        points: vert,
-        closed: true,
-        fill: col,
-        stroke: Default::default(),
-    });
+    epaint::Shape::Path { points: vert, closed: true, fill: col, stroke: Default::default() }
 }
 
-pub fn stroke_polygon(p: &Painter, tf: &Tf, pts: &[Pt], width: Decimal, col: Color32) {
+pub fn stroke_polygon(tf: &Tf, pts: &[Pt], width: Decimal, col: Color32) -> Vec<epaint::Shape> {
     let mut vert = pts.to_owned();
     if let Some(first) = vert.first().copied() {
         vert.push(first);
     }
-    stroke_path(p, tf, &vert, width, col);
+    stroke_path(tf, &vert, width, col)
 }
 
-pub fn stroke_path(p: &Painter, tf: &Tf, pts: &[Pt], width: Decimal, col: Color32) {
+pub fn stroke_path(tf: &Tf, pts: &[Pt], width: Decimal, col: Color32) -> Vec<epaint::Shape> {
+    let mut shapes = Vec::new();
     let width = width / dec!(2);
     for &[p0, p1] in pts.array_windows::<2>() {
-        fill_circle(p, tf, p0, width / dec!(2), col);
+        shapes.push(fill_circle(tf, p0, width / dec!(2), col));
 
         if p0.dist(p1) > EP {
             let perp = (p1 - p0).perp();
             let vert = [p0 - width * perp, p0 + width * perp, p1 + width * perp, p1 - width * perp];
-            fill_polygon(p, tf, &vert, col);
+            shapes.push(fill_polygon(tf, &vert, col));
         }
     }
     if let Some(last) = pts.last() {
-        fill_circle(p, tf, *last, width, col);
+        shapes.push(fill_circle(tf, *last, width, col));
     }
+    shapes
 }
