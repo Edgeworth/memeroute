@@ -310,7 +310,7 @@ impl Pt {
     }
 
     pub fn perp(&self) -> Pt {
-        Pt::new(-self.y, self.x)
+        Pt::new(-self.y, self.x).norm()
     }
 
     pub fn dist(&self, b: Pt) -> f64 {
@@ -319,6 +319,11 @@ impl Pt {
 
     pub fn mag(&self) -> f64 {
         (self.x * self.x + self.y * self.y).sqrt()
+    }
+
+    pub fn norm(&self) -> Pt {
+        let mag = self.mag();
+        Pt::new(self.x / mag, self.y / mag)
     }
 }
 
