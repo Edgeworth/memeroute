@@ -2,6 +2,7 @@ use crate::model::geom::{Pt, Rt};
 
 // File-format independent representation of a PCB.
 // Units are in millimetres.
+// All rotations are in degrees, counterclockwise from the positive x axis.
 
 pub type Id = String;
 

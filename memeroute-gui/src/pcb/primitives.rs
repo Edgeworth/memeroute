@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+use std::f64::consts::TAU;
 
 use eframe::egui::{epaint, Color32};
 use memeroute::model::geom::{Pt, Rt};
@@ -21,9 +21,8 @@ pub fn fill_rect(tf: &Tf, rt: Rt, col: Color32) -> epaint::Shape {
 pub fn fill_circle(tf: &Tf, pt: Pt, r: f64, col: Color32) -> epaint::Shape {
     let mut vert = Vec::new();
     for i in 0..NUM_POINTS {
-        let rad = 2.0 * PI * i as f64 / NUM_POINTS as f64;
-        let rad_next = 2.0 * PI * (i + 1) as f64 / NUM_POINTS as f64;
-        vert.push(to_pos2(tf.pt(pt)));
+        let rad = TAU * i as f64 / NUM_POINTS as f64;
+        let rad_next = TAU * (i + 1) as f64 / NUM_POINTS as f64;
         vert.push(to_pos2(tf.pt(Pt::new(pt.x + rad.cos() * r, pt.y + rad.sin() * r))));
         vert.push(to_pos2(tf.pt(Pt::new(pt.x + rad_next.cos() * r, pt.y + rad_next.sin() * r))));
     }

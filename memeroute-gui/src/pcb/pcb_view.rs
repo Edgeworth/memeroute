@@ -2,27 +2,37 @@ use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
 use memeroute::model::geom::{Pt, Rt};
-use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Shape, ShapeType};
+use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Shape, ShapeType, Side};
 use memeroute::model::transform::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
 use crate::pcb::{to_pos2, to_pt, to_rt};
 
+// Index 0 is front, index 1 is back.
 lazy_static! {
+    static ref KEEPOUT: Color32 = Color32::from_rgba_unmultiplied(155, 27, 0, 255);
+
+    static ref OUTLINE: [Color32; 2] = [
+        Color32::from_rgba_unmultiplied(89, 113, 193, 255),
+        Color32::from_rgba_unmultiplied(168, 0, 186, 255)
+    ];
+
+    static ref BOUNDARY: Color32 = Color32::from_rgba_unmultiplied(255, 199, 46, 255);
+
     static ref PRIMARY: [Color32; 5] = [
-        Color32::from_rgba_unmultiplied(20, 55, 173, 150),
-        Color32::from_rgba_unmultiplied(89, 113, 193, 150),
-        Color32::from_rgba_unmultiplied(56, 84, 178, 150),
-        Color32::from_rgba_unmultiplied(14, 42, 133, 150),
-        Color32::from_rgba_unmultiplied(9, 31, 105, 150),
+        Color32::from_rgba_unmultiplied(20, 55, 173, 255),
+        Color32::from_rgba_unmultiplied(89, 113, 193, 255),
+        Color32::from_rgba_unmultiplied(56, 84, 178, 255),
+        Color32::from_rgba_unmultiplied(14, 42, 133, 255),
+        Color32::from_rgba_unmultiplied(9, 31, 105, 255),
     ];
 
     static ref SECONDARY: [Color32; 5] = [
-        Color32::from_rgba_unmultiplied(255, 44, 0, 150),
-        Color32::from_rgba_unmultiplied(255, 126, 99, 150),
-        Color32::from_rgba_unmultiplied(255, 91, 57, 150),
-        Color32::from_rgba_unmultiplied(197, 34, 0, 150),
-        Color32::from_rgba_unmultiplied(155, 27, 0, 150),
+        Color32::from_rgba_unmultiplied(255, 44, 0, 255),
+        Color32::from_rgba_unmultiplied(255, 126, 99, 255),
+        Color32::from_rgba_unmultiplied(255, 91, 57, 255),
+        Color32::from_rgba_unmultiplied(197, 34, 0, 255),
+        Color32::from_rgba_unmultiplied(155, 27, 0, 255),
     ];
 }
 
@@ -55,6 +65,7 @@ impl Widget for &mut PcbView {
 
         self.set_screen_area(to_rt(response.rect));
         let mesh = self.render(ui.ctx());
+        painter.rect_filled(response.rect, 0.0, Color32::WHITE);
         painter.add(epaint::Shape::Mesh(mesh));
         response
     }
@@ -78,39 +89,47 @@ impl PcbView {
         self.dirty = true;
     }
 
-    fn draw_shape(&self, tf: &Tf, v: &Shape) -> Vec<epaint::Shape> {
+    fn draw_shape(&self, tf: &Tf, v: &Shape, col: Color32) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
         match &v.shape {
-            ShapeType::Rect(s) => shapes.push(fill_rect(tf, *s, PRIMARY[0])),
-            ShapeType::Circle(s) => shapes.push(fill_circle(tf, s.p, s.r, PRIMARY[0])),
+            ShapeType::Rect(s) => shapes.push(fill_rect(tf, *s, col)),
+            ShapeType::Circle(s) => shapes.push(fill_circle(tf, s.p, s.r, col)),
             ShapeType::Polygon(s) => {
-                shapes.push(fill_polygon(tf, &s.pts, SECONDARY[1]));
-                shapes.extend(stroke_polygon(tf, &s.pts, s.width, SECONDARY[0]));
+                shapes.push(fill_polygon(tf, &s.pts, col));
+                shapes.extend(stroke_polygon(tf, &s.pts, s.width, col));
             }
             ShapeType::Path(s) => {
-                // Treat paths with width 0 as having a width of 1.0;
-                let w = if s.width == 0.0 { 1.0 } else { s.width };
-                shapes.extend(stroke_path(tf, &s.pts, w, SECONDARY[0]))
+                // Treat paths with width 0 as having a width of 0.2 mm;
+                let w = if s.width == 0.0 { 0.2 } else { s.width };
+                shapes.extend(stroke_path(tf, &s.pts, w, col))
             }
             ShapeType::Arc(_) => todo!(),
         }
         shapes
     }
 
-    fn draw_keepout(&self, tf: &Tf, v: &Keepout) -> Vec<epaint::Shape> {
-        self.draw_shape(tf, &v.shape)
+    fn draw_keepout(&self, tf: &Tf, v: &Keepout, col: Color32) -> Vec<epaint::Shape> {
+        self.draw_shape(tf, &v.shape, col)
     }
 
     fn draw_padstack(&self, _tf: &Tf, _v: &Padstack) {}
 
     fn draw_component(&self, tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
-        let tf = tf * Tf::translate(v.p);
+        let side_idx = match v.side {
+            Side::Front => 0,
+            Side::Back => 1,
+        };
+        // TODO(check): is it correct to flip both axes?
+        let side_tf =
+            if v.side == Side::Back { Tf::scale(Pt::new(-1.0, -1.0)) } else { Tf::identity() };
+        let tf = tf * Tf::translate(v.p) * Tf::rotate(v.rotation) * side_tf;
+
         for outline in v.outlines.iter() {
-            shapes.extend(self.draw_shape(&tf, outline));
+            shapes.extend(self.draw_shape(&tf, outline, OUTLINE[side_idx]));
         }
         for keepout in v.keepouts.iter() {
-            shapes.extend(self.draw_keepout(&tf, keepout));
+            shapes.extend(self.draw_keepout(&tf, keepout, *KEEPOUT));
         }
         shapes
     }
@@ -136,20 +155,17 @@ impl PcbView {
                 anti_alias: false,
                 ..Default::default()
             });
-            Self::tessellate(
-                ctx,
-                &mut tess,
-                &mut mesh,
-                vec![fill_rect(&tf, self.local_area, Color32::WHITE)],
-            );
             for boundary in self.pcb.boundaries() {
-                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_shape(&tf, boundary));
+                let shapes = self.draw_shape(&tf, boundary, *BOUNDARY);
+                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for keepout in self.pcb.keepouts() {
-                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_keepout(&tf, keepout));
+                let shapes = self.draw_keepout(&tf, keepout, *KEEPOUT);
+                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for component in self.pcb.components() {
-                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_component(&tf, component));
+                let shapes = self.draw_component(&tf, component);
+                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             self.mesh = mesh;
         }
