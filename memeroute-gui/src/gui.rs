@@ -2,7 +2,6 @@ use eframe::egui::Widget;
 use eframe::{egui, epi};
 use memeroute::model::geom::Rt;
 use memeroute::model::pcb::Pcb;
-use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 
 use crate::pcb::pcb_view::PcbView;
@@ -29,8 +28,7 @@ pub struct MemerouteGui {
 
 impl MemerouteGui {
     pub fn new(pcb: Pcb) -> Self {
-        let pcb_view =
-            PcbView::new(pcb.clone(), Rt::new(dec!(-20.0), dec!(-20.0), dec!(200.0), dec!(200.0)));
+        let pcb_view = PcbView::new(pcb.clone(), Rt::new(-20.0, -20.0, 200.0, 200.0));
         Self { s: Default::default(), pcb, pcb_view }
     }
 }

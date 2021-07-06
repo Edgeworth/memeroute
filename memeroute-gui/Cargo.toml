@@ -14,9 +14,6 @@ log = "*"
 memeroute = {version = "*", path = ".."}
 num-traits = "*"
 pretty_env_logger = "*"
-rust_decimal = {version = "*", features = ["maths", "std", "serde-str", "serde-arbitrary-precision"]}
-rust_decimal_macros = "*"
 serde = {version = "*", features = ["derive"]}
-serde_json = "*"
 structopt = "*"
 tokio = {version = "*", features = ["full"]}

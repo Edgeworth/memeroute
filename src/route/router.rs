@@ -6,14 +6,14 @@ pub trait RouteStrategy {
     fn route() -> RouteResult;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RouteResult {
     wires: Vec<Wire>,
     vias: Vec<Via>,
     failed: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Router {}
 
 impl Router {
