@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use eyre::{eyre, Result};
-use rust_decimal::Decimal;
 
 use crate::dsn::token::{Tok, Token};
 use crate::dsn::types::{
@@ -13,7 +12,7 @@ use crate::dsn::types::{
 };
 use crate::model::geom::{Pt, Rt};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Parser {
     toks: Vec<Token>,
     idx: usize,
@@ -190,42 +189,36 @@ impl Parser {
     }
 
     fn wiring(&mut self) -> Result<DsnWiring> {
-        let mut v = DsnWiring::default();
+        let v = DsnWiring::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Wiring)?;
         while self.peek(0)?.tok != Tok::Rparen {
             let t = self.peek(1)?;
-            match t.tok {
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
-            }
+            return Err(eyre!("unrecognised token '{}'", t));
         }
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
 
     fn via(&mut self) -> Result<DsnVia> {
-        let mut v = DsnVia::default();
+        let v = DsnVia::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Via)?;
         while self.peek(0)?.tok != Tok::Rparen {
             let t = self.peek(1)?;
-            match t.tok {
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
-            }
+            return Err(eyre!("unrecognised token '{}'", t));
         }
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
 
     fn wire(&mut self) -> Result<DsnWire> {
-        let mut v = DsnWire::default();
+        let v = DsnWire::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Wire)?;
         while self.peek(0)?.tok != Tok::Rparen {
             let t = self.peek(1)?;
-            match t.tok {
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
-            }
+            return Err(eyre!("unrecognised token '{}'", t));
         }
         self.expect(Tok::Rparen)?;
         Ok(v)
@@ -260,14 +253,12 @@ impl Parser {
     }
 
     fn plane(&mut self) -> Result<DsnPlane> {
-        let mut v = DsnPlane::default();
+        let v = DsnPlane::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Plane)?;
         while self.peek(0)?.tok != Tok::Rparen {
             let t = self.peek(1)?;
-            match t.tok {
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
-            }
+            return Err(eyre!("unrecognised token '{}'", t));
         }
         self.expect(Tok::Rparen)?;
         Ok(v)
@@ -440,14 +431,12 @@ impl Parser {
     }
 
     fn window(&mut self) -> Result<DsnWindow> {
-        let mut v = DsnWindow::default();
+        let v = DsnWindow::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Window)?;
         while self.peek(0)?.tok != Tok::Rparen {
             let t = self.peek(1)?;
-            match t.tok {
-                _ => return Err(eyre!("unrecognised token '{}'", t)),
-            }
+            return Err(eyre!("unrecognised token '{}'", t));
         }
         self.expect(Tok::Rparen)?;
         Ok(v)
@@ -661,9 +650,9 @@ impl Parser {
         })
     }
 
-    fn number(&mut self) -> Result<Decimal> {
+    fn number(&mut self) -> Result<f64> {
         // TODO: Handle fractions.
-        Ok(Decimal::from_str(&self.literal()?)?)
+        Ok(f64::from_str(&self.literal()?)?)
     }
 
     fn integer(&mut self) -> Result<i32> {

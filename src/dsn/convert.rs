@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
 use eyre::{eyre, Result};
-use num::ToPrimitive;
-use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 
 use crate::dsn::types::{
     DsnComponent, DsnDimensionUnit, DsnId, DsnImage, DsnKeepout, DsnKeepoutType, DsnNet,
@@ -15,7 +12,7 @@ use crate::model::pcb::{
     Polygon, Shape, ShapeType, Side,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Converter {
     dsn: DsnPcb,
     pcb: Pcb,
@@ -28,17 +25,17 @@ impl Converter {
         Self { dsn, pcb: Default::default(), padstacks: HashMap::new(), images: HashMap::new() }
     }
 
-    fn mm(&self) -> Decimal {
+    fn mm(&self) -> f64 {
         match self.dsn.resolution.dimension {
-            DsnDimensionUnit::Inch => dec!(25.4),
-            DsnDimensionUnit::Mil => dec!(0.0254),
-            DsnDimensionUnit::Cm => dec!(10),
-            DsnDimensionUnit::Mm => dec!(1),
-            DsnDimensionUnit::Um => dec!(0.001),
+            DsnDimensionUnit::Inch => 25.4,
+            DsnDimensionUnit::Mil => 0.0254,
+            DsnDimensionUnit::Cm => 10.0,
+            DsnDimensionUnit::Mm => 1.0,
+            DsnDimensionUnit::Um => 0.001,
         }
     }
 
-    fn coord(&self, v: Decimal) -> Decimal {
+    fn coord(&self, v: f64) -> f64 {
         self.mm() * v
     }
 
@@ -65,7 +62,7 @@ impl Converter {
             DsnShape::Circle(v) => Shape {
                 layer: v.layer_id.clone(),
                 shape: ShapeType::Circle(Circle {
-                    r: self.coord(v.diameter / dec!(2)),
+                    r: self.coord(v.diameter / 2.0),
                     p: self.pt(v.p),
                 }),
             },

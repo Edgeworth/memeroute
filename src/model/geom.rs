@@ -1,32 +1,20 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, Neg, Sub, SubAssign};
 
 use derive_more::Display;
-use num_traits::Zero;
-use rust_decimal::{Decimal, MathematicalOps};
-use rust_decimal_macros::dec;
+use nalgebra::{vector, Vector2};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Copy, Clone, Display, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Copy, Clone, Display, Serialize, Deserialize)]
 #[display(fmt = "({}, {}, {}, {})", x, y, w, h)]
 pub struct Rt {
-    pub x: Decimal,
-    pub y: Decimal,
-    pub w: Decimal,
-    pub h: Decimal,
-}
-
-impl Zero for Rt {
-    fn zero() -> Self {
-        Self::new(dec!(0), dec!(0), dec!(0), dec!(0))
-    }
-
-    fn is_zero(&self) -> bool {
-        *self == Self::zero()
-    }
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
 }
 
 impl Rt {
-    pub const fn new(x: Decimal, y: Decimal, w: Decimal, h: Decimal) -> Self {
+    pub const fn new(x: f64, y: f64, w: f64, h: f64) -> Self {
         Self { x, y, w, h }
     }
 
@@ -34,15 +22,19 @@ impl Rt {
         Self { x: p.x, y: p.y, w: sz.w, h: sz.h }
     }
 
+    fn empty() -> Self {
+        Self::new(0.0, 0.0, 0.0, 0.0)
+    }
+
     pub fn from_sz(sz: Sz) -> Self {
         Self::ptsz(Pt::zero(), sz)
     }
 
-    pub fn b(&self) -> Decimal {
+    pub fn b(&self) -> f64 {
         self.y + self.h
     }
 
-    pub fn r(&self) -> Decimal {
+    pub fn r(&self) -> f64 {
         self.x + self.w
     }
 
@@ -67,7 +59,7 @@ impl Rt {
     }
 
     pub fn center(&self) -> Pt {
-        Pt::new(self.x + self.w / dec!(2), self.y + self.h / dec!(2))
+        Pt::new(self.x + self.w / 2.0, self.y + self.h / 2.0)
     }
 
     pub fn with_sz(&self, sz: Sz) -> Rt {
@@ -78,10 +70,10 @@ impl Rt {
         self.inset_xy(d.w, d.h)
     }
 
-    pub fn inset_xy(&self, dx: Decimal, dy: Decimal) -> Rt {
-        let wsub = if dec!(2) * dx < self.w { dec!(2) * dx } else { self.w };
-        let hsub = if dec!(2) * dy < self.h { dec!(2) * dy } else { self.h };
-        Rt::new(self.x + wsub / dec!(2), self.y + hsub / dec!(2), self.w - wsub, self.h - hsub)
+    pub fn inset_xy(&self, dx: f64, dy: f64) -> Rt {
+        let wsub = if 2.0 * dx < self.w { 2.0 * dx } else { self.w };
+        let hsub = if 2.0 * dy < self.h { 2.0 * dy } else { self.h };
+        Rt::new(self.x + wsub / 2.0, self.y + hsub / 2.0, self.w - wsub, self.h - hsub)
     }
 
     pub fn contains(&self, p: Pt) -> bool {
@@ -89,7 +81,7 @@ impl Rt {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.w.is_zero() && self.h.is_zero()
+        self.w == 0.0 && self.h == 0.0
     }
 
     pub fn united(&self, rt: Rt) -> Rt {
@@ -181,28 +173,28 @@ impl SubAssign<Pt> for Rt {
     }
 }
 
-impl Mul<Decimal> for Rt {
+impl Mul<f64> for Rt {
     type Output = Rt;
-    fn mul(self, o: Decimal) -> Self::Output {
+    fn mul(self, o: f64) -> Self::Output {
         Rt::new(self.x * o, self.y * o, self.w * o, self.h * o)
     }
 }
 
-impl Mul<Rt> for Decimal {
+impl Mul<Rt> for f64 {
     type Output = Rt;
     fn mul(self, o: Rt) -> Self::Output {
         Rt::new(self * o.x, self * o.y, self * o.w, self * o.h)
     }
 }
 
-impl Div<Decimal> for Rt {
+impl Div<f64> for Rt {
     type Output = Rt;
-    fn div(self, o: Decimal) -> Self::Output {
+    fn div(self, o: f64) -> Self::Output {
         Rt::new(self.x / o, self.y / o, self.w / o, self.h / o)
     }
 }
 
-impl Div<Rt> for Decimal {
+impl Div<Rt> for f64 {
     type Output = Rt;
     fn div(self, o: Rt) -> Self::Output {
         Rt::new(self / o.x, self / o.y, self / o.w, self / o.h)
@@ -212,7 +204,7 @@ impl Div<Rt> for Decimal {
 impl Mul<i64> for Rt {
     type Output = Rt;
     fn mul(self, o: i64) -> Self::Output {
-        let o = Decimal::new(o, 0);
+        let o = o as f64;
         Rt::new(self.x * o, self.y * o, self.w * o, self.h * o)
     }
 }
@@ -220,7 +212,7 @@ impl Mul<i64> for Rt {
 impl Mul<Rt> for i64 {
     type Output = Rt;
     fn mul(self, o: Rt) -> Self::Output {
-        let v = Decimal::new(self, 0);
+        let v = self as f64;
         Rt::new(v * o.x, v * o.y, v * o.w, v * o.h)
     }
 }
@@ -228,7 +220,7 @@ impl Mul<Rt> for i64 {
 impl Div<i64> for Rt {
     type Output = Rt;
     fn div(self, o: i64) -> Self::Output {
-        let o = Decimal::new(o, 0);
+        let o = o as f64;
         Rt::new(self.x / o, self.y / o, self.w / o, self.h / o)
     }
 }
@@ -236,7 +228,7 @@ impl Div<i64> for Rt {
 impl Div<Rt> for i64 {
     type Output = Rt;
     fn div(self, o: Rt) -> Self::Output {
-        let v = Decimal::new(self, 0);
+        let v = self as f64;
         Rt::new(v / o.x, v / o.y, v / o.w, v / o.h)
     }
 }
@@ -244,7 +236,7 @@ impl Div<Rt> for i64 {
 impl Mul<u64> for Rt {
     type Output = Rt;
     fn mul(self, o: u64) -> Self::Output {
-        let o = Decimal::new(o as i64, 0);
+        let o = o as f64;
         Rt::new(self.x * o, self.y * o, self.w * o, self.h * o)
     }
 }
@@ -252,7 +244,7 @@ impl Mul<u64> for Rt {
 impl Mul<Rt> for u64 {
     type Output = Rt;
     fn mul(self, o: Rt) -> Self::Output {
-        let v = Decimal::new(self as i64, 0);
+        let v = self as f64;
         Rt::new(v * o.x, v * o.y, v * o.w, v * o.h)
     }
 }
@@ -260,7 +252,7 @@ impl Mul<Rt> for u64 {
 impl Div<u64> for Rt {
     type Output = Rt;
     fn div(self, o: u64) -> Self::Output {
-        let o = Decimal::new(o as i64, 0);
+        let o = o as f64;
         Rt::new(self.x / o, self.y / o, self.w / o, self.h / o)
     }
 }
@@ -268,16 +260,16 @@ impl Div<u64> for Rt {
 impl Div<Rt> for u64 {
     type Output = Rt;
     fn div(self, o: Rt) -> Self::Output {
-        let v = Decimal::new(self as i64, 0);
+        let v = self as f64;
         Rt::new(v / o.x, v / o.y, v / o.w, v / o.h)
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Copy, Clone, Display, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Copy, Clone, Display, Serialize, Deserialize)]
 #[display(fmt = "({}, {})", x, y)]
 pub struct Pt {
-    pub x: Decimal,
-    pub y: Decimal,
+    pub x: f64,
+    pub y: f64,
 }
 
 impl Neg for Pt {
@@ -288,22 +280,20 @@ impl Neg for Pt {
     }
 }
 
-impl Zero for Pt {
+impl Pt {
+    pub const fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+
     fn zero() -> Self {
-        Self::new(Decimal::zero(), Decimal::zero())
+        Self::new(0.0, 0.0)
     }
 
     fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
-}
 
-impl Pt {
-    pub const fn new(x: Decimal, y: Decimal) -> Self {
-        Self { x, y }
-    }
-
-    pub fn as_array(&self) -> [Decimal; 2] {
+    pub fn as_array(&self) -> [f64; 2] {
         [self.x, self.y]
     }
 
@@ -311,11 +301,11 @@ impl Pt {
         Sz::new(self.x, self.y)
     }
 
-    pub fn offset(&self, dx: Decimal, dy: Decimal) -> Pt {
+    pub fn offset(&self, dx: f64, dy: f64) -> Pt {
         Pt::new(self.x + dx, self.y + dy)
     }
 
-    pub fn cross(&self, p: Pt) -> Decimal {
+    pub fn cross(&self, p: Pt) -> f64 {
         self.x * p.y - self.y * p.x
     }
 
@@ -323,30 +313,36 @@ impl Pt {
         Pt::new(-self.y, self.x)
     }
 
-    pub fn dist(&self, b: Pt) -> Decimal {
+    pub fn dist(&self, b: Pt) -> f64 {
         (b - *self).mag()
     }
 
-    pub fn mag(&self) -> Decimal {
-        (self.x * self.x + self.y * self.y).sqrt().unwrap()
+    pub fn mag(&self) -> f64 {
+        (self.x * self.x + self.y * self.y).sqrt()
     }
 }
 
-impl From<[Decimal; 2]> for Pt {
-    fn from([x, y]: [Decimal; 2]) -> Self {
+impl From<[f64; 2]> for Pt {
+    fn from([x, y]: [f64; 2]) -> Self {
         Pt::new(x, y)
     }
 }
 
-impl From<(Decimal, Decimal)> for Pt {
-    fn from((x, y): (Decimal, Decimal)) -> Self {
+impl From<(f64, f64)> for Pt {
+    fn from((x, y): (f64, f64)) -> Self {
         Pt::new(x, y)
     }
 }
 
-impl From<&(Decimal, Decimal)> for Pt {
-    fn from((ref x, ref y): &(Decimal, Decimal)) -> Self {
+impl From<&(f64, f64)> for Pt {
+    fn from((ref x, ref y): &(f64, f64)) -> Self {
         Pt::new(*x, *y)
+    }
+}
+
+impl From<Pt> for Vector2<f64> {
+    fn from(p: Pt) -> Self {
+        vector![p.x, p.y]
     }
 }
 
@@ -406,57 +402,55 @@ impl SubAssign<Sz> for Pt {
     }
 }
 
-impl Mul<Decimal> for Pt {
+impl Mul<f64> for Pt {
     type Output = Pt;
-    fn mul(self, o: Decimal) -> Self::Output {
+    fn mul(self, o: f64) -> Self::Output {
         Pt::new(self.x * o, self.y * o)
     }
 }
 
-impl Div<Decimal> for Pt {
+impl Div<f64> for Pt {
     type Output = Pt;
-    fn div(self, o: Decimal) -> Self::Output {
+    fn div(self, o: f64) -> Self::Output {
         Pt::new(self.x / o, self.y / o)
     }
 }
 
-impl Mul<Pt> for Decimal {
+impl Mul<Pt> for f64 {
     type Output = Pt;
     fn mul(self, o: Pt) -> Self::Output {
         Pt::new(self * o.x, self * o.y)
     }
 }
 
-impl Div<Pt> for Decimal {
+impl Div<Pt> for f64 {
     type Output = Pt;
     fn div(self, o: Pt) -> Self::Output {
         Pt::new(self / o.x, self / o.y)
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Copy, Clone, Display, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Copy, Clone, Display, Serialize, Deserialize)]
 #[display(fmt = "({}, {})", w, h)]
 pub struct Sz {
-    pub w: Decimal,
-    pub h: Decimal,
+    pub w: f64,
+    pub h: f64,
 }
 
-impl Zero for Sz {
+impl Sz {
+    pub const fn new(w: f64, h: f64) -> Self {
+        Self { w, h }
+    }
+
     fn zero() -> Self {
-        Self::new(Decimal::zero(), Decimal::zero())
+        Self::new(0.0, 0.0)
     }
 
     fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
-}
 
-impl Sz {
-    pub const fn new(w: Decimal, h: Decimal) -> Self {
-        Self { w, h }
-    }
-
-    pub fn area(&self) -> Decimal {
+    pub fn area(&self) -> f64 {
         self.w * self.h
     }
 
@@ -469,19 +463,19 @@ impl Sz {
     }
 }
 
-impl From<[Decimal; 2]> for Sz {
-    fn from([w, h]: [Decimal; 2]) -> Self {
+impl From<[f64; 2]> for Sz {
+    fn from([w, h]: [f64; 2]) -> Self {
         Sz::new(w, h)
     }
 }
 
-impl From<(Decimal, Decimal)> for Sz {
-    fn from((w, h): (Decimal, Decimal)) -> Self {
+impl From<(f64, f64)> for Sz {
+    fn from((w, h): (f64, f64)) -> Self {
         Sz::new(w, h)
     }
 }
 
-impl From<Sz> for (Decimal, Decimal) {
+impl From<Sz> for (f64, f64) {
     fn from(sz: Sz) -> Self {
         (sz.w, sz.h)
     }
@@ -529,28 +523,28 @@ impl DivAssign<Sz> for Sz {
     }
 }
 
-impl Mul<Decimal> for Sz {
+impl Mul<f64> for Sz {
     type Output = Sz;
-    fn mul(self, o: Decimal) -> Self::Output {
+    fn mul(self, o: f64) -> Self::Output {
         Sz::new(self.w * o, self.h * o)
     }
 }
 
-impl Div<Decimal> for Sz {
+impl Div<f64> for Sz {
     type Output = Sz;
-    fn div(self, o: Decimal) -> Self::Output {
+    fn div(self, o: f64) -> Self::Output {
         Sz::new(self.w / o, self.h / o)
     }
 }
 
-impl Mul<Sz> for Decimal {
+impl Mul<Sz> for f64 {
     type Output = Sz;
     fn mul(self, o: Sz) -> Self::Output {
         Sz::new(self * o.w, self * o.h)
     }
 }
 
-impl Div<Sz> for Decimal {
+impl Div<Sz> for f64 {
     type Output = Sz;
     fn div(self, o: Sz) -> Self::Output {
         Sz::new(self / o.w, self / o.h)

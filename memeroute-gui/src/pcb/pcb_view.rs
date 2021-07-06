@@ -1,12 +1,12 @@
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
-use eframe::egui::{epaint, Color32, Context, Painter, Response, Sense, Ui, Widget};
+use eframe::egui::{epaint, Color32, Context, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
-use memeroute::model::geom::{Pt, Rt};
+use memeroute::model::geom::Rt;
 use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Shape, ShapeType};
 use memeroute::model::transform::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
-use crate::pcb::{to_rect, to_rt};
+use crate::pcb::to_rt;
 
 lazy_static! {
     static ref PRIMARY: [Color32; 5] = [
@@ -72,7 +72,7 @@ impl PcbView {
                 shapes.extend(stroke_polygon(tf, &s.pts, s.width, SECONDARY[0]));
             }
             ShapeType::Path(s) => shapes.extend(stroke_path(tf, &s.pts, s.width, SECONDARY[0])),
-            ShapeType::Arc(s) => todo!(),
+            ShapeType::Arc(_) => todo!(),
         }
         shapes
     }
@@ -81,7 +81,7 @@ impl PcbView {
         self.draw_shape(tf, &v.shape)
     }
 
-    fn draw_padstack(&self, tf: &Tf, v: &Padstack) {}
+    fn draw_padstack(&self, _tf: &Tf, _v: &Padstack) {}
 
     fn draw_component(&self, tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();

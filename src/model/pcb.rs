@@ -1,5 +1,3 @@
-use rust_decimal::Decimal;
-
 use crate::model::geom::{Pt, Rt};
 
 // File-format independent representation of a PCB.
@@ -7,33 +5,33 @@ use crate::model::geom::{Pt, Rt};
 
 pub type Id = String;
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Circle {
-    pub r: Decimal, // Radius
-    pub p: Pt,      // Center
+    pub r: f64, // Radius
+    pub p: Pt,  // Center
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Polygon {
-    pub width: Decimal,
+    pub width: f64,
     pub pts: Vec<Pt>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Path {
-    pub width: Decimal,
+    pub width: f64,
     pub pts: Vec<Pt>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Arc {
-    pub width: Decimal, // TODO: Change to pt, radius, radian range, width.
+    pub width: f64, // TODO: Change to pt, radius, radian range, width.
     pub start: Pt,
     pub end: Pt,
     pub center: Pt,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ShapeType {
     Rect(Rt),
     Circle(Circle),
@@ -42,7 +40,7 @@ pub enum ShapeType {
     Arc(Arc),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Shape {
     pub layer: Id,
     pub shape: ShapeType,
@@ -51,7 +49,7 @@ pub struct Shape {
 // Keepout: No routing whatsoever.
 // ViaKeepout: No vias.
 // WireKeepout: No wires.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum KeepoutType {
     Keepout,
     ViaKeepout,
@@ -59,13 +57,13 @@ pub enum KeepoutType {
 }
 
 // Describes a keepout area.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Keepout {
     pub kind: KeepoutType,
     pub shape: Shape,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Side {
     Front,
     Back,
@@ -78,28 +76,28 @@ impl Default for Side {
 }
 
 // Describes a pin.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Pin {
     pub id: Id,
     pub padstack: Padstack,
-    pub rotation: Decimal,
+    pub rotation: f64,
     pub p: Pt,
 }
 
 // Describes a component at a location.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Component {
     pub id: Id,
     pub p: Pt,
     pub side: Side,
-    pub rotation: Decimal,
+    pub rotation: f64,
     pub outlines: Vec<Shape>,
     pub keepouts: Vec<Keepout>,
     pub pins: Vec<Pin>,
 }
 
 // Describes a padstack.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Padstack {
     pub id: Id,
     pub shapes: Vec<Shape>,
@@ -107,7 +105,7 @@ pub struct Padstack {
 }
 
 // Describes a layer in a PCB.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Layer {
     pub id: Id,
 }
@@ -118,30 +116,30 @@ impl Layer {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct PinRef {
     pub component: Id,
     pub pin: Id,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Net {
     pub id: Id,
     pub pins: Vec<PinRef>,
 }
 
 // Describes a route.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Wire {
     pub shape: Shape,
 }
 
 // Describes a via.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Via {}
 
 // Describes an overall PCB.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Pcb {
     id: Id,
 

@@ -9,23 +9,12 @@ members = ["memeroute-gui"]
 
 [dependencies]
 approx = "*"
-colored = "*"
 derive_more = "*"
 eyre = "*"
-lazy_static = "*"
-log = "*"
-num = "*"
-num-derive = "*"
-num-traits = "*"
-paste = "*"
+nalgebra = "*"
 regex = "*"
-rust_decimal = {version = "*", features = ["maths", "std", "serde-str", "serde-arbitrary-precision"]}
-rust_decimal_macros = "*"
 serde = {version = "*", features = ["derive"]}
-serde_json = "*"
 strum = {version = "*", features = ["derive"]}
-tokio = {version = "*", features = ["full"]}
-tokio-test = "*"
 
 [dev-dependencies]
 criterion = {version = "*", features = ["real_blackbox"]}

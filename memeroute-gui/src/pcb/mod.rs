@@ -1,13 +1,11 @@
 use eframe::egui::{Pos2, Rect};
 use memeroute::model::geom::{Pt, Rt};
-use num_traits::{FromPrimitive, ToPrimitive};
-use rust_decimal::Decimal;
 
 pub mod pcb_view;
 pub mod primitives;
 
 pub fn to_pos2(p: Pt) -> Pos2 {
-    Pos2::new(p.x.to_f32().unwrap(), p.y.to_f32().unwrap())
+    Pos2::new(p.x as f32, p.y as f32)
 }
 
 pub fn to_rect(r: Rt) -> Rect {
@@ -15,10 +13,5 @@ pub fn to_rect(r: Rt) -> Rect {
 }
 
 pub fn to_rt(r: Rect) -> Rt {
-    Rt::new(
-        Decimal::from_f32(r.left()).unwrap(),
-        Decimal::from_f32(r.top()).unwrap(),
-        Decimal::from_f32(r.width()).unwrap(),
-        Decimal::from_f32(r.height()).unwrap(),
-    )
+    Rt::new(r.left() as f64, r.top() as f64, r.width() as f64, r.height() as f64)
 }
