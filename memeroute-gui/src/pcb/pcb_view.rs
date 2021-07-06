@@ -1,7 +1,7 @@
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
-use eframe::egui::{epaint, Color32, Context, Response, Sense, Ui, Widget};
+use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
-use memeroute::model::geom::Rt;
+use memeroute::model::geom::{Pt, Rt};
 use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Shape, ShapeType};
 use memeroute::model::transform::Tf;
 
@@ -31,7 +31,8 @@ pub struct PcbView {
     pcb: Pcb,
     screen_area: Rt,
     local_area: Rt,
-    tf: Tf,
+    offset: Pt,
+    zoom: f64,
     dirty: bool,
     mesh: Mesh,
 }
@@ -40,6 +41,18 @@ impl Widget for &mut PcbView {
     fn ui(self, ui: &mut Ui) -> Response {
         let (response, painter) =
             ui.allocate_painter(ui.available_size_before_wrap_finite(), Sense::click_and_drag());
+
+        if response.dragged_by(PointerButton::Middle) {
+            let p = response.drag_delta();
+            self.offset += Pt::new(p.x as f64, p.y as f64);
+        }
+
+        if ui.rect_contains_pointer(response.rect) {
+            // TODO: Zoom on current loc
+            let delta = ui.ctx().input().scroll_delta.y as f64;
+            self.zoom *= 1.0 + 4.0 * delta / response.rect.height() as f64;
+        }
+
         self.set_screen_area(to_rt(response.rect));
         let mesh = self.render(ui.ctx());
         painter.add(epaint::Shape::Mesh(mesh));
@@ -51,10 +64,11 @@ impl PcbView {
     pub fn new(pcb: Pcb, local_area: Rt) -> Self {
         Self {
             pcb,
-            screen_area: Default::default(),
             local_area,
-            tf: Tf::identity(),
             dirty: true,
+            offset: Pt::zero(),
+            zoom: 1.0,
+            screen_area: Default::default(),
             mesh: Mesh::default(),
         }
     }
@@ -62,7 +76,6 @@ impl PcbView {
     fn set_screen_area(&mut self, screen_area: Rt) {
         self.screen_area = screen_area;
         self.dirty = true;
-        self.tf = Tf::affine(self.local_area, self.screen_area);
     }
 
     fn draw_shape(&self, tf: &Tf, v: &Shape) -> Vec<epaint::Shape> {
@@ -74,7 +87,11 @@ impl PcbView {
                 shapes.push(fill_polygon(tf, &s.pts, SECONDARY[1]));
                 shapes.extend(stroke_polygon(tf, &s.pts, s.width, SECONDARY[0]));
             }
-            ShapeType::Path(s) => shapes.extend(stroke_path(tf, &s.pts, s.width, SECONDARY[0])),
+            ShapeType::Path(s) => {
+                // Treat paths with width 0 as having a width of 1.0;
+                let w = if s.width == 0.0 { 1.0 } else { s.width };
+                shapes.extend(stroke_path(tf, &s.pts, w, SECONDARY[0]))
+            }
             ShapeType::Arc(_) => todo!(),
         }
         shapes
@@ -138,8 +155,11 @@ impl PcbView {
         }
         let mut mesh = self.mesh.clone();
         if self.dirty {
+            let tf = Tf::translate(self.offset)
+                * Tf::scale(Pt::new(self.zoom, self.zoom))
+                * Tf::affine(self.local_area, self.screen_area);
             for vert in mesh.vertices.iter_mut() {
-                vert.pos = to_pos2(self.tf.pt(to_pt(vert.pos)));
+                vert.pos = to_pos2(tf.pt(to_pt(vert.pos)));
             }
             self.dirty = false;
         }
