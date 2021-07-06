@@ -24,11 +24,14 @@ impl Default for State {
 pub struct MemerouteGui {
     s: State,
     pcb: Pcb,
+    pcb_view: PcbView,
 }
 
 impl MemerouteGui {
     pub fn new(pcb: Pcb) -> Self {
-        Self { s: Default::default(), pcb }
+        let pcb_view =
+            PcbView::new(pcb.clone(), Rt::new(dec!(-20.0), dec!(-20.0), dec!(200.0), dec!(200.0)));
+        Self { s: Default::default(), pcb, pcb_view }
     }
 }
 
@@ -86,11 +89,7 @@ impl epi::App for MemerouteGui {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            let pcb_view = PcbView::new(
-                &self.pcb,
-                Rt::new(dec!(-20.0), dec!(-20.0), dec!(200.0), dec!(200.0)),
-            );
-            pcb_view.ui(ui);
+            self.pcb_view.ui(ui);
         });
     }
 }
