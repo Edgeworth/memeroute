@@ -22,7 +22,7 @@ impl Rt {
         Self { x: p.x, y: p.y, w: sz.w, h: sz.h }
     }
 
-    fn empty() -> Self {
+    pub fn empty() -> Self {
         Self::new(0.0, 0.0, 0.0, 0.0)
     }
 
@@ -285,11 +285,11 @@ impl Pt {
         Self { x, y }
     }
 
-    fn zero() -> Self {
+    pub fn zero() -> Self {
         Self::new(0.0, 0.0)
     }
 
-    fn is_zero(&self) -> bool {
+    pub fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
 
@@ -442,11 +442,11 @@ impl Sz {
         Self { w, h }
     }
 
-    fn zero() -> Self {
+    pub fn zero() -> Self {
         Self::new(0.0, 0.0)
     }
 
-    fn is_zero(&self) -> bool {
+    pub fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
 
