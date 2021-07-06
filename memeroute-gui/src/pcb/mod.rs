@@ -8,6 +8,10 @@ pub fn to_pos2(p: Pt) -> Pos2 {
     Pos2::new(p.x as f32, p.y as f32)
 }
 
+pub fn to_pt(p: Pos2) -> Pt {
+    Pt::new(p.x as f64, p.y as f64)
+}
+
 pub fn to_rect(r: Rt) -> Rect {
     Rect::from_two_pos(to_pos2(r.tl()), to_pos2(r.br()))
 }

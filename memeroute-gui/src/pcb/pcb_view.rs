@@ -6,7 +6,7 @@ use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Shape, ShapeType}
 use memeroute::model::transform::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
-use crate::pcb::to_rt;
+use crate::pcb::{to_pos2, to_pt, to_rt};
 
 lazy_static! {
     static ref PRIMARY: [Color32; 5] = [
@@ -32,6 +32,7 @@ pub struct PcbView {
     screen_area: Rt,
     local_area: Rt,
     tf: Tf,
+    dirty: bool,
     mesh: Mesh,
 }
 
@@ -53,12 +54,14 @@ impl PcbView {
             screen_area: Default::default(),
             local_area,
             tf: Tf::identity(),
+            dirty: true,
             mesh: Mesh::default(),
         }
     }
 
     fn set_screen_area(&mut self, screen_area: Rt) {
         self.screen_area = screen_area;
+        self.dirty = true;
         self.tf = Tf::affine(self.local_area, self.screen_area);
     }
 
@@ -109,6 +112,7 @@ impl PcbView {
     fn render(&mut self, ctx: &Context) -> Mesh {
         if self.mesh.is_empty() {
             let mut mesh = Mesh::default();
+            let tf = Tf::new();
             let mut tess = Tessellator::from_options(TessellationOptions {
                 pixels_per_point: ctx.pixels_per_point(),
                 aa_size: 1.0 / ctx.pixels_per_point(),
@@ -119,24 +123,26 @@ impl PcbView {
                 ctx,
                 &mut tess,
                 &mut mesh,
-                vec![fill_rect(&Tf::new(), self.screen_area, Color32::WHITE)],
+                vec![fill_rect(&tf, self.local_area, Color32::WHITE)],
             );
             for boundary in self.pcb.boundaries() {
-                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_shape(&self.tf, boundary));
+                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_shape(&tf, boundary));
             }
             for keepout in self.pcb.keepouts() {
-                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_keepout(&self.tf, keepout));
+                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_keepout(&tf, keepout));
             }
             for component in self.pcb.components() {
-                Self::tessellate(
-                    ctx,
-                    &mut tess,
-                    &mut mesh,
-                    self.draw_component(&self.tf, component),
-                );
+                Self::tessellate(ctx, &mut tess, &mut mesh, self.draw_component(&tf, component));
             }
             self.mesh = mesh;
         }
-        self.mesh.clone()
+        let mut mesh = self.mesh.clone();
+        if self.dirty {
+            for vert in mesh.vertices.iter_mut() {
+                vert.pos = to_pos2(self.tf.pt(to_pt(vert.pos)));
+            }
+            self.dirty = false;
+        }
+        mesh
     }
 }
