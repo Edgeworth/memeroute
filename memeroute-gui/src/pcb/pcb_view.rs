@@ -58,9 +58,11 @@ impl Widget for &mut PcbView {
         }
 
         if ui.rect_contains_pointer(response.rect) {
-            // TODO: Zoom on current loc
+            let pos = to_pt(ui.ctx().input().pointer.interact_pos().unwrap());
             let delta = ui.ctx().input().scroll_delta.y as f64;
-            self.zoom *= 1.0 + 4.0 * delta / response.rect.height() as f64;
+            let fac = 10.0 * delta / response.rect.height() as f64;
+            self.offset = self.offset + (self.offset - pos) * fac;
+            self.zoom *= 1.0 + fac;
         }
 
         self.set_screen_area(to_rt(response.rect));
@@ -86,6 +88,7 @@ impl PcbView {
 
     fn set_screen_area(&mut self, screen_area: Rt) {
         self.screen_area = screen_area;
+        self.local_area = self.local_area.match_aspect(&self.screen_area);
         self.dirty = true;
     }
 

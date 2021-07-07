@@ -1,5 +1,6 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, Neg, Sub, SubAssign};
 
+use approx::relative_eq;
 use derive_more::Display;
 use nalgebra::{vector, Vector2};
 use serde::{Deserialize, Serialize};
@@ -62,6 +63,10 @@ impl Rt {
         Pt::new(self.x + self.w / 2.0, self.y + self.h / 2.0)
     }
 
+    pub fn area(&self) -> f64 {
+        self.w * self.h
+    }
+
     pub fn with_sz(&self, sz: Sz) -> Rt {
         Rt::ptsz(self.tl(), sz)
     }
@@ -104,6 +109,19 @@ impl Rt {
         let r = pa.x.max(pb.x);
         let b = pa.y.max(pb.y);
         Rt::new(x, y, r - x, b - y)
+    }
+
+    // Returns a rectangle with the same area that matches the aspect ratio of |r|.
+    pub fn match_aspect(&self, r: &Rt) -> Rt {
+        if relative_eq!(r.w, 0.0) {
+            Rt::new(self.x, self.y, 0.0, self.h)
+        } else if relative_eq!(r.h, 0.0) {
+            Rt::new(self.x, self.y, self.w, 0.0)
+        } else {
+            let aspect = (r.w / r.h).sqrt();
+            let len = self.area().sqrt();
+            Rt::new(self.x, self.y, len * aspect, len / aspect)
+        }
     }
 }
 
