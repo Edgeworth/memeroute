@@ -1,3 +1,8 @@
+use std::collections::hash_map::Values;
+use std::collections::HashMap;
+
+use eyre::{eyre, Result};
+
 use crate::model::geom::{Pt, Rt};
 
 // File-format independent representation of a PCB.
@@ -94,7 +99,21 @@ pub struct Component {
     pub rotation: f64,
     pub outlines: Vec<Shape>,
     pub keepouts: Vec<Keepout>,
-    pub pins: Vec<Pin>,
+    pins: HashMap<Id, Pin>,
+}
+
+impl Component {
+    pub fn add_pin(&mut self, p: Pin) {
+        self.pins.insert(p.id.clone(), p);
+    }
+
+    pub fn pins(&self) -> Values<'_, Id, Pin> {
+        self.pins.values()
+    }
+
+    pub fn pin(&self, id: &str) -> Option<&Pin> {
+        self.pins.get(id)
+    }
 }
 
 // Describes a padstack.
@@ -149,12 +168,12 @@ pub struct Pcb {
     boundaries: Vec<Shape>,
     keepouts: Vec<Keepout>,
     via_padstacks: Vec<Padstack>, // Types of vias available to use.
-    components: Vec<Component>,
+    components: HashMap<Id, Component>,
 
     // Routing:
     wires: Vec<Wire>,
     vias: Vec<Via>,
-    nets: Vec<Net>,
+    nets: HashMap<Id, Net>,
 }
 
 impl Pcb {
@@ -162,52 +181,52 @@ impl Pcb {
         self.id = id.to_owned();
     }
 
-    pub fn add_layer(&mut self, l: Layer) {
-        self.layers.push(l);
-    }
-
-    pub fn add_boundary(&mut self, s: Shape) {
-        self.boundaries.push(s);
-    }
-
-    pub fn add_keepout(&mut self, k: Keepout) {
-        self.keepouts.push(k);
-    }
-
-    pub fn add_via_padstack(&mut self, p: Padstack) {
-        self.via_padstacks.push(p);
-    }
-
-    pub fn add_component(&mut self, c: Component) {
-        self.components.push(c);
-    }
-
-    pub fn add_net(&mut self, n: Net) {
-        self.nets.push(n);
-    }
-
     pub fn id(&self) -> &Id {
         &self.id
+    }
+
+    pub fn add_layer(&mut self, l: Layer) {
+        self.layers.push(l);
     }
 
     pub fn layers(&self) -> &[Layer] {
         &self.layers
     }
 
+    pub fn add_boundary(&mut self, s: Shape) {
+        self.boundaries.push(s);
+    }
+
     pub fn boundaries(&self) -> &[Shape] {
         &self.boundaries
+    }
+
+    pub fn add_keepout(&mut self, k: Keepout) {
+        self.keepouts.push(k);
     }
 
     pub fn keepouts(&self) -> &[Keepout] {
         &self.keepouts
     }
 
+    pub fn add_via_padstack(&mut self, p: Padstack) {
+        self.via_padstacks.push(p);
+    }
+
     pub fn via_padstacks(&self) -> &[Padstack] {
         &self.via_padstacks
     }
 
-    pub fn components(&self) -> &[Component] {
-        &self.components
+    pub fn add_component(&mut self, c: Component) {
+        self.components.insert(c.id.clone(), c);
+    }
+
+    pub fn components(&self) -> Values<'_, Id, Component> {
+        self.components.values()
+    }
+
+    pub fn component(&self, id: &str) -> Option<&Component> {
+        self.components.get(id)
     }
 
     pub fn wires(&self) -> &[Wire] {
@@ -218,7 +237,33 @@ impl Pcb {
         &self.vias
     }
 
-    pub fn nets(&self) -> &[Net] {
-        &self.nets
+    pub fn add_net(&mut self, n: Net) {
+        self.nets.insert(n.id.clone(), n);
+    }
+
+    pub fn nets(&self) -> Values<'_, Id, Net> {
+        self.nets.values()
+    }
+
+    pub fn net(&self, id: &str) -> Option<&Net> {
+        self.nets.get(id)
+    }
+
+    pub fn add_wire(&mut self, w: Wire) {
+        self.wires.push(w);
+    }
+
+    pub fn add_via(&mut self, v: Via) {
+        self.vias.push(v);
+    }
+
+    pub fn pin_ref(&self, p: &PinRef) -> Result<(&Component, &Pin)> {
+        let component = self
+            .component(&p.component)
+            .ok_or_else(|| eyre!("unknown component id {}", p.component))?;
+        let pin = component
+            .pin(&p.pin)
+            .ok_or_else(|| eyre!("unknown pin id {} on component {}", p.pin, p.component))?;
+        Ok((component, pin))
     }
 }

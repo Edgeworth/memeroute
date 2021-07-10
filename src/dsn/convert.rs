@@ -131,34 +131,32 @@ impl Converter {
 
 
     fn image(&self, v: &DsnImage) -> Result<Component> {
-        Ok(Component {
-            outlines: v.outlines.iter().map(|p| self.shape(p)).collect(),
-            keepouts: v.keepouts.iter().map(|p| self.keepout(p)).collect(),
-            pins: v.pins.iter().map(|p| self.pin(p)).collect::<Result<_>>()?,
-            ..Default::default()
-        })
+        let mut c = Component::default();
+        c.outlines = v.outlines.iter().map(|p| self.shape(p)).collect();
+        c.keepouts = v.keepouts.iter().map(|p| self.keepout(p)).collect();
+        for pin in v.pins.iter() {
+            c.add_pin(self.pin(pin)?);
+        }
+        Ok(c)
     }
 
     fn components(&self, v: &DsnComponent) -> Result<Vec<Component>> {
         let mut components = Vec::new();
         for pl in v.refs.iter() {
-            let component = self
+            let mut c = self
                 .images
                 .get(&v.image_id)
                 .ok_or_else(|| eyre!("missing image with id {}", v.image_id))?
                 .clone();
-            let component = Component {
-                id: pl.component_id.clone(),
-                p: self.pt(pl.p),
-                side: match pl.side {
-                    DsnSide::Front => Side::Front,
-                    DsnSide::Back => Side::Back,
-                    DsnSide::Both => return Err(eyre!("invalid side specification")),
-                },
-                rotation: self.rot(pl.rotation),
-                ..component
+            c.id = pl.component_id.clone();
+            c.p = self.pt(pl.p);
+            c.side = match pl.side {
+                DsnSide::Front => Side::Front,
+                DsnSide::Back => Side::Back,
+                DsnSide::Both => return Err(eyre!("invalid side specification")),
             };
-            components.push(component);
+            c.rotation = self.rot(pl.rotation);
+            components.push(c);
         }
         Ok(components)
     }
