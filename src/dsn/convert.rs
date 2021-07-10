@@ -53,6 +53,10 @@ impl Converter {
         Pt { x: self.coord(v.x), y: -self.coord(v.y) }
     }
 
+    fn rot(&self, r: f64) -> f64 {
+        // Since coords are flipped need to invert rotations.
+        -r
+    }
 
     fn shape(&self, v: &DsnShape) -> Shape {
         match v {
@@ -119,7 +123,7 @@ impl Converter {
                 .get(&v.padstack_id)
                 .ok_or_else(|| eyre!("missing padstack with id {}", v.padstack_id))?
                 .clone(),
-            rotation: v.rotation,
+            rotation: self.rot(v.rotation),
             p: self.pt(v.p),
         })
     }
@@ -150,7 +154,7 @@ impl Converter {
                     DsnSide::Back => Side::Back,
                     DsnSide::Both => return Err(eyre!("invalid side specification")),
                 },
-                rotation: pl.rotation,
+                rotation: self.rot(pl.rotation),
                 ..component
             };
             components.push(component);

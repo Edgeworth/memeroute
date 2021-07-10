@@ -2,7 +2,7 @@ use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
 use memeroute::model::geom::{Pt, Rt};
-use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Shape, ShapeType, Side};
+use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Pin, Shape, ShapeType, Side};
 use memeroute::model::transform::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
@@ -10,29 +10,18 @@ use crate::pcb::{to_pos2, to_pt, to_rt};
 
 // Index 0 is front, index 1 is back.
 lazy_static! {
-    static ref KEEPOUT: Color32 = Color32::from_rgba_unmultiplied(155, 27, 0, 255);
+    static ref KEEPOUT: Color32 = Color32::from_rgba_unmultiplied(155, 27, 0, 180);
 
     static ref OUTLINE: [Color32; 2] = [
-        Color32::from_rgba_unmultiplied(89, 113, 193, 255),
-        Color32::from_rgba_unmultiplied(168, 0, 186, 255)
+        Color32::from_rgba_unmultiplied(89, 113, 193, 180),
+        Color32::from_rgba_unmultiplied(168, 0, 186, 180)
     ];
 
-    static ref BOUNDARY: Color32 = Color32::from_rgba_unmultiplied(255, 199, 46, 255);
+    static ref BOUNDARY: Color32 = Color32::from_rgba_unmultiplied(255, 199, 46, 180);
 
-    static ref PRIMARY: [Color32; 5] = [
-        Color32::from_rgba_unmultiplied(20, 55, 173, 255),
-        Color32::from_rgba_unmultiplied(89, 113, 193, 255),
-        Color32::from_rgba_unmultiplied(56, 84, 178, 255),
-        Color32::from_rgba_unmultiplied(14, 42, 133, 255),
-        Color32::from_rgba_unmultiplied(9, 31, 105, 255),
-    ];
-
-    static ref SECONDARY: [Color32; 5] = [
-        Color32::from_rgba_unmultiplied(255, 44, 0, 255),
-        Color32::from_rgba_unmultiplied(255, 126, 99, 255),
-        Color32::from_rgba_unmultiplied(255, 91, 57, 255),
-        Color32::from_rgba_unmultiplied(197, 34, 0, 255),
-        Color32::from_rgba_unmultiplied(155, 27, 0, 255),
+    static ref PIN: [Color32; 2] = [
+        Color32::from_rgba_unmultiplied(0, 27, 161, 180),
+        Color32::from_rgba_unmultiplied(0, 27, 161, 180),
     ];
 }
 
@@ -102,7 +91,7 @@ impl PcbView {
                 shapes.extend(stroke_polygon(tf, &s.pts, s.width, col));
             }
             ShapeType::Path(s) => {
-                // Treat paths with width 0 as having a width of 0.2 mm;
+                // Treat paths with width 0 as having a width of 0.2 mm (arbitrary).
                 let w = if s.width == 0.0 { 0.2 } else { s.width };
                 shapes.extend(stroke_path(tf, &s.pts, w, col))
             }
@@ -115,7 +104,18 @@ impl PcbView {
         self.draw_shape(tf, &v.shape, col)
     }
 
-    fn draw_padstack(&self, _tf: &Tf, _v: &Padstack) {}
+    fn draw_padstack(&self, tf: &Tf, v: &Padstack, col: Color32) -> Vec<epaint::Shape> {
+        let mut shapes = Vec::new();
+        for shape in v.shapes.iter() {
+            shapes.extend(self.draw_shape(tf, shape, col));
+        }
+        shapes
+    }
+
+    fn draw_pin(&self, tf: &Tf, v: &Pin, col: Color32) -> Vec<epaint::Shape> {
+        let tf = tf * Tf::translate(v.p) * Tf::rotate(v.rotation);
+        self.draw_padstack(&tf, &v.padstack, col)
+    }
 
     fn draw_component(&self, tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
@@ -133,6 +133,9 @@ impl PcbView {
         }
         for keepout in v.keepouts.iter() {
             shapes.extend(self.draw_keepout(&tf, keepout, *KEEPOUT));
+        }
+        for pin in v.pins.iter() {
+            shapes.extend(self.draw_pin(&tf, pin, PIN[side_idx]))
         }
         shapes
     }
