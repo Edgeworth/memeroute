@@ -1,10 +1,9 @@
-use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
-
 use approx::relative_eq;
+use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
-use crate::model::pt::Pt;
+use crate::model::pt::{Pt, PtI};
 use crate::model::sz::Sz;
 
 #[derive(Debug, Default, PartialEq, Copy, Clone, Display, Serialize, Deserialize)]
@@ -133,154 +132,100 @@ impl From<Sz> for Rt {
     }
 }
 
-impl Add<Rt> for Rt {
-    type Output = Rt;
-    fn add(self, o: Rt) -> Self::Output {
-        Rt::new(self.x + o.x, self.y + o.y, self.w + o.w, self.h + o.h)
+impl_op_ex!(+ |a: &Rt, b: &Rt| -> Rt { Rt::new(a.x + b.x, a.y + b.y, a.w + b.w, a.h + b.h) });
+impl_op_ex!(+= |a: &mut Rt, b: &Rt| { a.x += b.x; a.y += b.y; a.w += b.w; a.h += b.h; });
+impl_op_ex!(-|a: &Rt, b: &Rt| -> Rt { Rt::new(a.x - b.x, a.y - b.y, a.w - b.w, a.h - b.h) });
+impl_op_ex!(-= |a: &mut Rt, b: &Rt| { a.x -= b.x; a.y -= b.y; a.w -= b.w; a.h -= b.h; });
+
+impl_op_ex_commutative!(+|a: &Rt, b: &Pt| -> Rt { Rt::new(a.x + b.x, a.y + b.y, a.w, a.h) });
+impl_op_ex_commutative!(-|a: &Rt, b: &Pt| -> Rt { Rt::new(a.x - b.x, a.y - b.y, a.w, a.h) });
+
+impl_op_ex_commutative!(*|a: &Rt, b: &f64| -> Rt { Rt::new(a.x * b, a.y * b, a.w * b, a.h * b) });
+impl_op_ex_commutative!(/|a: &Rt, b: &f64| -> Rt { Rt::new(a.x / b, a.y / b, a.w / b, a.h / b) });
+impl_op_ex_commutative!(*|a: &Rt, b: &i64| -> Rt {
+    let b = *b as f64;
+    Rt::new(a.x * b, a.y * b, a.w * b, a.h * b)
+});
+impl_op_ex_commutative!(/|a: &Rt, b: &i64| -> Rt {
+    let b = *b as f64;
+    Rt::new(a.x / b, a.y / b, a.w / b, a.h / b)
+});
+
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone, Display, Serialize, Deserialize)]
+#[display(fmt = "({}, {}, {}, {})", x, y, w, h)]
+pub struct RtI {
+    pub x: i64,
+    pub y: i64,
+    pub w: i64,
+    pub h: i64,
+}
+
+impl RtI {
+    pub const fn new(x: i64, y: i64, w: i64, h: i64) -> Self {
+        Self { x, y, w, h }
+    }
+
+    pub fn empty() -> Self {
+        Self::new(0, 0, 0, 0)
+    }
+
+    pub fn b(&self) -> i64 {
+        self.y + self.h
+    }
+
+    pub fn r(&self) -> i64 {
+        self.x + self.w
+    }
+
+    pub fn bl(&self) -> PtI {
+        PtI::new(self.x, self.b())
+    }
+
+    pub fn br(&self) -> PtI {
+        PtI::new(self.r(), self.b())
+    }
+
+    pub fn tl(&self) -> PtI {
+        PtI::new(self.x, self.y)
+    }
+
+    pub fn tr(&self) -> PtI {
+        PtI::new(self.r(), self.y)
+    }
+
+    pub fn center(&self) -> PtI {
+        PtI::new(self.x + self.w / 2, self.y + self.h / 2)
+    }
+
+    pub fn area(&self) -> i64 {
+        self.w * self.h
+    }
+
+    pub fn contains(&self, p: PtI) -> bool {
+        p.x >= self.x && p.y >= self.y && p.x <= self.r() && p.y <= self.b()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.w == 0 && self.h == 0
+    }
+
+    pub fn enclosing(pa: PtI, pb: PtI) -> RtI {
+        let x = pa.x.min(pb.x);
+        let y = pa.y.min(pb.y);
+        let r = pa.x.max(pb.x);
+        let b = pa.y.max(pb.y);
+        RtI::new(x, y, r - x, b - y)
     }
 }
 
-impl AddAssign<Rt> for Rt {
-    fn add_assign(&mut self, o: Rt) {
-        self.x = self.x + o.x;
-        self.y = self.y + o.y;
-        self.w = self.w + o.w;
-        self.h = self.h + o.h;
-    }
-}
+impl_op_ex!(+ |a: &RtI, b: &RtI| -> RtI { RtI::new(a.x + b.x, a.y + b.y, a.w + b.w, a.h + b.h) });
+impl_op_ex!(+= |a: &mut RtI, b: &RtI| { a.x += b.x; a.y += b.y; a.w += b.w; a.h += b.h; });
+impl_op_ex!(-|a: &RtI, b: &RtI| -> RtI { RtI::new(a.x - b.x, a.y - b.y, a.w - b.w, a.h - b.h) });
+impl_op_ex!(-= |a: &mut RtI, b: &RtI| { a.x -= b.x; a.y -= b.y; a.w -= b.w; a.h -= b.h; });
 
-impl Sub<Rt> for Rt {
-    type Output = Rt;
-    fn sub(self, o: Rt) -> Self::Output {
-        Rt::new(self.x - o.x, self.y - o.y, self.w - o.w, self.h - o.h)
-    }
-}
+impl_op_ex_commutative!(+|a: &RtI, b: &PtI| -> RtI { RtI::new(a.x + b.x, a.y + b.y, a.w, a.h) });
+impl_op_ex_commutative!(-|a: &RtI, b: &PtI| -> RtI { RtI::new(a.x - b.x, a.y - b.y, a.w, a.h) });
 
-impl SubAssign<Rt> for Rt {
-    fn sub_assign(&mut self, o: Rt) {
-        self.x = self.x - o.x;
-        self.y = self.y - o.y;
-        self.w = self.w - o.w;
-        self.h = self.h - o.h;
-    }
-}
-
-impl Add<Pt> for Rt {
-    type Output = Rt;
-    fn add(self, o: Pt) -> Self::Output {
-        Rt::new(self.x + o.x, self.y + o.y, self.w, self.h)
-    }
-}
-
-impl AddAssign<Pt> for Rt {
-    fn add_assign(&mut self, o: Pt) {
-        self.x = self.x + o.x;
-        self.y = self.y + o.y;
-    }
-}
-
-impl Sub<Pt> for Rt {
-    type Output = Rt;
-    fn sub(self, o: Pt) -> Self::Output {
-        Rt::new(self.x - o.x, self.y - o.y, self.w, self.h)
-    }
-}
-
-impl SubAssign<Pt> for Rt {
-    fn sub_assign(&mut self, o: Pt) {
-        self.x = self.x - o.x;
-        self.y = self.y - o.y;
-    }
-}
-
-impl Mul<f64> for Rt {
-    type Output = Rt;
-    fn mul(self, o: f64) -> Self::Output {
-        Rt::new(self.x * o, self.y * o, self.w * o, self.h * o)
-    }
-}
-
-impl Mul<Rt> for f64 {
-    type Output = Rt;
-    fn mul(self, o: Rt) -> Self::Output {
-        Rt::new(self * o.x, self * o.y, self * o.w, self * o.h)
-    }
-}
-
-impl Div<f64> for Rt {
-    type Output = Rt;
-    fn div(self, o: f64) -> Self::Output {
-        Rt::new(self.x / o, self.y / o, self.w / o, self.h / o)
-    }
-}
-
-impl Div<Rt> for f64 {
-    type Output = Rt;
-    fn div(self, o: Rt) -> Self::Output {
-        Rt::new(self / o.x, self / o.y, self / o.w, self / o.h)
-    }
-}
-
-impl Mul<i64> for Rt {
-    type Output = Rt;
-    fn mul(self, o: i64) -> Self::Output {
-        let o = o as f64;
-        Rt::new(self.x * o, self.y * o, self.w * o, self.h * o)
-    }
-}
-
-impl Mul<Rt> for i64 {
-    type Output = Rt;
-    fn mul(self, o: Rt) -> Self::Output {
-        let v = self as f64;
-        Rt::new(v * o.x, v * o.y, v * o.w, v * o.h)
-    }
-}
-
-impl Div<i64> for Rt {
-    type Output = Rt;
-    fn div(self, o: i64) -> Self::Output {
-        let o = o as f64;
-        Rt::new(self.x / o, self.y / o, self.w / o, self.h / o)
-    }
-}
-
-impl Div<Rt> for i64 {
-    type Output = Rt;
-    fn div(self, o: Rt) -> Self::Output {
-        let v = self as f64;
-        Rt::new(v / o.x, v / o.y, v / o.w, v / o.h)
-    }
-}
-
-impl Mul<u64> for Rt {
-    type Output = Rt;
-    fn mul(self, o: u64) -> Self::Output {
-        let o = o as f64;
-        Rt::new(self.x * o, self.y * o, self.w * o, self.h * o)
-    }
-}
-
-impl Mul<Rt> for u64 {
-    type Output = Rt;
-    fn mul(self, o: Rt) -> Self::Output {
-        let v = self as f64;
-        Rt::new(v * o.x, v * o.y, v * o.w, v * o.h)
-    }
-}
-
-impl Div<u64> for Rt {
-    type Output = Rt;
-    fn div(self, o: u64) -> Self::Output {
-        let o = o as f64;
-        Rt::new(self.x / o, self.y / o, self.w / o, self.h / o)
-    }
-}
-
-impl Div<Rt> for u64 {
-    type Output = Rt;
-    fn div(self, o: Rt) -> Self::Output {
-        let v = self as f64;
-        Rt::new(v / o.x, v / o.y, v / o.w, v / o.h)
-    }
-}
+impl_op_ex_commutative!(*|a: &RtI, b: &i64| -> RtI {
+    RtI::new(a.x * b, a.y * b, a.w * b, a.h * b)
+});

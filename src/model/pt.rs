@@ -1,5 +1,4 @@
-use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
-
+use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 use nalgebra::{vector, Vector2};
 use serde::{Deserialize, Serialize};
@@ -11,14 +10,6 @@ use crate::model::sz::Sz;
 pub struct Pt {
     pub x: f64,
     pub y: f64,
-}
-
-impl Neg for Pt {
-    type Output = Self;
-
-    fn neg(self) -> Self::Output {
-        Self { x: -self.x, y: -self.y }
-    }
 }
 
 impl Pt {
@@ -68,110 +59,54 @@ impl Pt {
     }
 }
 
-impl From<[f64; 2]> for Pt {
-    fn from([x, y]: [f64; 2]) -> Self {
-        Pt::new(x, y)
-    }
-}
-
-impl From<(f64, f64)> for Pt {
-    fn from((x, y): (f64, f64)) -> Self {
-        Pt::new(x, y)
-    }
-}
-
-impl From<&(f64, f64)> for Pt {
-    fn from((ref x, ref y): &(f64, f64)) -> Self {
-        Pt::new(*x, *y)
-    }
-}
-
 impl From<Pt> for Vector2<f64> {
     fn from(p: Pt) -> Self {
         vector![p.x, p.y]
     }
 }
 
-impl Add<Pt> for Pt {
-    type Output = Pt;
-    fn add(self, o: Pt) -> Self::Output {
-        Pt::new(self.x + o.x, self.y + o.y)
+impl_op_ex!(-|a: &Pt| -> Pt { Pt::new(-a.x, -a.y) });
+
+impl_op_ex!(+ |a: &Pt, b: &Pt| -> Pt { Pt::new(a.x + b.x, a.y + b.y) });
+impl_op_ex!(+= |a: &mut Pt, b: &Pt| { a.x += b.x; a.y += b.y; });
+impl_op_ex!(-|a: &Pt, b: &Pt| -> Pt { Pt::new(a.x - b.x, a.y - b.y) });
+impl_op_ex!(-= |a: &mut Pt, b: &Pt| { a.x -= b.x; a.y -= b.y; });
+
+impl_op_ex_commutative!(*|a: &Pt, b: &f64| -> Pt { Pt::new(a.x * b, a.y * b) });
+impl_op_ex_commutative!(/|a: &Pt, b: &f64| -> Pt { Pt::new(a.x / b, a.y / b) });
+
+impl_op_ex_commutative!(+ |a: &Pt, b: &Sz| -> Pt { Pt::new(a.x + b.w, a.y + b.h) });
+impl_op_ex!(+= |a: &mut Pt, b: &Sz| { a.x += b.w; a.y += b.h; });
+impl_op_ex_commutative!(-|a: &Pt, b: &Sz| -> Pt { Pt::new(a.x - b.w, a.y - b.h) });
+impl_op_ex!(-= |a: &mut Pt, b: &Sz| { a.x -= b.w; a.y -= b.h; });
+
+#[derive(Debug, Default, PartialEq, Eq, Hash, Copy, Clone, Display, Serialize, Deserialize)]
+#[display(fmt = "({}, {})", x, y)]
+pub struct PtI {
+    pub x: i64,
+    pub y: i64,
+}
+
+impl PtI {
+    pub const fn new(x: i64, y: i64) -> Self {
+        Self { x, y }
+    }
+
+    pub fn zero() -> Self {
+        Self::new(0, 0)
+    }
+
+    pub fn is_zero(&self) -> bool {
+        *self == Self::zero()
     }
 }
 
-impl AddAssign<Pt> for Pt {
-    fn add_assign(&mut self, o: Pt) {
-        self.x = self.x + o.x;
-        self.y = self.y + o.y;
-    }
-}
+impl_op_ex!(-|a: &PtI| -> PtI { PtI::new(-a.x, -a.y) });
 
-impl Sub<Pt> for Pt {
-    type Output = Pt;
-    fn sub(self, o: Pt) -> Self::Output {
-        Pt::new(self.x - o.x, self.y - o.y)
-    }
-}
+impl_op_ex!(+ |a: &PtI, b: &PtI| -> PtI { PtI::new(a.x + b.x, a.y + b.y) });
+impl_op_ex!(+= |a: &mut PtI, b: &PtI| { a.x += b.x; a.y += b.y; });
+impl_op_ex!(-|a: &PtI, b: &PtI| -> PtI { PtI::new(a.x - b.x, a.y - b.y) });
+impl_op_ex!(-= |a: &mut PtI, b: &PtI| { a.x -= b.x; a.y -= b.y; });
 
-impl SubAssign<Pt> for Pt {
-    fn sub_assign(&mut self, o: Pt) {
-        self.x = self.x - o.x;
-        self.y = self.y - o.y;
-    }
-}
-
-impl Add<Sz> for Pt {
-    type Output = Pt;
-    fn add(self, o: Sz) -> Self::Output {
-        Pt::new(self.x + o.w, self.y + o.h)
-    }
-}
-
-impl AddAssign<Sz> for Pt {
-    fn add_assign(&mut self, o: Sz) {
-        self.x = self.x + o.w;
-        self.y = self.y + o.h;
-    }
-}
-
-impl Sub<Sz> for Pt {
-    type Output = Pt;
-    fn sub(self, o: Sz) -> Self::Output {
-        Pt::new(self.x - o.w, self.y - o.h)
-    }
-}
-
-impl SubAssign<Sz> for Pt {
-    fn sub_assign(&mut self, o: Sz) {
-        self.x = self.x - o.w;
-        self.y = self.y - o.h;
-    }
-}
-
-impl Mul<f64> for Pt {
-    type Output = Pt;
-    fn mul(self, o: f64) -> Self::Output {
-        Pt::new(self.x * o, self.y * o)
-    }
-}
-
-impl Div<f64> for Pt {
-    type Output = Pt;
-    fn div(self, o: f64) -> Self::Output {
-        Pt::new(self.x / o, self.y / o)
-    }
-}
-
-impl Mul<Pt> for f64 {
-    type Output = Pt;
-    fn mul(self, o: Pt) -> Self::Output {
-        Pt::new(self * o.x, self * o.y)
-    }
-}
-
-impl Div<Pt> for f64 {
-    type Output = Pt;
-    fn div(self, o: Pt) -> Self::Output {
-        Pt::new(self / o.x, self / o.y)
-    }
-}
+impl_op_ex_commutative!(*|a: &PtI, b: &i64| -> PtI { PtI::new(a.x * b, a.y * b) });
+impl_op_ex_commutative!(/|a: &PtI, b: &i64| -> PtI { PtI::new(a.x / b, a.y / b) });

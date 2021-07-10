@@ -9,6 +9,7 @@ members = ["memeroute-gui"]
 
 [dependencies]
 approx = "*"
+auto_ops = "*"
 derive_more = "*"
 eyre = "*"
 nalgebra = "*"

@@ -3,26 +3,26 @@ use std::collections::HashSet;
 use eyre::{eyre, Result};
 use petgraph::algo::dijkstra;
 
-use crate::model::pcb::{Id, Pcb, PinRef, Side};
-use crate::model::pt::Pt;
+use crate::model::pcb::{Id, Pcb, PinRef, Shape, Side};
+use crate::model::pt::{Pt, PtI};
+use crate::model::rt::{Rt, RtI};
+use crate::model::tf::Tf;
 use crate::route::router::{RouteResult, RouteStrategy};
 
-type GridIdx = (i32, i32);
-
-const DIR: [(GridIdx, f32); 8] = [
-    ((-1, 0), 1.0),
-    ((1, 0), 1.0),
-    ((0, -1), 1.0),
-    ((0, 1), 1.0),
-    ((1, 1), 1.414),
-    ((1, -1), 1.414),
-    ((-1, 1), 1.414),
-    ((-1, -1), 1.414),
+const DIR: [(PtI, f32); 8] = [
+    (PtI::new(-1, 0), 1.0),
+    (PtI::new(1, 0), 1.0),
+    (PtI::new(0, -1), 1.0),
+    (PtI::new(0, 1), 1.0),
+    (PtI::new(1, 1), 1.414),
+    (PtI::new(1, -1), 1.414),
+    (PtI::new(-1, 1), 1.414),
+    (PtI::new(-1, -1), 1.414),
 ];
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
 struct State {
-    idx: GridIdx,
+    idx: PtI,
     layer: Id,
 }
 
@@ -37,6 +37,12 @@ pub struct GridRouter {
 impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
         Self { pcb, net_order, resolution: 0.1, blocked: HashSet::new() }
+    }
+
+    fn mark_shape(&mut self, tf: &Tf, s: &Shape) {
+        let bounds = tf.shape(&s.shape).bounds();
+        let bounds = RtI::enclosing(self.to_grid(bounds.tl()), self.to_grid(bounds.br()));
+        
     }
 
     fn mark_blocked(&mut self) {}
@@ -61,20 +67,20 @@ impl GridRouter {
         Ok(State { idx, layer })
     }
 
-    fn to_grid(&self, p: Pt) -> GridIdx {
-        ((p.x / self.resolution).trunc() as i32, (p.y / self.resolution).trunc() as i32)
+    fn to_grid(&self, p: Pt) -> PtI {
+        PtI::new((p.x / self.resolution).trunc() as i64, (p.y / self.resolution).trunc() as i64)
     }
 
-    fn to_world(&self, p: &GridIdx) -> Pt {
+    fn to_world(&self, p: &PtI) -> Pt {
         Pt::new(
-            p.0 as f64 * self.resolution + self.resolution / 2.0,
-            p.1 as f64 * self.resolution + self.resolution / 2.0,
+            p.x as f64 * self.resolution + self.resolution / 2.0,
+            p.y as f64 * self.resolution + self.resolution / 2.0,
         )
     }
 
     // Checks if the point |p| is routable (inside boundary, outside of
     // keepouts, etc).
-    fn is_oob(&self, p: &GridIdx) -> bool {
+    fn is_oob(&self, p: &PtI) -> bool {
         false
     }
 }
