@@ -10,7 +10,8 @@ use crate::dsn::types::{
     DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect,
     DsnResolution, DsnRule, DsnShape, DsnSide, DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
-use crate::model::geom::{Pt, Rt};
+use crate::model::pt::Pt;
+use crate::model::rt::Rt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parser {

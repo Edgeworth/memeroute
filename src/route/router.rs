@@ -7,11 +7,19 @@ pub trait RouteStrategy {
     fn route(&mut self) -> Result<RouteResult>;
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct RouteResult {
     pub wires: Vec<Wire>,
     pub vias: Vec<Via>,
     pub failed: bool,
+}
+
+impl RouteResult {
+    pub fn merge(&mut self, r: RouteResult) {
+        self.wires.extend(r.wires);
+        self.vias.extend(r.vias);
+        self.failed |= r.failed;
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

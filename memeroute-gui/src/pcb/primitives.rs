@@ -1,8 +1,9 @@
 use std::f64::consts::TAU;
 
 use eframe::egui::{epaint, Color32};
-use memeroute::model::geom::{Pt, Rt};
-use memeroute::model::transform::Tf;
+use memeroute::model::pt::Pt;
+use memeroute::model::rt::Rt;
+use memeroute::model::tf::Tf;
 
 use crate::pcb::to_pos2;
 

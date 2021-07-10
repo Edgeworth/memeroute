@@ -3,39 +3,19 @@ use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 
-use crate::model::geom::{Pt, Rt};
+use crate::model::arc::Arc;
+use crate::model::circle::Circle;
+use crate::model::path::Path;
+use crate::model::polygon::Polygon;
+use crate::model::pt::Pt;
+use crate::model::rt::Rt;
+use crate::model::tf::Tf;
 
 // File-format independent representation of a PCB.
 // Units are in millimetres.
 // All rotations are in degrees, counterclockwise from the positive x axis.
 
 pub type Id = String;
-
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct Circle {
-    pub r: f64, // Radius
-    pub p: Pt,  // Center
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct Polygon {
-    pub width: f64,
-    pub pts: Vec<Pt>,
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct Path {
-    pub width: f64,
-    pub pts: Vec<Pt>,
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct Arc {
-    pub width: f64, // TODO: Change to pt, radius, radian range, width.
-    pub start: Pt,
-    pub end: Pt,
-    pub center: Pt,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShapeType {
@@ -90,6 +70,12 @@ pub struct Pin {
     pub p: Pt,
 }
 
+impl Pin {
+    pub fn tf(&self) -> Tf {
+        Tf::translate(self.p) * Tf::rotate(self.rotation)
+    }
+}
+
 // Describes a component at a location.
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Component {
@@ -113,6 +99,12 @@ impl Component {
 
     pub fn pin(&self, id: &str) -> Option<&Pin> {
         self.pins.get(id)
+    }
+
+    pub fn tf(&self) -> Tf {
+        let side_tf =
+            if self.side == Side::Back { Tf::scale(Pt::new(-1.0, -1.0)) } else { Tf::identity() };
+        Tf::translate(self.p) * Tf::rotate(self.rotation) * side_tf
     }
 }
 

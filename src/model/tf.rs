@@ -3,7 +3,8 @@ use std::ops::Mul;
 
 use nalgebra::{vector, Matrix3};
 
-use crate::model::geom::{Pt, Rt};
+use crate::model::pt::Pt;
+use crate::model::rt::Rt;
 
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub struct Tf {
