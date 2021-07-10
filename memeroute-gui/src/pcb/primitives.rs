@@ -4,18 +4,13 @@ use eframe::egui::{epaint, Color32};
 use memeroute::model::geom::{Pt, Rt};
 use memeroute::model::transform::Tf;
 
-use crate::pcb::{to_pos2, to_rect};
+use crate::pcb::to_pos2;
 
 const NUM_POINTS: usize = 16;
 const EP: f64 = 1.0e-5;
 
 pub fn fill_rect(tf: &Tf, rt: Rt, col: Color32) -> epaint::Shape {
-    epaint::Shape::Rect {
-        rect: to_rect(tf.rt(rt)),
-        corner_radius: 0.0,
-        fill: col,
-        stroke: Default::default(),
-    }
+    fill_polygon(tf, &[rt.tl(), rt.tr(), rt.br(), rt.bl()], col)
 }
 
 pub fn fill_circle(tf: &Tf, pt: Pt, r: f64, col: Color32) -> epaint::Shape {
