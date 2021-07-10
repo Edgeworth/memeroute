@@ -1,9 +1,5 @@
-pub mod arc;
-pub mod circle;
-pub mod path;
 pub mod pcb;
-pub mod polygon;
 pub mod pt;
-pub mod rt;
+pub mod shape;
 pub mod sz;
 pub mod tf;

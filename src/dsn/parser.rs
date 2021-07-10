@@ -11,7 +11,7 @@ use crate::dsn::types::{
     DsnResolution, DsnRule, DsnShape, DsnSide, DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
 use crate::model::pt::Pt;
-use crate::model::rt::Rt;
+use crate::model::shape::rt::Rt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parser {

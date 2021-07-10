@@ -6,14 +6,14 @@ use crate::dsn::types::{
     DsnComponent, DsnDimensionUnit, DsnId, DsnImage, DsnKeepout, DsnKeepoutType, DsnNet,
     DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
 };
-use crate::model::circle::Circle;
-use crate::model::path::Path;
 use crate::model::pcb::{
     Component, Keepout, KeepoutType, Layer, Net, Padstack, Pcb, Pin, PinRef, Shape, ShapeType, Side,
 };
-use crate::model::polygon::Polygon;
 use crate::model::pt::Pt;
-use crate::model::rt::Rt;
+use crate::model::shape::circle::Circle;
+use crate::model::shape::path::Path;
+use crate::model::shape::polygon::Polygon;
+use crate::model::shape::rt::Rt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Converter {
@@ -69,10 +69,7 @@ impl Converter {
             }
             DsnShape::Circle(v) => Shape {
                 layer: v.layer_id.clone(),
-                shape: ShapeType::Circle(Circle {
-                    r: self.coord(v.diameter / 2.0),
-                    p: self.pt(v.p),
-                }),
+                shape: ShapeType::Circle(Circle::new(self.coord(v.diameter / 2.0), self.pt(v.p))),
             },
             DsnShape::Polygon(v) => Shape {
                 layer: v.layer_id.clone(),
@@ -88,7 +85,7 @@ impl Converter {
                     pts: v.pts.iter().map(|&v| self.pt(v)).collect(),
                 }),
             },
-            DsnShape::QArc(v) => todo!(),
+            DsnShape::QArc(_v) => todo!(),
         }
     }
 

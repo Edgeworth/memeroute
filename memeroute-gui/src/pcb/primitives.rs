@@ -2,7 +2,7 @@ use std::f64::consts::TAU;
 
 use eframe::egui::{epaint, Color32};
 use memeroute::model::pt::Pt;
-use memeroute::model::rt::Rt;
+use memeroute::model::shape::rt::Rt;
 use memeroute::model::tf::Tf;
 
 use crate::pcb::to_pos2;

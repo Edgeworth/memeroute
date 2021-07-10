@@ -3,7 +3,7 @@ use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui,
 use lazy_static::lazy_static;
 use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Pin, Shape, ShapeType, Side};
 use memeroute::model::pt::Pt;
-use memeroute::model::rt::Rt;
+use memeroute::model::shape::rt::Rt;
 use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
@@ -92,7 +92,7 @@ impl PcbView {
         let mut shapes = Vec::new();
         match &v.shape {
             ShapeType::Rect(s) => shapes.push(fill_rect(tf, *s, col)),
-            ShapeType::Circle(s) => shapes.push(fill_circle(tf, s.p, s.r, col)),
+            ShapeType::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
             ShapeType::Polygon(s) => {
                 shapes.push(fill_polygon(tf, &s.pts, col));
                 shapes.extend(stroke_polygon(tf, &s.pts, s.width, col));
