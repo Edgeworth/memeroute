@@ -75,6 +75,12 @@ impl PcbView {
         }
     }
 
+    pub fn set_pcb(&mut self, pcb: Pcb) {
+        self.pcb = pcb;
+        self.dirty = true;
+        self.mesh.clear(); // Regenerate mesh.
+    }
+
     fn set_screen_area(&mut self, screen_area: Rt) {
         self.screen_area = screen_area;
         self.local_area = self.local_area.match_aspect(&self.screen_area);
@@ -134,7 +140,7 @@ impl PcbView {
         for keepout in v.keepouts.iter() {
             shapes.extend(self.draw_keepout(&tf, keepout, *KEEPOUT));
         }
-        for pin in v.pins.iter() {
+        for pin in v.pins() {
             shapes.extend(self.draw_pin(&tf, pin, PIN[side_idx]))
         }
         shapes

@@ -12,6 +12,7 @@ approx = "*"
 derive_more = "*"
 eyre = "*"
 nalgebra = "*"
+petgraph = "*"
 regex = "*"
 serde = {version = "*", features = ["derive"]}
 strum = {version = "*", features = ["derive"]}

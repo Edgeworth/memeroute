@@ -2,6 +2,7 @@ use eframe::egui::Widget;
 use eframe::{egui, epi};
 use memeroute::model::geom::Rt;
 use memeroute::model::pcb::Pcb;
+use memeroute::route::router::Router;
 use serde::{Deserialize, Serialize};
 
 use crate::pcb::pcb_view::PcbView;
@@ -10,12 +11,11 @@ use crate::pcb::pcb_view::PcbView;
 #[serde(default)]
 struct State {
     filename: String,
-    value: f32,
 }
 
 impl Default for State {
     fn default() -> Self {
-        Self { filename: "data/left.dsn".to_string(), value: 2.7 }
+        Self { filename: "data/left.dsn".to_string() }
     }
 }
 
@@ -54,7 +54,7 @@ impl epi::App for MemerouteGui {
     }
 
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
-        let State { filename, value, .. } = &mut self.s;
+        let State { filename, .. } = &mut self.s;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -75,14 +75,20 @@ impl epi::App for MemerouteGui {
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
 
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(filename);
-            });
+            if ui.button("Route").clicked() {
+                let mut router = Router::new(self.pcb.clone());
+                let resp = router.route().unwrap();
 
-            ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                *value += 1.0;
+                for wire in resp.wires.into_iter() {
+                    self.pcb.add_wire(wire);
+                }
+
+                for via in resp.vias.into_iter() {
+                    self.pcb.add_via(via);
+                }
+
+                // Update pcb view.
+                self.pcb_view.set_pcb(self.pcb.clone());
             }
         });
 

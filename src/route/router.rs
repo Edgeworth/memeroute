@@ -1,27 +1,32 @@
 use eyre::Result;
 
-use crate::model::pcb::{Via, Wire};
+use crate::model::pcb::{Pcb, Via, Wire};
+use crate::route::grid::GridRouter;
 
 pub trait RouteStrategy {
-    fn route() -> RouteResult;
+    fn route(&mut self) -> Result<RouteResult>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RouteResult {
-    wires: Vec<Wire>,
-    vias: Vec<Via>,
-    failed: bool,
+    pub wires: Vec<Wire>,
+    pub vias: Vec<Via>,
+    pub failed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Router {}
+pub struct Router {
+    pcb: Pcb,
+}
 
 impl Router {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(pcb: Pcb) -> Self {
+        Self { pcb }
     }
 
-    pub fn route() -> Result<RouteResult> {
-        todo!()
+    pub fn route(&mut self) -> Result<RouteResult> {
+        let net_order = self.pcb.nets().map(|v| v.id.clone()).collect();
+        let mut grid = GridRouter::new(self.pcb.clone(), net_order);
+        grid.route()
     }
 }
