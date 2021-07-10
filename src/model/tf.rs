@@ -4,12 +4,12 @@ use std::ops::Mul;
 use approx::assert_relative_eq;
 use nalgebra::{vector, Matrix3};
 
-use crate::model::circle::Circle;
-use crate::model::path::Path;
-use crate::model::pcb::{Shape, ShapeType};
-use crate::model::polygon::Polygon;
+use crate::model::pcb::ShapeType;
 use crate::model::pt::Pt;
-use crate::model::rt::Rt;
+use crate::model::shape::circle::Circle;
+use crate::model::shape::path::Path;
+use crate::model::shape::polygon::Polygon;
+use crate::model::shape::rt::Rt;
 
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub struct Tf {
@@ -60,10 +60,10 @@ impl Tf {
     }
 
     pub fn circle(&self, c: Circle) -> Circle {
-        let radii = self.pt(Pt::new(c.r, c.r));
+        let radii = self.pt(Pt::new(c.r(), c.r()));
         // TODO: Assumes similarity transformation.
         assert_relative_eq!(radii.x, radii.y);
-        Circle { r: radii.x, p: self.pt(c.p) }
+        Circle::new(radii.x, self.pt(c.p()))
     }
 
     pub fn polygon(&self, p: &Polygon) -> Polygon {

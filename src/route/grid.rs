@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 
 use eyre::{eyre, Result};
-use petgraph::algo::dijkstra;
 
 use crate::model::pcb::{Id, Pcb, PinRef, Shape, Side};
 use crate::model::pt::{Pt, PtI};
-use crate::model::rt::{Rt, RtI};
+use crate::model::shape::rt::RtI;
 use crate::model::tf::Tf;
 use crate::route::router::{RouteResult, RouteStrategy};
 
@@ -41,14 +40,13 @@ impl GridRouter {
 
     fn mark_shape(&mut self, tf: &Tf, s: &Shape) {
         let bounds = tf.shape(&s.shape).bounds();
-        let bounds = RtI::enclosing(self.to_grid(bounds.tl()), self.to_grid(bounds.br()));
-        
+        let _bounds = RtI::enclosing(self.to_grid(bounds.tl()), self.to_grid(bounds.br()));
     }
 
     fn mark_blocked(&mut self) {}
 
     // Connect the given states together and return a route result doing that.
-    fn connect(&mut self, states: Vec<State>) -> Result<RouteResult> {
+    fn connect(&mut self, _states: Vec<State>) -> Result<RouteResult> {
         let res = RouteResult::default();
         // dijkstra(graph, start, goal, edge_cost)
         Ok(res)
@@ -80,7 +78,7 @@ impl GridRouter {
 
     // Checks if the point |p| is routable (inside boundary, outside of
     // keepouts, etc).
-    fn is_oob(&self, p: &PtI) -> bool {
+    fn is_oob(&self, _p: &PtI) -> bool {
         false
     }
 }

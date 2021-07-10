@@ -1,7 +1,7 @@
 use eframe::egui::Widget;
 use eframe::{egui, epi};
 use memeroute::model::pcb::Pcb;
-use memeroute::model::rt::Rt;
+use memeroute::model::shape::rt::Rt;
 use memeroute::route::router::Router;
 use serde::{Deserialize, Serialize};
 
@@ -54,15 +54,7 @@ impl epi::App for MemerouteGui {
     }
 
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
-        let State { filename, .. } = &mut self.s;
-
-        // Examples of how to create different panels and windows.
-        // Pick whichever suits you.
-        // Tip: a good default choice is to just keep the `CentralPanel`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
-
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
                 egui::menu::menu(ui, "File", |ui| {
                     if ui.button("Quit").clicked() {

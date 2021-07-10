@@ -1,13 +1,13 @@
 use crate::model::pt::Pt;
-use crate::model::rt::Rt;
+use crate::model::shape::rt::Rt;
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct Path {
+pub struct Polygon {
     pub width: f64,
     pub pts: Vec<Pt>,
 }
 
-impl Path {
+impl Polygon {
     pub fn bounds(&self) -> Rt {
         let mut b = Rt::empty();
         let v = Pt::new(self.width / 2.0, self.width / 2.0);

@@ -3,12 +3,12 @@ use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 
-use crate::model::arc::Arc;
-use crate::model::circle::Circle;
-use crate::model::path::Path;
-use crate::model::polygon::Polygon;
 use crate::model::pt::Pt;
-use crate::model::rt::Rt;
+use crate::model::shape::arc::Arc;
+use crate::model::shape::circle::Circle;
+use crate::model::shape::path::Path;
+use crate::model::shape::polygon::Polygon;
+use crate::model::shape::rt::Rt;
 use crate::model::tf::Tf;
 
 // File-format independent representation of a PCB.
