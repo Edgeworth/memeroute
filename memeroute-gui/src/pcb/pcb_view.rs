@@ -1,9 +1,10 @@
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
-use memeroute::model::geom::{Pt, Rt};
 use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Pin, Shape, ShapeType, Side};
-use memeroute::model::transform::Tf;
+use memeroute::model::pt::Pt;
+use memeroute::model::rt::Rt;
+use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
 use crate::pcb::{to_pos2, to_pt, to_rt};
@@ -119,8 +120,7 @@ impl PcbView {
     }
 
     fn draw_pin(&self, tf: &Tf, v: &Pin, col: Color32) -> Vec<epaint::Shape> {
-        let tf = tf * Tf::translate(v.p) * Tf::rotate(v.rotation);
-        self.draw_padstack(&tf, &v.padstack, col)
+        self.draw_padstack(&(tf * v.tf()), &v.padstack, col)
     }
 
     fn draw_component(&self, tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
@@ -129,11 +129,7 @@ impl PcbView {
             Side::Front => 0,
             Side::Back => 1,
         };
-        // TODO(check): is it correct to flip both axes?
-        let side_tf =
-            if v.side == Side::Back { Tf::scale(Pt::new(-1.0, -1.0)) } else { Tf::identity() };
-        let tf = tf * Tf::translate(v.p) * Tf::rotate(v.rotation) * side_tf;
-
+        let tf = tf * v.tf();
         for outline in v.outlines.iter() {
             shapes.extend(self.draw_shape(&tf, outline, OUTLINE[side_idx]));
         }

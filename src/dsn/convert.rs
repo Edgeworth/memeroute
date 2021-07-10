@@ -6,11 +6,14 @@ use crate::dsn::types::{
     DsnComponent, DsnDimensionUnit, DsnId, DsnImage, DsnKeepout, DsnKeepoutType, DsnNet,
     DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
 };
-use crate::model::geom::{Pt, Rt};
+use crate::model::circle::Circle;
+use crate::model::path::Path;
 use crate::model::pcb::{
-    Arc, Circle, Component, Keepout, KeepoutType, Layer, Net, Padstack, Path, Pcb, Pin, PinRef,
-    Polygon, Shape, ShapeType, Side,
+    Component, Keepout, KeepoutType, Layer, Net, Padstack, Pcb, Pin, PinRef, Shape, ShapeType, Side,
 };
+use crate::model::polygon::Polygon;
+use crate::model::pt::Pt;
+use crate::model::rt::Rt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Converter {
@@ -85,15 +88,7 @@ impl Converter {
                     pts: v.pts.iter().map(|&v| self.pt(v)).collect(),
                 }),
             },
-            DsnShape::QArc(v) => Shape {
-                layer: v.layer_id.clone(),
-                shape: ShapeType::Arc(Arc {
-                    width: self.coord(v.aperture_width),
-                    start: self.pt(v.start),
-                    end: self.pt(v.end),
-                    center: self.pt(v.center),
-                }),
-            },
+            DsnShape::QArc(v) => todo!(),
         }
     }
 
