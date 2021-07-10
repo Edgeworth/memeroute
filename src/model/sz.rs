@@ -1,5 +1,4 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, Sub, SubAssign};
-
+use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
@@ -36,90 +35,10 @@ impl Sz {
     }
 }
 
-impl From<[f64; 2]> for Sz {
-    fn from([w, h]: [f64; 2]) -> Self {
-        Sz::new(w, h)
-    }
-}
+impl_op_ex!(+ |a: &Sz, b: &Sz| -> Sz { Sz::new(a.w + b.w, a.h + b.h) });
+impl_op_ex!(+= |a: &mut Sz, b: &Sz| { a.w += b.w; a.h += b.h; });
+impl_op_ex!(-|a: &Sz, b: &Sz| -> Sz { Sz::new(a.w - b.w, a.h - b.h) });
+impl_op_ex!(-= |a: &mut Sz, b: &Sz| { a.w -= b.w; a.h -= b.h; });
 
-impl From<(f64, f64)> for Sz {
-    fn from((w, h): (f64, f64)) -> Self {
-        Sz::new(w, h)
-    }
-}
-
-impl From<Sz> for (f64, f64) {
-    fn from(sz: Sz) -> Self {
-        (sz.w, sz.h)
-    }
-}
-
-impl Add<Sz> for Sz {
-    type Output = Sz;
-    fn add(self, o: Sz) -> Self::Output {
-        Sz::new(self.w + o.w, self.h + o.h)
-    }
-}
-
-impl AddAssign<Sz> for Sz {
-    fn add_assign(&mut self, o: Sz) {
-        self.w = self.w + o.w;
-        self.h = self.h + o.h;
-    }
-}
-
-impl Sub<Sz> for Sz {
-    type Output = Sz;
-    fn sub(self, o: Sz) -> Self::Output {
-        Sz::new(self.w - o.w, self.h - o.h)
-    }
-}
-
-impl SubAssign<Sz> for Sz {
-    fn sub_assign(&mut self, o: Sz) {
-        self.w = self.w - o.w;
-        self.h = self.h - o.h;
-    }
-}
-
-impl Div<Sz> for Sz {
-    type Output = Sz;
-    fn div(self, o: Sz) -> Self::Output {
-        Sz::new(self.w / o.w, self.h / o.h)
-    }
-}
-
-impl DivAssign<Sz> for Sz {
-    fn div_assign(&mut self, o: Sz) {
-        self.w = self.w / o.w;
-        self.h = self.h / o.h;
-    }
-}
-
-impl Mul<f64> for Sz {
-    type Output = Sz;
-    fn mul(self, o: f64) -> Self::Output {
-        Sz::new(self.w * o, self.h * o)
-    }
-}
-
-impl Div<f64> for Sz {
-    type Output = Sz;
-    fn div(self, o: f64) -> Self::Output {
-        Sz::new(self.w / o, self.h / o)
-    }
-}
-
-impl Mul<Sz> for f64 {
-    type Output = Sz;
-    fn mul(self, o: Sz) -> Self::Output {
-        Sz::new(self * o.w, self * o.h)
-    }
-}
-
-impl Div<Sz> for f64 {
-    type Output = Sz;
-    fn div(self, o: Sz) -> Self::Output {
-        Sz::new(self / o.w, self / o.h)
-    }
-}
+impl_op_ex_commutative!(*|a: &Sz, b: &f64| -> Sz { Sz::new(a.w * b, a.h * b) });
+impl_op_ex_commutative!(/|a: &Sz, b: &f64| -> Sz { Sz::new(a.w / b, a.h / b) });

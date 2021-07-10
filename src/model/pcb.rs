@@ -26,6 +26,18 @@ pub enum ShapeType {
     Arc(Arc),
 }
 
+impl ShapeType {
+    pub fn bounds(&self) -> Rt {
+        match self {
+            ShapeType::Rect(s) => *s,
+            ShapeType::Circle(s) => s.bounds(),
+            ShapeType::Polygon(s) => s.bounds(),
+            ShapeType::Path(s) => s.bounds(),
+            ShapeType::Arc(_) => todo!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Shape {
     pub layer: Id,
