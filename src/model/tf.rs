@@ -59,7 +59,7 @@ impl Tf {
         Rt::enclosing(a, b)
     }
 
-    pub fn circle(&self, c: Circle) -> Circle {
+    pub fn circle(&self, c: &Circle) -> Circle {
         let radii = self.pt(Pt::new(c.r(), c.r()));
         // TODO: Assumes similarity transformation.
         assert_relative_eq!(radii.x, radii.y);
@@ -74,16 +74,16 @@ impl Tf {
     }
 
     pub fn path(&self, p: &Path) -> Path {
-        let w = self.pt(Pt::new(p.width, p.width));
+        let w = self.pt(Pt::new(p.width(), p.width()));
         // TODO: Assumes similarity transformation.
         assert_relative_eq!(w.x, w.y);
-        Path { width: w.x, pts: p.pts.iter().map(|&v| self.pt(v)).collect() }
+        Path::new(p.pts().iter().map(|&v| self.pt(v)).collect(), w.x)
     }
 
     pub fn shape(&self, s: &ShapeType) -> ShapeType {
         match s {
             ShapeType::Rect(s) => ShapeType::Rect(self.rt(*s)),
-            ShapeType::Circle(s) => ShapeType::Circle(self.circle(*s)),
+            ShapeType::Circle(s) => ShapeType::Circle(self.circle(s)),
             ShapeType::Polygon(s) => ShapeType::Polygon(self.polygon(s)),
             ShapeType::Path(s) => ShapeType::Path(self.path(s)),
             ShapeType::Arc(_) => todo!(),

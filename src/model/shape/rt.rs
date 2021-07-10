@@ -1,6 +1,7 @@
 use approx::relative_eq;
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
+use parry2d_f64::bounding_volume::AABB;
 use serde::{Deserialize, Serialize};
 
 use crate::model::pt::{Pt, PtI};
@@ -129,6 +130,18 @@ impl Rt {
 impl From<Sz> for Rt {
     fn from(sz: Sz) -> Self {
         Rt::ptsz(Pt::zero(), sz)
+    }
+}
+
+impl From<AABB> for Rt {
+    fn from(r: AABB) -> Self {
+        (&r).into()
+    }
+}
+
+impl From<&AABB> for Rt {
+    fn from(r: &AABB) -> Self {
+        Rt::enclosing(r.mins.into(), r.maxs.into())
     }
 }
 

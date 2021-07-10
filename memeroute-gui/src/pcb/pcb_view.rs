@@ -26,7 +26,7 @@ lazy_static! {
     ];
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct PcbView {
     pcb: Pcb,
     screen_area: Rt,
@@ -99,8 +99,8 @@ impl PcbView {
             }
             ShapeType::Path(s) => {
                 // Treat paths with width 0 as having a width of 0.2 mm (arbitrary).
-                let w = if s.width == 0.0 { 0.2 } else { s.width };
-                shapes.extend(stroke_path(tf, &s.pts, w, col))
+                let w = if s.width() == 0.0 { 0.2 } else { s.width() };
+                shapes.extend(stroke_path(tf, s.pts(), w, col))
             }
             ShapeType::Arc(_) => todo!(),
         }

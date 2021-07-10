@@ -25,7 +25,7 @@ struct State {
     layer: Id,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct GridRouter {
     pcb: Pcb,
     net_order: Vec<Id>,

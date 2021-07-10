@@ -1,20 +1,42 @@
+use parry2d_f64::shape::Compound;
+
 use crate::model::pt::Pt;
 use crate::model::shape::rt::Rt;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Clone)]
 pub struct Path {
-    pub width: f64,
-    pub pts: Vec<Pt>,
+    pts: Vec<Pt>,
+    width: f64,
+    parry: Compound,
+}
+
+impl std::fmt::Debug for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?} {:?}", self.pts, self.width))
+    }
 }
 
 impl Path {
+    pub fn new(pts: Vec<Pt>, width: f64) -> Self {
+        let parry = Compound::new(vec![]);
+        Self { pts, width, parry }
+    }
+
     pub fn bounds(&self) -> Rt {
-        let mut b = Rt::empty();
-        let v = Pt::new(self.width / 2.0, self.width / 2.0);
-        for p in self.pts.iter() {
-            let r = Rt::enclosing(*p - v, *p + v);
-            b = b.united(r);
-        }
-        b
+        self.parry.local_aabb().into()
+    }
+
+    pub fn pts(&self) -> &[Pt] {
+        &self.pts
+    }
+
+    pub fn width(&self) -> f64 {
+        self.width
+    }
+
+    fn as_parry(&self) -> &Compound {
+        &self.parry
     }
 }
+
+impl_parry2d!(Path);
