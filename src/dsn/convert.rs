@@ -40,11 +40,12 @@ impl Converter {
     }
 
     fn rect(&self, v: &DsnRect) -> Rt {
+        let h = self.coord(v.rect.h);
         Rt {
             x: self.coord(v.rect.x),
-            y: -self.coord(v.rect.y), // Convert to positive y is up axes.
+            y: -self.coord(v.rect.y) - h, // Convert to positive y is up axes.
             w: self.coord(v.rect.w),
-            h: self.coord(v.rect.h),
+            h,
         }
     }
 
