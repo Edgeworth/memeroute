@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use approx::relative_eq;
 use eyre::{eyre, Result};
 
 use crate::dsn::types::{
@@ -7,13 +8,14 @@ use crate::dsn::types::{
     DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
 };
 use crate::model::pcb::{
-    Component, Keepout, KeepoutType, Layer, Net, Padstack, Pcb, Pin, PinRef, Shape, ShapeType, Side,
+    Component, Keepout, KeepoutType, Layer, Net, Padstack, Pcb, Pin, PinRef, Shape, Side,
 };
 use crate::model::pt::Pt;
 use crate::model::shape::circle::Circle;
 use crate::model::shape::path::Path;
 use crate::model::shape::polygon::Polygon;
 use crate::model::shape::rt::Rt;
+use crate::model::shape::shape_type::ShapeType;
 
 #[derive(Debug, Clone)]
 pub struct Converter {
@@ -43,13 +45,13 @@ impl Converter {
     }
 
     fn rect(&self, v: &DsnRect) -> Rt {
-        let h = self.coord(v.rect.h);
-        Rt {
-            x: self.coord(v.rect.x),
-            y: -self.coord(v.rect.y) - h, // Convert to positive y is up axes.
-            w: self.coord(v.rect.w),
+        let h = self.coord(v.rect.h());
+        Rt::new(
+            self.coord(v.rect.l()),
+            -self.coord(v.rect.t()) - h, // Convert to positive y is up axes.
+            self.coord(v.rect.w()),
             h,
-        }
+        )
     }
 
     fn pt(&self, v: Pt) -> Pt {
@@ -71,13 +73,17 @@ impl Converter {
                 layer: v.layer_id.clone(),
                 shape: ShapeType::Circle(Circle::new(self.coord(v.diameter / 2.0), self.pt(v.p))),
             },
-            DsnShape::Polygon(v) => Shape {
-                layer: v.layer_id.clone(),
-                shape: ShapeType::Polygon(Polygon {
-                    width: self.coord(v.aperture_width),
-                    pts: v.pts.iter().map(|&v| self.pt(v)).collect(),
-                }),
-            },
+            DsnShape::Polygon(v) => {
+                let mut pts: Vec<Pt> = v.pts.iter().map(|&v| self.pt(v)).collect();
+                // Polygons seem to have the first vertex repeated.
+                if pts.len() >= 2 && relative_eq!(pts.first().unwrap(), pts.last().unwrap()) {
+                    pts.pop();
+                }
+                Shape {
+                    layer: v.layer_id.clone(),
+                    shape: ShapeType::Polygon(Polygon::new(pts, self.coord(v.aperture_width))),
+                }
+            }
             DsnShape::Path(v) => Shape {
                 layer: v.layer_id.clone(),
                 shape: ShapeType::Path(Path::new(

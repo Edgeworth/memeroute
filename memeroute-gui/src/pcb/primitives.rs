@@ -10,7 +10,7 @@ use crate::pcb::to_pos2;
 const NUM_POINTS: usize = 16;
 const EP: f64 = 1.0e-5;
 
-pub fn fill_rect(tf: &Tf, rt: Rt, col: Color32) -> epaint::Shape {
+pub fn fill_rect(tf: &Tf, rt: &Rt, col: Color32) -> epaint::Shape {
     fill_polygon(tf, &[rt.tl(), rt.tr(), rt.br(), rt.bl()], col)
 }
 
