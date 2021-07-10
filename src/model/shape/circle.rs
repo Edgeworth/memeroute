@@ -1,3 +1,4 @@
+use parry2d_f64::shape::{Capsule, Segment};
 
 use crate::model::pt::Pt;
 use crate::model::shape::rt::Rt;
@@ -24,7 +25,7 @@ impl Circle {
         self.parry.segment.a.into()
     }
 
-    fn as_parry(&self) -> &Capsule {
+    pub fn as_parry(&self) -> &Capsule {
         &self.parry
     }
 }

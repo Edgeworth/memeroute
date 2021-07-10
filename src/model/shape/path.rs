@@ -1,4 +1,4 @@
-use parry2d_f64::shape::Compound;
+use parry2d_f64::shape::{Capsule, Compound, Segment, SharedShape};
 
 use crate::model::pt::Pt;
 use crate::model::shape::rt::Rt;
@@ -18,7 +18,17 @@ impl std::fmt::Debug for Path {
 
 impl Path {
     pub fn new(pts: Vec<Pt>, width: f64) -> Self {
-        let parry = Compound::new(vec![]);
+        let mut v = Vec::new();
+        for [a, b] in pts.array_windows::<2>() {
+            v.push((
+                Isometry::rotation(0.0), // Construct an empty isometry.
+                SharedShape::new(Capsule {
+                    segment: Segment { a: a.into(), b: b.into() },
+                    radius: width / 2.0,
+                }),
+            ));
+        }
+        let parry = Compound::new(v);
         Self { pts, width, parry }
     }
 
@@ -34,7 +44,7 @@ impl Path {
         self.width
     }
 
-    fn as_parry(&self) -> &Compound {
+    pub fn as_parry(&self) -> &Compound {
         &self.parry
     }
 }

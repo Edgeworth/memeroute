@@ -5,8 +5,7 @@ macro_rules! impl_parry2d {
         use parry2d_f64::math::{Isometry, Point, Real, Vector};
         use parry2d_f64::query::{PointProjection, PointQuery, Ray, RayCast, RayIntersection};
         use parry2d_f64::shape::{
-            Capsule, FeatureId, PolygonalFeatureMap, Segment, Shape, ShapeType, SimdCompositeShape,
-            SupportMap, TypedShape,
+            FeatureId, PolygonalFeatureMap, Shape, SimdCompositeShape, SupportMap, TypedShape,
         };
 
         impl PointQuery for $type {
@@ -123,7 +122,7 @@ macro_rules! impl_parry2d {
                 self.as_parry().mass_properties(density)
             }
 
-            fn shape_type(&self) -> ShapeType {
+            fn shape_type(&self) -> parry2d_f64::shape::ShapeType {
                 self.as_parry().shape_type()
             }
 
@@ -179,3 +178,4 @@ pub mod circle;
 pub mod path;
 pub mod polygon;
 pub mod rt;
+pub mod shape_type;

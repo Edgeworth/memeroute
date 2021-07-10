@@ -1,9 +1,10 @@
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
-use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Pin, Shape, ShapeType, Side};
+use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Pin, Shape, Side};
 use memeroute::model::pt::Pt;
 use memeroute::model::shape::rt::Rt;
+use memeroute::model::shape::shape_type::ShapeType;
 use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
@@ -91,11 +92,11 @@ impl PcbView {
     fn draw_shape(&self, tf: &Tf, v: &Shape, col: Color32) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
         match &v.shape {
-            ShapeType::Rect(s) => shapes.push(fill_rect(tf, *s, col)),
+            ShapeType::Rect(s) => shapes.push(fill_rect(tf, s, col)),
             ShapeType::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
             ShapeType::Polygon(s) => {
-                shapes.push(fill_polygon(tf, &s.pts, col));
-                shapes.extend(stroke_polygon(tf, &s.pts, s.width, col));
+                shapes.push(fill_polygon(tf, s.pts(), col));
+                shapes.extend(stroke_polygon(tf, s.pts(), s.width(), col));
             }
             ShapeType::Path(s) => {
                 // Treat paths with width 0 as having a width of 0.2 mm (arbitrary).
@@ -181,7 +182,7 @@ impl PcbView {
         if self.dirty {
             let tf = Tf::translate(self.offset)
                 * Tf::scale(Pt::new(self.zoom, self.zoom))
-                * Tf::affine(self.local_area, self.screen_area);
+                * Tf::affine(&self.local_area, &self.screen_area);
             for vert in mesh.vertices.iter_mut() {
                 vert.pos = to_pos2(tf.pt(to_pt(vert.pos)));
             }

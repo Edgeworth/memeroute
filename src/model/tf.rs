@@ -4,12 +4,12 @@ use std::ops::Mul;
 use approx::assert_relative_eq;
 use nalgebra::{vector, Matrix3};
 
-use crate::model::pcb::ShapeType;
 use crate::model::pt::Pt;
 use crate::model::shape::circle::Circle;
 use crate::model::shape::path::Path;
 use crate::model::shape::polygon::Polygon;
 use crate::model::shape::rt::Rt;
+use crate::model::shape::shape_type::ShapeType;
 
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub struct Tf {
@@ -37,9 +37,9 @@ impl Tf {
         Self { m: Matrix3::new_rotation(deg / 180.0 * PI) }
     }
 
-    pub fn affine(from: Rt, to: Rt) -> Self {
-        let xscale = to.w / from.w;
-        let yscale = to.h / from.h;
+    pub fn affine(from: &Rt, to: &Rt) -> Self {
+        let xscale = to.w() / from.w();
+        let yscale = to.h() / from.h();
         let offset = to.tl() - from.tl();
         Self::translate(offset) * Self::scale(Pt::new(xscale, yscale))
     }
@@ -53,7 +53,7 @@ impl Tf {
         Pt::new(v.x, v.y)
     }
 
-    pub fn rt(&self, r: Rt) -> Rt {
+    pub fn rt(&self, r: &Rt) -> Rt {
         let a = self.pt(r.tl());
         let b = self.pt(r.br());
         Rt::enclosing(a, b)
@@ -67,10 +67,10 @@ impl Tf {
     }
 
     pub fn polygon(&self, p: &Polygon) -> Polygon {
-        let w = self.pt(Pt::new(p.width, p.width));
+        let w = self.pt(Pt::new(p.width(), p.width()));
         // TODO: Assumes similarity transformation.
         assert_relative_eq!(w.x, w.y);
-        Polygon { width: w.x, pts: p.pts.iter().map(|&v| self.pt(v)).collect() }
+        Polygon::new(p.pts().iter().map(|&v| self.pt(v)).collect(), w.x)
     }
 
     pub fn path(&self, p: &Path) -> Path {
@@ -82,7 +82,7 @@ impl Tf {
 
     pub fn shape(&self, s: &ShapeType) -> ShapeType {
         match s {
-            ShapeType::Rect(s) => ShapeType::Rect(self.rt(*s)),
+            ShapeType::Rect(s) => ShapeType::Rect(self.rt(s)),
             ShapeType::Circle(s) => ShapeType::Circle(self.circle(s)),
             ShapeType::Polygon(s) => ShapeType::Polygon(self.polygon(s)),
             ShapeType::Path(s) => ShapeType::Path(self.path(s)),

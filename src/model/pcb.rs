@@ -4,11 +4,7 @@ use std::collections::HashMap;
 use eyre::{eyre, Result};
 
 use crate::model::pt::Pt;
-use crate::model::shape::arc::Arc;
-use crate::model::shape::circle::Circle;
-use crate::model::shape::path::Path;
-use crate::model::shape::polygon::Polygon;
-use crate::model::shape::rt::Rt;
+use crate::model::shape::shape_type::ShapeType;
 use crate::model::tf::Tf;
 
 // File-format independent representation of a PCB.
@@ -16,27 +12,6 @@ use crate::model::tf::Tf;
 // All rotations are in degrees, counterclockwise from the positive x axis.
 
 pub type Id = String;
-
-#[derive(Debug, Clone)]
-pub enum ShapeType {
-    Rect(Rt),
-    Circle(Circle),
-    Polygon(Polygon),
-    Path(Path),
-    Arc(Arc),
-}
-
-impl ShapeType {
-    pub fn bounds(&self) -> Rt {
-        match self {
-            ShapeType::Rect(s) => *s,
-            ShapeType::Circle(s) => s.bounds(),
-            ShapeType::Polygon(s) => s.bounds(),
-            ShapeType::Path(s) => s.bounds(),
-            ShapeType::Arc(_) => todo!(),
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Shape {

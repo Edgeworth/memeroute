@@ -1,3 +1,4 @@
+use approx::{AbsDiffEq, RelativeEq};
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 use nalgebra::{vector, Vector2};
@@ -60,6 +61,29 @@ impl Pt {
     }
 }
 
+impl AbsDiffEq for Pt {
+    type Epsilon = f64;
+
+    fn default_epsilon() -> f64 {
+        f64::default_epsilon()
+    }
+
+    fn abs_diff_eq(&self, o: &Self, epsilon: f64) -> bool {
+        f64::abs_diff_eq(&self.x, &o.x, epsilon) && f64::abs_diff_eq(&self.y, &o.y, epsilon)
+    }
+}
+
+impl RelativeEq for Pt {
+    fn default_max_relative() -> f64 {
+        f64::default_max_relative()
+    }
+
+    fn relative_eq(&self, o: &Self, epsilon: f64, max_relative: f64) -> bool {
+        f64::relative_eq(&self.x, &o.x, epsilon, max_relative)
+            && f64::relative_eq(&self.y, &o.y, epsilon, max_relative)
+    }
+}
+
 impl From<Pt> for Vector2<f64> {
     fn from(p: Pt) -> Self {
         vector![p.x, p.y]
@@ -68,6 +92,12 @@ impl From<Pt> for Vector2<f64> {
 
 impl From<Pt> for Point<Real> {
     fn from(p: Pt) -> Self {
+        (&p).into()
+    }
+}
+
+impl From<&Pt> for Point<Real> {
+    fn from(p: &Pt) -> Self {
         Point::new(p.x, p.y)
     }
 }
