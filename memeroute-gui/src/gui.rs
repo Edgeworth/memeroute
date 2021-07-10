@@ -19,7 +19,7 @@ impl Default for State {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct MemerouteGui {
     s: State,
     pcb: Pcb,

@@ -15,7 +15,7 @@ use crate::model::shape::path::Path;
 use crate::model::shape::polygon::Polygon;
 use crate::model::shape::rt::Rt;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Converter {
     dsn: DsnPcb,
     pcb: Pcb,
@@ -80,10 +80,10 @@ impl Converter {
             },
             DsnShape::Path(v) => Shape {
                 layer: v.layer_id.clone(),
-                shape: ShapeType::Path(Path {
-                    width: self.coord(v.aperture_width),
-                    pts: v.pts.iter().map(|&v| self.pt(v)).collect(),
-                }),
+                shape: ShapeType::Path(Path::new(
+                    v.pts.iter().map(|&v| self.pt(v)).collect(),
+                    self.coord(v.aperture_width),
+                )),
             },
             DsnShape::QArc(_v) => todo!(),
         }

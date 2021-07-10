@@ -7,7 +7,7 @@ pub trait RouteStrategy {
     fn route(&mut self) -> Result<RouteResult>;
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct RouteResult {
     pub wires: Vec<Wire>,
     pub vias: Vec<Via>,
@@ -22,7 +22,7 @@ impl RouteResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Router {
     pcb: Pcb,
 }

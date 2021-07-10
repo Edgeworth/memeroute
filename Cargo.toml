@@ -13,6 +13,7 @@ auto_ops = "*"
 derive_more = "*"
 eyre = "*"
 nalgebra = "*"
+parry2d-f64 = "*"
 petgraph = "*"
 regex = "*"
 serde = {version = "*", features = ["derive"]}

@@ -17,7 +17,7 @@ use crate::model::tf::Tf;
 
 pub type Id = String;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum ShapeType {
     Rect(Rt),
     Circle(Circle),
@@ -38,7 +38,7 @@ impl ShapeType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Shape {
     pub layer: Id,
     pub shape: ShapeType,
@@ -47,7 +47,7 @@ pub struct Shape {
 // Keepout: No routing whatsoever.
 // ViaKeepout: No vias.
 // WireKeepout: No wires.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum KeepoutType {
     Keepout,
     ViaKeepout,
@@ -55,7 +55,7 @@ pub enum KeepoutType {
 }
 
 // Describes a keepout area.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Keepout {
     pub kind: KeepoutType,
     pub shape: Shape,
@@ -74,7 +74,7 @@ impl Default for Side {
 }
 
 // Describes a pin.
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct Pin {
     pub id: Id,
     pub padstack: Padstack,
@@ -89,7 +89,7 @@ impl Pin {
 }
 
 // Describes a component at a location.
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct Component {
     pub id: Id,
     pub p: Pt,
@@ -121,7 +121,7 @@ impl Component {
 }
 
 // Describes a padstack.
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct Padstack {
     pub id: Id,
     pub shapes: Vec<Shape>,
@@ -129,7 +129,7 @@ pub struct Padstack {
 }
 
 // Describes a layer in a PCB.
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct Layer {
     pub id: Id,
 }
@@ -140,30 +140,30 @@ impl Layer {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct PinRef {
     pub component: Id,
     pub pin: Id,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct Net {
     pub id: Id,
     pub pins: Vec<PinRef>,
 }
 
 // Describes a route.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Wire {
     pub shape: Shape,
 }
 
 // Describes a via.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Via {}
 
 // Describes an overall PCB.
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct Pcb {
     id: Id,
 

@@ -3,8 +3,8 @@ use crate::model::shape::rt::Rt;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Polygon {
-    pub width: f64,
     pub pts: Vec<Pt>,
+    pub width: f64,
 }
 
 impl Polygon {
