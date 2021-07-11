@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use eyre::{eyre, Result};
 
 use crate::model::pt::Pt;
+use crate::model::shape::rt::Rt;
 use crate::model::shape::shape_type::ShapeType;
 use crate::model::tf::Tf;
 
@@ -247,5 +248,14 @@ impl Pcb {
             .pin(&p.pin)
             .ok_or_else(|| eyre!("unknown pin id {} on component {}", p.pin, p.component))?;
         Ok((component, pin))
+    }
+
+    pub fn bounds(&self) -> Rt {
+        // Assumes boundaries are valid.
+        let mut b = Rt::empty();
+        for boundary in self.boundaries() {
+            b = b.united(&boundary.shape.bounds());
+        }
+        b
     }
 }
