@@ -25,6 +25,8 @@ lazy_static! {
         Color32::from_rgba_unmultiplied(0, 27, 161, 180),
         Color32::from_rgba_unmultiplied(0, 27, 161, 180),
     ];
+
+    static ref WIRE: Color32 = Color32::from_rgba_unmultiplied(252, 3, 182, 180);
 }
 
 #[derive(Debug, Clone)]
@@ -176,13 +178,21 @@ impl PcbView {
                 let shapes = self.draw_component(&tf, component);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
+            for wire in self.pcb.wires() {
+                let shapes = self.draw_shape(&tf, &wire.shape, *WIRE);
+                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
+            }
+            for via in self.pcb.vias() {
+                // TODO: Draw vias.
+            }
             self.mesh = mesh;
         }
         let mut mesh = self.mesh.clone();
         if self.dirty {
             let tf = Tf::translate(self.offset)
                 * Tf::scale(Pt::new(self.zoom, self.zoom))
-                * Tf::affine(&self.local_area, &self.screen_area);
+                * Tf::affine(&self.local_area, &self.screen_area)
+                * Tf::scale(Pt::new(1.0, -1.0)); // Invert y axis
             for vert in mesh.vertices.iter_mut() {
                 vert.pos = to_pos2(tf.pt(to_pt(vert.pos)));
             }
