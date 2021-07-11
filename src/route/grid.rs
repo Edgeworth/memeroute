@@ -55,16 +55,13 @@ impl GridRouter {
     fn mark_blocked_shape(&self, blocked: &mut HashSet<State>, tf: &Tf, s: &Shape) -> Result<()> {
         println!("shape: {:?}", s.shape);
         let shape = tf.shape(&s.shape);
-        let bounds = shape.bounds();
-        println!("keepout: {} {:?}", bounds, shape);
-        let bounds = RtI::enclosing(self.to_grid(bounds.bl()), self.to_grid(bounds.tr()));
-        println!("keepout2: {}", bounds);
+        let bounds = self.grid_rt(shape.bounds());
 
-        for l in bounds.l()..=bounds.r() {
-            for b in bounds.b()..=bounds.t() {
+        for l in bounds.l()..bounds.r() {
+            for b in bounds.b()..bounds.t() {
                 let p = PtI::new(l, b);
                 // Collision rectangle test
-                let r = Rt::enclosing(self.to_world(&p), self.to_world(&PtI::new(l + 1, b + 1)));
+                let r = Rt::enclosing(self.world_pt(&p), self.world_pt(&PtI::new(l + 1, b + 1)));
                 if intersection_test(&identity(), &shape, &identity(), &r)? {
                     blocked.insert(State { p, layer: s.layer.clone() });
                 }
@@ -91,7 +88,7 @@ impl GridRouter {
             // }
             for keepout in c.keepouts.iter() {
                 // TODO: Handle only via vs only wire keepout.
-                // self.mark_blocked_shape(&mut blocked, &tf, &keepout.shape)?;
+                self.mark_blocked_shape(&mut blocked, &tf, &keepout.shape)?;
             }
         }
         self.blocked = blocked;
@@ -116,7 +113,7 @@ impl GridRouter {
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
         let (component, pin) = self.pcb.pin_ref(pin_ref)?;
-        let p = self.to_grid((component.tf() * pin.tf()).pt(pin.p));
+        let p = self.grid_pt((component.tf() * pin.tf()).pt(pin.p));
         // TODO: Using component side for which layer is broken. Need to look at
         // padstack.
         let layer = match component.side {
@@ -126,16 +123,21 @@ impl GridRouter {
         Ok(State { p, layer })
     }
 
-    fn to_grid(&self, p: Pt) -> PtI {
+    fn grid_pt(&self, p: Pt) -> PtI {
+        // Map points to the lower left corner.
         PtI::new((p.x / self.resolution).floor() as i64, (p.y / self.resolution).floor() as i64)
     }
 
-    fn to_world(&self, p: &PtI) -> Pt {
+    fn grid_rt(&self, r: Rt) -> RtI {
+        RtI::enclosing(self.grid_pt(r.bl()), self.grid_pt(r.tr()) + PtI::new(1, 1))
+    }
+
+    fn world_pt(&self, p: &PtI) -> Pt {
         Pt::new(p.x as f64 * self.resolution, p.y as f64 * self.resolution)
     }
 
-    fn to_world_mid(&self, p: &PtI) -> Pt {
-        self.to_world(p) + Pt::new(self.resolution / 2.0, self.resolution / 2.0)
+    fn world_pt_mid(&self, p: &PtI) -> Pt {
+        self.world_pt(p) + Pt::new(self.resolution / 2.0, self.resolution / 2.0)
     }
 }
 
@@ -147,15 +149,15 @@ impl RouteStrategy for GridRouter {
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
             res.merge(self.connect(states)?);
         }
-        // println!("blocked: {:?}", self.blocked);
-        for l in 0..50 {
-            for b in -50..0 {
+        let bounds = self.grid_rt(self.pcb.bounds());
+        for l in bounds.l()..bounds.r() {
+            for b in bounds.b()..bounds.t() {
                 let p = PtI::new(l, b);
                 if self.is_blocked(&State { p, layer: "F.Cu".to_owned() }) {
                     continue;
                 }
                 let shape =
-                    ShapeType::Circle(Circle::new(self.to_world_mid(&p), self.resolution / 2.0));
+                    ShapeType::Circle(Circle::new(self.world_pt_mid(&p), self.resolution / 2.0));
                 res.wires.push(Wire { shape: Shape { layer: "F.Cu".to_owned(), shape } })
             }
         }
