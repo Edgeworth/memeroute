@@ -11,6 +11,9 @@ use crate::model::tf::Tf;
 // Units are in millimetres.
 // All rotations are in degrees, counterclockwise from the positive x axis.
 
+// Layer representing any layer.
+pub const ANY_LAYER: &str = "signal";
+
 pub type Id = String;
 
 #[derive(Debug, Clone)]

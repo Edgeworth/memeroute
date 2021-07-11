@@ -1,3 +1,5 @@
+use parry2d_f64::math::{Isometry, Real};
+
 macro_rules! impl_parry2d {
     ($type:ident) => {
         use parry2d_f64::bounding_volume::{BoundingSphere, AABB};
@@ -171,6 +173,10 @@ macro_rules! impl_parry2d {
             }
         }
     };
+}
+
+pub fn identity() -> Isometry<Real> {
+    Isometry::rotation(0.0)
 }
 
 pub mod arc;

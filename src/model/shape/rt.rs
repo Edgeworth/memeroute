@@ -7,37 +7,30 @@ use crate::model::pt::{Pt, PtI};
 use crate::model::sz::Sz;
 
 #[derive(Debug, Default, Clone, Display)]
-#[display(fmt = "({}, {}, {}, {})", l, t, w, h)]
+#[display(fmt = "({}, {}, {}, {})", x, y, w, h)]
 pub struct Rt {
-    l: f64,
-    t: f64,
+    x: f64,
+    y: f64,
     w: f64,
     h: f64,
     parry: Option<ConvexPolygon>,
 }
 
 impl Rt {
-    pub fn new(l: f64, t: f64, w: f64, h: f64) -> Self {
+    // x and y denotes the bottom left point of the rectangle.
+    pub fn new(x: f64, y: f64, w: f64, h: f64) -> Self {
         let parry = ConvexPolygon::from_convex_polyline(vec![
-            Point::new(l, t),
-            Point::new(l, t + h),
-            Point::new(l + w, t + h),
-            Point::new(l + w, t),
+            Point::new(x, y),
+            Point::new(x + w, y),
+            Point::new(x + w, y + h),
+            Point::new(x, y + h),
         ])
         .unwrap();
-        Self { l, t, w, h, parry: Some(parry) }
+        Self { x, y, w, h, parry: Some(parry) }
     }
 
     pub fn empty() -> Self {
         Self::default()
-    }
-
-    pub fn l(&self) -> f64 {
-        self.l
-    }
-
-    pub fn t(&self) -> f64 {
-        self.t
     }
 
     pub fn w(&self) -> f64 {
@@ -48,16 +41,24 @@ impl Rt {
         self.h
     }
 
-    pub fn b(&self) -> f64 {
-        self.t + self.h
+    pub fn l(&self) -> f64 {
+        self.x
+    }
+
+    pub fn t(&self) -> f64 {
+        self.y + self.h
     }
 
     pub fn r(&self) -> f64 {
-        self.l + self.w
+        self.x + self.w
+    }
+
+    pub fn b(&self) -> f64 {
+        self.y
     }
 
     pub fn bl(&self) -> Pt {
-        Pt::new(self.l, self.b())
+        Pt::new(self.l(), self.b())
     }
 
     pub fn br(&self) -> Pt {
@@ -65,11 +66,11 @@ impl Rt {
     }
 
     pub fn tl(&self) -> Pt {
-        Pt::new(self.l, self.t)
+        Pt::new(self.l(), self.t())
     }
 
     pub fn tr(&self) -> Pt {
-        Pt::new(self.r(), self.t)
+        Pt::new(self.r(), self.t())
     }
 
     pub fn sz(&self) -> Sz {
@@ -77,7 +78,7 @@ impl Rt {
     }
 
     pub fn center(&self) -> Pt {
-        Pt::new(self.l + self.w / 2.0, self.t + self.h / 2.0)
+        Pt::new(self.x + self.w / 2.0, self.y + self.h / 2.0)
     }
 
     pub fn area(&self) -> f64 {
@@ -91,11 +92,11 @@ impl Rt {
     pub fn inset_xy(&self, dx: f64, dy: f64) -> Rt {
         let wsub = if 2.0 * dx < self.w { 2.0 * dx } else { self.w };
         let hsub = if 2.0 * dy < self.h { 2.0 * dy } else { self.h };
-        Rt::new(self.l + wsub / 2.0, self.t + hsub / 2.0, self.w - wsub, self.h - hsub)
+        Rt::new(self.x + wsub / 2.0, self.y + hsub / 2.0, self.w - wsub, self.h - hsub)
     }
 
     pub fn contains(&self, p: Pt) -> bool {
-        p.x >= self.l && p.y >= self.t && p.x <= self.r() && p.y <= self.b()
+        p.x >= self.l() && p.y >= self.b() && p.x <= self.r() && p.y <= self.t()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -108,11 +109,11 @@ impl Rt {
         } else if self.is_empty() {
             rt.clone()
         } else {
-            let x = self.l.min(rt.l);
-            let y = self.t.min(rt.t);
-            let r = self.r().min(rt.r());
-            let b = self.b().min(rt.b());
-            Rt::new(x, y, r - x, b - y)
+            let x = self.x.min(rt.x);
+            let y = self.y.min(rt.y);
+            let r = self.r().max(rt.r());
+            let t = self.t().max(rt.t());
+            Rt::new(x, y, r - x, t - y)
         }
     }
 
@@ -120,20 +121,20 @@ impl Rt {
         let x = pa.x.min(pb.x);
         let y = pa.y.min(pb.y);
         let r = pa.x.max(pb.x);
-        let b = pa.y.max(pb.y);
-        Rt::new(x, y, r - x, b - y)
+        let t = pa.y.max(pb.y);
+        Rt::new(x, y, r - x, t - y)
     }
 
     // Returns a rectangle with the same area that matches the aspect ratio of |r|.
     pub fn match_aspect(&self, r: &Rt) -> Rt {
         if relative_eq!(r.w, 0.0) {
-            Rt::new(self.l, self.t, 0.0, self.h)
+            Rt::new(self.x, self.y, 0.0, self.h)
         } else if relative_eq!(r.h, 0.0) {
-            Rt::new(self.l, self.t, self.w, 0.0)
+            Rt::new(self.x, self.y, self.w, 0.0)
         } else {
             let aspect = (r.w / r.h).sqrt();
             let len = self.area().sqrt();
-            Rt::new(self.l, self.t, len * aspect, len / aspect)
+            Rt::new(self.x, self.y, len * aspect, len / aspect)
         }
     }
 
@@ -160,23 +161,23 @@ impl PartialEq for Rt {
     }
 }
 
-impl_op_ex!(+ |a: &Rt, b: &Rt| -> Rt { Rt::new(a.l + b.l, a.t + b.t, a.w + b.w, a.h + b.h) });
-impl_op_ex!(+= |a: &mut Rt, b: &Rt| { a.l += b.l; a.t += b.t; a.w += b.w; a.h += b.h; });
-impl_op_ex!(-|a: &Rt, b: &Rt| -> Rt { Rt::new(a.l - b.l, a.t - b.t, a.w - b.w, a.h - b.h) });
-impl_op_ex!(-= |a: &mut Rt, b: &Rt| { a.l -= b.l; a.t -= b.t; a.w -= b.w; a.h -= b.h; });
+impl_op_ex!(+ |a: &Rt, b: &Rt| -> Rt { Rt::new(a.x + b.x, a.y + b.y, a.w + b.w, a.h + b.h) });
+impl_op_ex!(+= |a: &mut Rt, b: &Rt| { a.x += b.x; a.y += b.y; a.w += b.w; a.h += b.h; });
+impl_op_ex!(-|a: &Rt, b: &Rt| -> Rt { Rt::new(a.x - b.x, a.y - b.y, a.w - b.w, a.h - b.h) });
+impl_op_ex!(-= |a: &mut Rt, b: &Rt| { a.x -= b.x; a.y -= b.y; a.w -= b.w; a.h -= b.h; });
 
-impl_op_ex_commutative!(+|a: &Rt, b: &Pt| -> Rt { Rt::new(a.l + b.x, a.t + b.y, a.w, a.h) });
-impl_op_ex_commutative!(-|a: &Rt, b: &Pt| -> Rt { Rt::new(a.l - b.x, a.t - b.y, a.w, a.h) });
+impl_op_ex_commutative!(+|a: &Rt, b: &Pt| -> Rt { Rt::new(a.x + b.x, a.y + b.y, a.w, a.h) });
+impl_op_ex_commutative!(-|a: &Rt, b: &Pt| -> Rt { Rt::new(a.x - b.x, a.y - b.y, a.w, a.h) });
 
-impl_op_ex_commutative!(*|a: &Rt, b: &f64| -> Rt { Rt::new(a.l * b, a.t * b, a.w * b, a.h * b) });
-impl_op_ex_commutative!(/|a: &Rt, b: &f64| -> Rt { Rt::new(a.l / b, a.t / b, a.w / b, a.h / b) });
+impl_op_ex_commutative!(*|a: &Rt, b: &f64| -> Rt { Rt::new(a.x * b, a.y * b, a.w * b, a.h * b) });
+impl_op_ex_commutative!(/|a: &Rt, b: &f64| -> Rt { Rt::new(a.x / b, a.y / b, a.w / b, a.h / b) });
 impl_op_ex_commutative!(*|a: &Rt, b: &i64| -> Rt {
     let b = *b as f64;
-    Rt::new(a.l * b, a.t * b, a.w * b, a.h * b)
+    Rt::new(a.x * b, a.y * b, a.w * b, a.h * b)
 });
 impl_op_ex_commutative!(/|a: &Rt, b: &i64| -> Rt {
     let b = *b as f64;
-    Rt::new(a.l / b, a.t / b, a.w / b, a.h / b)
+    Rt::new(a.x / b, a.y / b, a.w / b, a.h / b)
 });
 
 impl_parry2d!(Rt);
@@ -184,10 +185,10 @@ impl_parry2d!(Rt);
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone, Display)]
 #[display(fmt = "({}, {}, {}, {})", x, y, w, h)]
 pub struct RtI {
-    pub x: i64,
-    pub y: i64,
-    pub w: i64,
-    pub h: i64,
+    x: i64,
+    y: i64,
+    w: i64,
+    h: i64,
 }
 
 impl RtI {
@@ -195,56 +196,53 @@ impl RtI {
         Self { x, y, w, h }
     }
 
-    pub fn empty() -> Self {
-        Self::new(0, 0, 0, 0)
+
+    pub const fn w(&self) -> i64 {
+        self.w
     }
 
-    pub fn b(&self) -> i64 {
+    pub const fn h(&self) -> i64 {
+        self.h
+    }
+
+    pub const fn l(&self) -> i64 {
+        self.x
+    }
+
+    pub const fn t(&self) -> i64 {
         self.y + self.h
     }
 
-    pub fn r(&self) -> i64 {
+    pub const fn r(&self) -> i64 {
         self.x + self.w
     }
 
-    pub fn bl(&self) -> PtI {
-        PtI::new(self.x, self.b())
+    pub const fn b(&self) -> i64 {
+        self.y
     }
 
-    pub fn br(&self) -> PtI {
+    pub const fn bl(&self) -> PtI {
+        PtI::new(self.l(), self.b())
+    }
+
+    pub const fn br(&self) -> PtI {
         PtI::new(self.r(), self.b())
     }
 
-    pub fn tl(&self) -> PtI {
-        PtI::new(self.x, self.y)
+    pub const fn tl(&self) -> PtI {
+        PtI::new(self.l(), self.t())
     }
 
-    pub fn tr(&self) -> PtI {
-        PtI::new(self.r(), self.y)
-    }
-
-    pub fn center(&self) -> PtI {
-        PtI::new(self.x + self.w / 2, self.y + self.h / 2)
-    }
-
-    pub fn area(&self) -> i64 {
-        self.w * self.h
-    }
-
-    pub fn contains(&self, p: PtI) -> bool {
-        p.x >= self.x && p.y >= self.y && p.x <= self.r() && p.y <= self.b()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.w == 0 && self.h == 0
+    pub const fn tr(&self) -> PtI {
+        PtI::new(self.r(), self.t())
     }
 
     pub fn enclosing(pa: PtI, pb: PtI) -> RtI {
         let x = pa.x.min(pb.x);
         let y = pa.y.min(pb.y);
         let r = pa.x.max(pb.x);
-        let b = pa.y.max(pb.y);
-        RtI::new(x, y, r - x, b - y)
+        let t = pa.y.max(pb.y);
+        RtI::new(x, y, r - x, t - y)
     }
 }
 

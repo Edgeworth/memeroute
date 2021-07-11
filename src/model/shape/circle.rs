@@ -9,7 +9,7 @@ pub struct Circle {
 }
 
 impl Circle {
-    pub fn new(r: f64, p: Pt) -> Self {
+    pub fn new(p: Pt, r: f64) -> Self {
         Self { parry: Capsule { segment: Segment { a: p.into(), b: p.into() }, radius: r } }
     }
 

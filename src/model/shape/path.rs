@@ -1,6 +1,7 @@
 use parry2d_f64::shape::{Capsule, Compound, Segment, SharedShape};
 
 use crate::model::pt::Pt;
+use crate::model::shape::identity;
 use crate::model::shape::rt::Rt;
 
 #[derive(Clone)]
@@ -21,7 +22,7 @@ impl Path {
         let mut v = Vec::new();
         for [a, b] in pts.array_windows::<2>() {
             v.push((
-                Isometry::rotation(0.0), // Construct an empty isometry.
+                identity(),
                 SharedShape::new(Capsule {
                     segment: Segment { a: a.into(), b: b.into() },
                     radius: width / 2.0,

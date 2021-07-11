@@ -45,23 +45,20 @@ impl Converter {
     }
 
     fn rect(&self, v: &DsnRect) -> Rt {
-        let h = self.coord(v.rect.h());
         Rt::new(
             self.coord(v.rect.l()),
-            -self.coord(v.rect.t()) - h, // Convert to positive y is up axes.
+            self.coord(v.rect.b()),
             self.coord(v.rect.w()),
-            h,
+            self.coord(v.rect.h()),
         )
     }
 
     fn pt(&self, v: Pt) -> Pt {
-        // Convert to positive y is up axes.
-        Pt { x: self.coord(v.x), y: -self.coord(v.y) }
+        Pt { x: self.coord(v.x), y: self.coord(v.y) }
     }
 
     fn rot(&self, r: f64) -> f64 {
-        // Since coords are flipped need to invert rotations.
-        -r
+        r
     }
 
     fn shape(&self, v: &DsnShape) -> Shape {
@@ -71,7 +68,7 @@ impl Converter {
             }
             DsnShape::Circle(v) => Shape {
                 layer: v.layer_id.clone(),
-                shape: ShapeType::Circle(Circle::new(self.coord(v.diameter / 2.0), self.pt(v.p))),
+                shape: ShapeType::Circle(Circle::new(self.pt(v.p), self.coord(v.diameter / 2.0))),
             },
             DsnShape::Polygon(v) => {
                 let mut pts: Vec<Pt> = v.pts.iter().map(|&v| self.pt(v)).collect();
