@@ -202,7 +202,9 @@ impl Converter {
             self.pcb.add_layer(Layer::new(&v.layer_name));
         }
         for v in self.dsn.structure.boundaries.iter() {
-            self.pcb.add_boundary(self.shape(v));
+            // Convert boundaries to closed shapes.
+            let Shape { layer, shape } = self.shape(v);
+            self.pcb.add_boundary(Shape { layer, shape: shape.filled() });
         }
         for v in self.dsn.structure.keepouts.iter() {
             self.pcb.add_keepout(self.keepout(v));

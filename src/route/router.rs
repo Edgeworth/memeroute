@@ -34,7 +34,7 @@ impl Router {
 
     pub fn route(&mut self) -> Result<RouteResult> {
         let net_order = self.pcb.nets().map(|v| v.id.clone()).collect();
-        let mut grid = GridRouter::new(self.pcb.clone(), net_order)?;
+        let mut grid = GridRouter::new(self.pcb.clone(), net_order);
         grid.route()
     }
 }

@@ -2,8 +2,10 @@ use std::collections::hash_map::Values;
 use std::collections::HashMap;
 
 use eyre::{eyre, Result};
+use parry2d_f64::query::intersection_test;
 
 use crate::model::pt::Pt;
+use crate::model::shape::identity;
 use crate::model::shape::rt::Rt;
 use crate::model::shape::shape_type::ShapeType;
 use crate::model::tf::Tf;
@@ -257,5 +259,16 @@ impl Pcb {
             b = b.united(&boundary.shape.bounds());
         }
         b
+    }
+
+    // Tests if the given rect is within the boundaries of the PCB.
+    pub fn rt_in_boundary(&self, r: &Rt) -> bool {
+        let r = ShapeType::Rect(r.clone());
+        for boundary in self.boundaries() {
+            if !boundary.shape.intersects(&r) {
+                return false;
+            }
+        }
+        true
     }
 }

@@ -1,5 +1,6 @@
 use std::f64::consts::TAU;
 
+use eframe::egui::epaint::{Mesh, Vertex};
 use eframe::egui::{epaint, Color32};
 use memeroute::model::pt::Pt;
 use memeroute::model::shape::rt::Rt;
@@ -11,7 +12,7 @@ const NUM_POINTS: usize = 16;
 const EP: f64 = 1.0e-5;
 
 pub fn fill_rect(tf: &Tf, rt: &Rt, col: Color32) -> epaint::Shape {
-    fill_polygon(tf, &[rt.tl(), rt.tr(), rt.br(), rt.bl()], col)
+    fill_polygon(tf, &[rt.tl(), rt.bl(), rt.br(), rt.tr()], &[0, 1, 2, 0, 2, 3], col)
 }
 
 pub fn fill_circle(tf: &Tf, pt: Pt, r: f64, col: Color32) -> epaint::Shape {
@@ -25,12 +26,16 @@ pub fn fill_circle(tf: &Tf, pt: Pt, r: f64, col: Color32) -> epaint::Shape {
     epaint::Shape::Path { points: vert, closed: true, fill: col, stroke: Default::default() }
 }
 
-pub fn fill_polygon(tf: &Tf, pts: &[Pt], col: Color32) -> epaint::Shape {
-    let mut vert = Vec::new();
-    for &pt in pts {
-        vert.push(to_pos2(tf.pt(pt)));
-    }
-    epaint::Shape::Path { points: vert, closed: true, fill: col, stroke: Default::default() }
+pub fn fill_polygon(tf: &Tf, pts: &[Pt], tris: &[u32], col: Color32) -> epaint::Shape {
+    let vert = pts
+        .iter()
+        .map(|&v| Vertex { pos: to_pos2(tf.pt(v)), uv: Default::default(), color: col })
+        .collect();
+    epaint::Shape::Mesh(Mesh {
+        indices: tris.to_owned(),
+        vertices: vert,
+        texture_id: Default::default(),
+    })
 }
 
 pub fn stroke_polygon(tf: &Tf, pts: &[Pt], width: f64, col: Color32) -> Vec<epaint::Shape> {
@@ -50,7 +55,7 @@ pub fn stroke_path(tf: &Tf, pts: &[Pt], width: f64, col: Color32) -> Vec<epaint:
         if p0.dist(p1) > EP {
             let perp = (p1 - p0).perp();
             let vert = [p0 - width * perp, p0 + width * perp, p1 + width * perp, p1 - width * perp];
-            shapes.push(fill_polygon(tf, &vert, col));
+            shapes.push(fill_polygon(tf, &vert, &[0, 1, 2, 0, 2, 3], col));
         }
     }
     if let Some(last) = pts.last() {

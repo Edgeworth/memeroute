@@ -28,7 +28,7 @@ pub struct MemerouteGui {
 
 impl MemerouteGui {
     pub fn new(pcb: Pcb) -> Self {
-        let pcb_view = PcbView::new(pcb.clone(), Rt::new(-100.0, -100.0, 100.0, 100.0));
+        let pcb_view = PcbView::new(pcb.clone(), pcb.bounds());
         Self { s: Default::default(), pcb, pcb_view }
     }
 }

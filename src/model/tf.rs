@@ -40,8 +40,9 @@ impl Tf {
     pub fn affine(from: &Rt, to: &Rt) -> Self {
         let xscale = to.w() / from.w();
         let yscale = to.h() / from.h();
-        let offset = to.tl() - from.tl();
-        Self::translate(offset) * Self::scale(Pt::new(xscale, yscale))
+        let scale = Self::scale(Pt::new(xscale, yscale));
+        let offset = to.bl() - scale.pt(from.bl());
+        Self::translate(offset) * scale
     }
 
     pub fn inv(&self) -> Tf {
@@ -56,8 +57,8 @@ impl Tf {
     // If there's a rotation, output will be a polygon not a Rt.
     pub fn rt(&self, r: &Rt) -> ShapeType {
         if relative_eq!(self.m[(1, 0)], 0.0) && relative_eq!(self.m[(0, 1)], 0.0) {
-            let a = self.pt(r.tl());
-            let b = self.pt(r.br());
+            let a = self.pt(r.bl());
+            let b = self.pt(r.tr());
             ShapeType::Rect(Rt::enclosing(a, b))
         } else {
             let poly = Polygon::new(vec![r.tl(), r.bl(), r.br(), r.tr()], 0.0);
@@ -74,22 +75,24 @@ impl Tf {
         assert_relative_eq!(self.m[(0, 1)], -self.m[(1, 0)]);
     }
 
+    fn length(&self, l: f64) -> f64 {
+        let scale = (self.m[(0, 0)] + self.m[(0, 1)]).powi(2);
+        l * scale.sqrt()
+    }
+
     pub fn circle(&self, c: &Circle) -> Circle {
         self.check_similarity();
-        Circle::new(self.pt(c.p()), c.r() * self.m[(0, 0)].abs())
+        Circle::new(self.pt(c.p()), self.length(c.r()))
     }
 
     pub fn polygon(&self, p: &Polygon) -> Polygon {
         self.check_similarity();
-        Polygon::new(
-            p.pts().iter().map(|&v| self.pt(v)).collect(),
-            p.width() * self.m[(0, 0)].abs(),
-        )
+        Polygon::new(p.pts().iter().map(|&v| self.pt(v)).collect(), self.length(p.width()))
     }
 
     pub fn path(&self, p: &Path) -> Path {
         self.check_similarity();
-        Path::new(p.pts().iter().map(|&v| self.pt(v)).collect(), p.width() * self.m[(0, 0)].abs())
+        Path::new(p.pts().iter().map(|&v| self.pt(v)).collect(), self.length(p.width()))
     }
 
     pub fn shape(&self, s: &ShapeType) -> ShapeType {
