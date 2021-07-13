@@ -2,10 +2,8 @@ use std::collections::hash_map::Values;
 use std::collections::HashMap;
 
 use eyre::{eyre, Result};
-use parry2d_f64::query::intersection_test;
 
 use crate::model::pt::Pt;
-use crate::model::shape::identity;
 use crate::model::shape::rt::Rt;
 use crate::model::shape::shape_type::ShapeType;
 use crate::model::tf::Tf;

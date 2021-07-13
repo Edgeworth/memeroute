@@ -182,7 +182,7 @@ impl PcbView {
                 let shapes = self.draw_shape(&tf, &wire.shape, *WIRE);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
-            for via in self.pcb.vias() {
+            for _via in self.pcb.vias() {
                 // TODO: Draw vias.
             }
             self.mesh = mesh;

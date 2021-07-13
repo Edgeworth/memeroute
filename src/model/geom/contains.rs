@@ -1,38 +1,37 @@
-use crate::model::pt::Pt;
 use crate::model::shape::circle::Circle;
 use crate::model::shape::path::Path;
 use crate::model::shape::polygon::Polygon;
 use crate::model::shape::rt::Rt;
 
-pub fn rect_contains_rect(a: &Rt, b: &Rt) -> bool {
+pub fn rect_contains_rect(_a: &Rt, _b: &Rt) -> bool {
     todo!()
 }
 
-pub fn rect_contains_circle(a: &Rt, b: &Circle) -> bool {
+pub fn rect_contains_circle(_a: &Rt, _b: &Circle) -> bool {
     todo!()
 }
 
-pub fn rect_contains_polygon(a: &Rt, b: &Polygon) -> bool {
+pub fn rect_contains_polygon(_a: &Rt, _b: &Polygon) -> bool {
     todo!()
 }
 
-pub fn rect_contains_path(a: &Rt, b: &Path) -> bool {
+pub fn rect_contains_path(_a: &Rt, _b: &Path) -> bool {
     todo!()
 }
 
-pub fn circle_contains_rect(a: &Circle, b: &Rt) -> bool {
+pub fn circle_contains_rect(_a: &Circle, _b: &Rt) -> bool {
     todo!()
 }
 
-pub fn circle_contains_circle(a: &Circle, b: &Circle) -> bool {
+pub fn circle_contains_circle(_a: &Circle, _b: &Circle) -> bool {
     todo!()
 }
 
-pub fn circle_contains_polygon(a: &Circle, b: &Polygon) -> bool {
+pub fn circle_contains_polygon(_a: &Circle, _b: &Polygon) -> bool {
     todo!()
 }
 
-pub fn circle_contains_path(a: &Circle, b: &Path) -> bool {
+pub fn circle_contains_path(_a: &Circle, _b: &Path) -> bool {
     todo!()
 }
 
@@ -44,30 +43,30 @@ pub fn polygon_contains_rect(a: &Polygon, b: &Rt) -> bool {
         && a.contains_local_point(&b.tr().into())
 }
 
-pub fn polygon_contains_circle(a: &Polygon, b: &Circle) -> bool {
+pub fn polygon_contains_circle(_a: &Polygon, _b: &Circle) -> bool {
     todo!()
 }
 
-pub fn polygon_contains_polygon(a: &Polygon, b: &Polygon) -> bool {
+pub fn polygon_contains_polygon(_a: &Polygon, _b: &Polygon) -> bool {
     todo!()
 }
 
-pub fn polygon_contains_path(a: &Polygon, b: &Path) -> bool {
+pub fn polygon_contains_path(_a: &Polygon, _b: &Path) -> bool {
     todo!()
 }
 
-pub fn path_contains_rect(a: &Path, b: &Rt) -> bool {
+pub fn path_contains_rect(_a: &Path, _b: &Rt) -> bool {
     todo!()
 }
 
-pub fn path_contains_circle(a: &Path, b: &Circle) -> bool {
+pub fn path_contains_circle(_a: &Path, _b: &Circle) -> bool {
     todo!()
 }
 
-pub fn path_contains_polygon(a: &Path, b: &Polygon) -> bool {
+pub fn path_contains_polygon(_a: &Path, _b: &Polygon) -> bool {
     todo!()
 }
 
-pub fn path_contains_path(a: &Path, b: &Path) -> bool {
+pub fn path_contains_path(_a: &Path, _b: &Path) -> bool {
     todo!()
 }
