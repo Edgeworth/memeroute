@@ -1,7 +1,6 @@
 use eframe::egui::Widget;
 use eframe::{egui, epi};
 use memeroute::model::pcb::Pcb;
-use memeroute::model::shape::rt::Rt;
 use memeroute::route::router::Router;
 use serde::{Deserialize, Serialize};
 

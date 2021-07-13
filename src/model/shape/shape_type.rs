@@ -1,4 +1,3 @@
-use eyre::Result;
 use parry2d_f64::query::intersection_test;
 
 use crate::model::geom::contains::{
