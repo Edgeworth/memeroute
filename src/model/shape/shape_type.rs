@@ -1,6 +1,13 @@
 use eyre::Result;
 use parry2d_f64::query::intersection_test;
 
+use crate::model::geom::contains::{
+    circle_contains_circle, circle_contains_path, circle_contains_polygon, circle_contains_rect,
+    path_contains_circle, path_contains_path, path_contains_polygon, path_contains_rect,
+    polygon_contains_circle, polygon_contains_path, polygon_contains_polygon,
+    polygon_contains_rect, rect_contains_circle, rect_contains_path, rect_contains_polygon,
+    rect_contains_rect,
+};
 use crate::model::shape::arc::Arc;
 use crate::model::shape::circle::Circle;
 use crate::model::shape::identity;
@@ -34,26 +41,26 @@ impl ShapeType {
 
     pub fn contains(&self, s: &ShapeType) -> bool {
         match (self, s) {
-            (ShapeType::Rect(a), ShapeType::Rect(b)) => todo!(),
-            (ShapeType::Rect(a), ShapeType::Circle(b)) => todo!(),
-            (ShapeType::Rect(a), ShapeType::Polygon(b)) => todo!(),
-            (ShapeType::Rect(a), ShapeType::Path(b)) => todo!(),
-            (ShapeType::Rect(a), ShapeType::Arc(b)) => todo!(),
-            (ShapeType::Circle(a), ShapeType::Rect(b)) => todo!(),
-            (ShapeType::Circle(a), ShapeType::Circle(b)) => todo!(),
-            (ShapeType::Circle(a), ShapeType::Polygon(b)) => todo!(),
-            (ShapeType::Circle(a), ShapeType::Path(b)) => todo!(),
-            (ShapeType::Circle(a), ShapeType::Arc(b)) => todo!(),
-            (ShapeType::Polygon(a), ShapeType::Rect(b)) => todo!(),
-            (ShapeType::Polygon(a), ShapeType::Circle(b)) => todo!(),
-            (ShapeType::Polygon(a), ShapeType::Polygon(b)) => todo!(),
-            (ShapeType::Polygon(a), ShapeType::Path(b)) => todo!(),
-            (ShapeType::Polygon(a), ShapeType::Arc(b)) => todo!(),
-            (ShapeType::Path(a), ShapeType::Rect(b)) => todo!(),
-            (ShapeType::Path(a), ShapeType::Circle(b)) => todo!(),
-            (ShapeType::Path(a), ShapeType::Polygon(b)) => todo!(),
-            (ShapeType::Path(a), ShapeType::Path(b)) => todo!(),
-            (ShapeType::Path(a), ShapeType::Arc(b)) => todo!(),
+            (ShapeType::Rect(a), ShapeType::Rect(b)) => rect_contains_rect(a, b),
+            (ShapeType::Rect(a), ShapeType::Circle(b)) => rect_contains_circle(a, b),
+            (ShapeType::Rect(a), ShapeType::Polygon(b)) => rect_contains_polygon(a, b),
+            (ShapeType::Rect(a), ShapeType::Path(b)) => rect_contains_path(a, b),
+            (ShapeType::Rect(_), ShapeType::Arc(_)) => todo!(),
+            (ShapeType::Circle(a), ShapeType::Rect(b)) => circle_contains_rect(a, b),
+            (ShapeType::Circle(a), ShapeType::Circle(b)) => circle_contains_circle(a, b),
+            (ShapeType::Circle(a), ShapeType::Polygon(b)) => circle_contains_polygon(a, b),
+            (ShapeType::Circle(a), ShapeType::Path(b)) => circle_contains_path(a, b),
+            (ShapeType::Circle(_), ShapeType::Arc(_)) => todo!(),
+            (ShapeType::Polygon(a), ShapeType::Rect(b)) => polygon_contains_rect(a, b),
+            (ShapeType::Polygon(a), ShapeType::Circle(b)) => polygon_contains_circle(a, b),
+            (ShapeType::Polygon(a), ShapeType::Polygon(b)) => polygon_contains_polygon(a, b),
+            (ShapeType::Polygon(a), ShapeType::Path(b)) => polygon_contains_path(a, b),
+            (ShapeType::Polygon(_), ShapeType::Arc(_)) => todo!(),
+            (ShapeType::Path(a), ShapeType::Rect(b)) => path_contains_rect(a, b),
+            (ShapeType::Path(a), ShapeType::Circle(b)) => path_contains_circle(a, b),
+            (ShapeType::Path(a), ShapeType::Polygon(b)) => path_contains_polygon(a, b),
+            (ShapeType::Path(a), ShapeType::Path(b)) => path_contains_path(a, b),
+            (ShapeType::Path(_), ShapeType::Arc(_)) => todo!(),
             (ShapeType::Arc(_), _) => todo!(),
         }
     }

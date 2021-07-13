@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 
-use crate::model::pcb::{Id, Padstack, Pcb, Pin, PinRef, Shape, Side, Wire, ANY_LAYER};
+use crate::model::pcb::{Id, Net, Padstack, Pcb, Pin, PinRef, Shape, Side, Wire, ANY_LAYER};
 use crate::model::pt::{Pt, PtI};
 use crate::model::shape::circle::Circle;
 use crate::model::shape::rt::{Rt, RtI};
@@ -28,28 +28,17 @@ struct State {
 }
 
 #[derive(Debug, Clone)]
-pub struct GridRouter {
+struct GridModel {
     pcb: Pcb,
-    net_order: Vec<Id>,
     resolution: f64, // Resolution in mm.
-    blocked: HashMap<State, i64>,
-    wire_test: Vec<Wire>,
 }
 
-impl GridRouter {
-    pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
-        let mut s = Self {
-            pcb,
-            net_order,
-            resolution: 0.8,
-            blocked: HashMap::new(),
-            wire_test: Vec::new(),
-        };
-        s.mark_blocked();
-        s
+impl GridModel {
+    pub fn new(pcb: Pcb) -> Self {
+        Self { pcb, resolution: 0.5 }
     }
 
-    fn mark_shape(&self, blocked: &mut HashMap<State, i64>, count: i64, tf: &Tf, s: &Shape) {
+    fn mark_shape(&self, blk: &mut BlockMap, count: i64, tf: &Tf, s: &Shape) {
         let shape = tf.shape(&s.shape);
         let bounds = self.grid_rt(&shape.bounds());
 
@@ -58,76 +47,69 @@ impl GridRouter {
                 let p = PtI::new(l, b);
                 let r = self.grid_square_in_world(p);
                 if shape.intersects(&ShapeType::Rect(r)) {
-                    *blocked.entry(State { p, layer: s.layer.clone() }).or_insert(0) += count;
+                    *blk.entry(State { p, layer: s.layer.clone() }).or_insert(0) += count;
                 }
             }
         }
     }
 
-    fn mark_padstack(
-        &self,
-        blocked: &mut HashMap<State, i64>,
-        count: i64,
-        tf: &Tf,
-        padstack: &Padstack,
-    ) {
+    fn mark_padstack(&self, blk: &mut BlockMap, count: i64, tf: &Tf, padstack: &Padstack) {
         for shape in padstack.shapes.iter() {
-            self.mark_shape(blocked, count, tf, shape);
+            self.mark_shape(blk, count, tf, shape);
         }
     }
 
-    fn mark_pin(&self, blocked: &mut HashMap<State, i64>, count: i64, tf: &Tf, pin: &Pin) {
-        self.mark_padstack(blocked, count, &(tf * pin.tf()), &pin.padstack);
+    fn mark_pin(&self, blk: &mut BlockMap, count: i64, tf: &Tf, pin: &Pin) {
+        self.mark_padstack(blk, count, &(tf * pin.tf()), &pin.padstack);
     }
 
-    fn mark_blocked(&mut self) {
-        let mut blocked = HashMap::new();
+    // Marks all pins in the given net.
+    fn mark_net(&self, blk: &mut BlockMap, count: i64, net: &Net) -> Result<()> {
+        for p in net.pins.iter() {
+            let (component, pin) = self.pcb.pin_ref(p)?;
+            self.mark_pin(blk, count, &component.tf(), pin);
+        }
+        Ok(())
+    }
+
+    fn mark_blocked(&self, blk: &mut BlockMap) {
         for keepout in self.pcb.keepouts() {
             // TODO: Handle only via vs only wire keepout.
-            self.mark_shape(&mut blocked, 1, &Tf::identity(), &keepout.shape);
+            self.mark_shape(blk, 1, &Tf::identity(), &keepout.shape);
         }
 
-        let mut wires = Vec::new();
         for c in self.pcb.components() {
             let tf = c.tf();
             for pin in c.pins() {
-                self.mark_pin(&mut blocked, 1, &tf, pin);
+                self.mark_pin(blk, 1, &tf, pin);
             }
             for keepout in c.keepouts.iter() {
                 // TODO: Handle only via vs only wire keepout.
-                self.mark_shape(&mut blocked, 1, &tf, &keepout.shape);
+                self.mark_shape(blk, 1, &tf, &keepout.shape);
             }
         }
-        self.blocked = blocked;
-        self.wire_test = wires;
     }
 
     // Checks if the state |s| is routable (inside boundary, outside of
     // keepouts, etc).
-    fn is_blocked(&self, s: &State) -> Result<bool> {
+    fn is_blocked(&self, blk: &BlockMap, s: &State) -> Result<bool> {
         // TODO: Check which layer the boundary is for.
         let r = self.grid_square_in_world(s.p);
-        if !self.pcb.rt_in_boundary(&r) {
+        if !self.pcb.boundary_contains_rt(&r) {
             return Ok(true);
         }
 
-        if *self.blocked.get(s).unwrap_or(&0) > 0 {
+        if *blk.get(s).unwrap_or(&0) > 0 {
             return Ok(true);
         }
 
-        if *self.blocked.get(&State { p: s.p, layer: ANY_LAYER.to_owned() }).unwrap_or(&0) > 0 {
+        if *blk.get(&State { p: s.p, layer: ANY_LAYER.to_owned() }).unwrap_or(&0) > 0 {
             return Ok(true);
         }
 
         Ok(false)
     }
 
-    // Connect the given states together and return a route result doing that.
-    fn connect(&mut self, _states: Vec<State>) -> Result<RouteResult> {
-        let res = RouteResult::default();
-        // dijkstra(graph, start, goal, edge_cost)
-        Ok(res)
-    }
 
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
@@ -164,27 +146,57 @@ impl GridRouter {
     }
 }
 
+type BlockMap = HashMap<State, i64>;
+
+#[derive(Debug, Clone)]
+pub struct GridRouter {
+    model: GridModel,
+    net_order: Vec<Id>,
+    blk: BlockMap,
+}
+
+impl GridRouter {
+    pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
+        let mut s = Self { model: GridModel::new(pcb), net_order, blk: BlockMap::new() };
+        s.model.mark_blocked(&mut s.blk);
+        s
+    }
+
+    // Connect the given states together and return a route result doing that.
+    fn connect(&self, _states: Vec<State>) -> Result<RouteResult> {
+        let res = RouteResult::default();
+        // dijkstra(graph, start, goal, edge_cost)
+        Ok(res)
+    }
+}
+
 impl RouteStrategy for GridRouter {
     fn route(&mut self) -> Result<RouteResult> {
         let mut res = RouteResult::default();
         for net_id in self.net_order.clone().into_iter() {
-            let net = self.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?;
-            let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
+            let net = self.model.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?;
+            let states =
+                net.pins.iter().map(|p| self.model.pin_ref_state(p)).collect::<Result<_>>()?;
+
+            self.model.mark_net(&mut self.blk, -1, net)?; // Temporarily remove pins as blocking.
             res.merge(self.connect(states)?);
+            self.model.mark_net(&mut self.blk, 1, net)?; // Add them back.
         }
-        let bounds = self.grid_rt(&self.pcb.bounds());
+
+        let bounds = self.model.grid_rt(&self.model.pcb.bounds());
         for l in bounds.l()..bounds.r() {
             for b in bounds.b()..bounds.t() {
                 let p = PtI::new(l, b);
-                if self.is_blocked(&State { p, layer: "F.Cu".to_owned() })? {
+                if self.model.is_blocked(&self.blk, &State { p, layer: "F.Cu".to_owned() })? {
                     continue;
                 }
-                let shape =
-                    ShapeType::Circle(Circle::new(self.world_pt_mid(p), self.resolution / 2.0));
+                let shape = ShapeType::Circle(Circle::new(
+                    self.model.world_pt_mid(p),
+                    self.model.resolution / 2.0,
+                ));
                 res.wires.push(Wire { shape: Shape { layer: "F.Cu".to_owned(), shape } })
             }
         }
-        res.wires.extend(self.wire_test.clone());
         Ok(res)
     }
 }
