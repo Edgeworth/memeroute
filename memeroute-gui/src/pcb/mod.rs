@@ -14,9 +14,10 @@ pub fn to_pt(p: Pos2) -> Pt {
 }
 
 pub fn to_rect(r: &Rt) -> Rect {
-    Rect::from_two_pos(to_pos2(r.tl()), to_pos2(r.br()))
+    Rect::from_two_pos(to_pos2(r.bl()), to_pos2(r.tr()))
 }
 
 pub fn to_rt(r: Rect) -> Rt {
+    // Using r.top() is correct here because our Rt's are flipped compared to Rects.
     Rt::new(r.left() as f64, r.top() as f64, r.width() as f64, r.height() as f64)
 }

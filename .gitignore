@@ -2,7 +2,7 @@
 /.cargo
 *.dsn
 *.ses
-specctra.pdf
+/pdfs
 /data
 *.cpp
 *.h

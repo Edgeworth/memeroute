@@ -11,6 +11,7 @@ members = ["memeroute-gui"]
 approx = "*"
 auto_ops = "*"
 derive_more = "*"
+earcutr = "*"
 eyre = "*"
 nalgebra = "*"
 parry2d-f64 = "*"

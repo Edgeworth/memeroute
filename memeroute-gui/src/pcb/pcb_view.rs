@@ -97,7 +97,7 @@ impl PcbView {
             ShapeType::Rect(s) => shapes.push(fill_rect(tf, s, col)),
             ShapeType::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
             ShapeType::Polygon(s) => {
-                shapes.push(fill_polygon(tf, s.pts(), col));
+                shapes.push(fill_polygon(tf, s.pts(), s.tris(), col));
                 shapes.extend(stroke_polygon(tf, s.pts(), s.width(), col));
             }
             ShapeType::Path(s) => {
@@ -189,10 +189,17 @@ impl PcbView {
         }
         let mut mesh = self.mesh.clone();
         if self.dirty {
+            let inv = Tf::scale(Pt::new(1.0, -1.0)); // Invert y axis
+            let local_area = Rt::new(
+                self.local_area.l(),
+                -self.local_area.t(),
+                self.local_area.w(),
+                self.local_area.h(),
+            );
             let tf = Tf::translate(self.offset)
                 * Tf::scale(Pt::new(self.zoom, self.zoom))
-                * Tf::affine(&self.local_area, &self.screen_area)
-                * Tf::scale(Pt::new(1.0, -1.0)); // Invert y axis
+                * Tf::affine(&local_area, &self.screen_area)
+                * inv;
             for vert in mesh.vertices.iter_mut() {
                 vert.pos = to_pos2(tf.pt(to_pt(vert.pos)));
             }
