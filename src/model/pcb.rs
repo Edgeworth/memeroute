@@ -262,13 +262,13 @@ impl Pcb {
     }
 
     // Tests if the given rect is within the boundaries of the PCB.
-    pub fn rt_in_boundary(&self, r: &Rt) -> bool {
+    pub fn boundary_contains_rt(&self, r: &Rt) -> bool {
         let r = ShapeType::Rect(r.clone());
         for boundary in self.boundaries() {
-            if !boundary.shape.intersects(&r) {
-                return false;
+            if boundary.shape.contains(&r) {
+                return true;
             }
         }
-        true
+        false
     }
 }

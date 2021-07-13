@@ -1,8 +1,8 @@
 use approx::assert_relative_eq;
-use earcutr::{deviation, earcut};
+use earcutr::earcut;
 use parry2d_f64::shape::{ConvexPolygon, RoundShape, TriMesh};
 
-use crate::model::geom::{ensure_ccw, is_convex_ccw};
+use crate::model::geom::convex::{ensure_ccw, is_convex_ccw};
 use crate::model::pt::Pt;
 use crate::model::shape::rt::Rt;
 

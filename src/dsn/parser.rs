@@ -193,10 +193,7 @@ impl Parser {
         let v = DsnWiring::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Wiring)?;
-        while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            return Err(eyre!("unrecognised token '{}'", t));
-        }
+        // TODO: Finish.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -205,10 +202,7 @@ impl Parser {
         let v = DsnVia::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Via)?;
-        while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            return Err(eyre!("unrecognised token '{}'", t));
-        }
+        // TODO: Finish.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -217,10 +211,7 @@ impl Parser {
         let v = DsnWire::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Wire)?;
-        while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            return Err(eyre!("unrecognised token '{}'", t));
-        }
+        // TODO: Finish.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -257,10 +248,7 @@ impl Parser {
         let v = DsnPlane::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Plane)?;
-        while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            return Err(eyre!("unrecognised token '{}'", t));
-        }
+        // TODO: Finish.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -435,10 +423,7 @@ impl Parser {
         let v = DsnWindow::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Window)?;
-        while self.peek(0)?.tok != Tok::Rparen {
-            let t = self.peek(1)?;
-            return Err(eyre!("unrecognised token '{}'", t));
-        }
+        // TODO: Finish.
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
