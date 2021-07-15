@@ -1,5 +1,6 @@
 use parry2d_f64::shape::{Capsule, Compound, Segment, SharedShape};
 
+use crate::model::geom::convex::remove_collinear;
 use crate::model::pt::Pt;
 use crate::model::shape::identity;
 use crate::model::shape::rt::Rt;
@@ -18,7 +19,8 @@ impl std::fmt::Debug for Path {
 }
 
 impl Path {
-    pub fn new(pts: Vec<Pt>, width: f64) -> Self {
+    pub fn new(pts: &[Pt], width: f64) -> Self {
+        let pts = remove_collinear(&pts);
         let mut v = Vec::new();
         for [a, b] in pts.array_windows::<2>() {
             v.push((

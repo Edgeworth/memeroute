@@ -61,7 +61,7 @@ impl Tf {
             let b = self.pt(r.tr());
             ShapeType::Rect(Rt::enclosing(a, b))
         } else {
-            let poly = Polygon::new(vec![r.tl(), r.bl(), r.br(), r.tr()], 0.0);
+            let poly = Polygon::new(&[r.tl(), r.bl(), r.br(), r.tr()], 0.0);
             ShapeType::Polygon(self.polygon(&poly))
         }
     }
@@ -75,24 +75,23 @@ impl Tf {
         assert_relative_eq!(self.m[(0, 1)], -self.m[(1, 0)]);
     }
 
-    fn length(&self, l: f64) -> f64 {
-        let scale = (self.m[(0, 0)] + self.m[(0, 1)]).powi(2);
-        l * scale.sqrt()
+    pub fn length(&self, l: f64) -> f64 {
+        self.check_similarity();
+        l * Pt::new(self.m[(0, 0)], self.m[(1, 0)]).mag()
     }
 
     pub fn circle(&self, c: &Circle) -> Circle {
-        self.check_similarity();
         Circle::new(self.pt(c.p()), self.length(c.r()))
     }
 
     pub fn polygon(&self, p: &Polygon) -> Polygon {
-        self.check_similarity();
-        Polygon::new(p.pts().iter().map(|&v| self.pt(v)).collect(), self.length(p.width()))
+        let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
+        Polygon::new(&pts, self.length(p.width()))
     }
 
     pub fn path(&self, p: &Path) -> Path {
-        self.check_similarity();
-        Path::new(p.pts().iter().map(|&v| self.pt(v)).collect(), self.length(p.width()))
+        let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
+        Path::new(&pts, self.length(p.width()))
     }
 
     pub fn shape(&self, s: &ShapeType) -> ShapeType {

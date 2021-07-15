@@ -2,7 +2,7 @@ use approx::assert_relative_eq;
 use earcutr::earcut;
 use parry2d_f64::shape::{ConvexPolygon, RoundShape, TriMesh};
 
-use crate::model::geom::convex::{ensure_ccw, is_convex_ccw};
+use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
 use crate::model::pt::Pt;
 use crate::model::shape::rt::Rt;
 
@@ -27,7 +27,8 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn new(mut pts: Vec<Pt>, width: f64) -> Self {
+    pub fn new(pts: &[Pt], width: f64) -> Self {
+        let mut pts = remove_collinear(&pts);
         ensure_ccw(&mut pts);
         let verts: Vec<f64> = pts.iter().map(|v| [v.x, v.y]).flatten().collect();
         let tris: Vec<_> = earcut(&verts, &vec![], 2).iter().map(|&v| v as u32).collect();

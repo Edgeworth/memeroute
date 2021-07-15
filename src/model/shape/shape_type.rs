@@ -66,7 +66,7 @@ impl ShapeType {
 
     pub fn filled(self) -> ShapeType {
         match self {
-            ShapeType::Path(s) => ShapeType::Polygon(Polygon::new(s.pts().to_owned(), s.width())),
+            ShapeType::Path(s) => ShapeType::Polygon(Polygon::new(s.pts(), s.width())),
             ShapeType::Arc(_) => todo!(),
             s => s,
         }
