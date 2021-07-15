@@ -23,3 +23,7 @@ pub fn is_strictly_left_of(p: Pt, st: Pt, en: Pt) -> bool {
 pub fn is_left_of(p: Pt, st: Pt, en: Pt) -> bool {
     relative_ge(cross_at(st, en, p), 0.0)
 }
+
+pub fn is_collinear(a: Pt, b: Pt, c: Pt) -> bool {
+    relative_eq!(cross_at(a, b, c), 0.0)
+}

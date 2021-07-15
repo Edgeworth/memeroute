@@ -1131,8 +1131,10 @@ dependencies = [
  "earcutr",
  "eyre",
  "nalgebra",
+ "ordered-float",
  "parry2d-f64",
  "petgraph",
+ "priority-queue",
  "regex",
  "serde",
  "strum",
@@ -1637,6 +1639,16 @@ checksum = "926d36b9553851b8b0005f1275891b392ee4d2d833852c417ed025477350fb9d"
 dependencies = [
  "env_logger",
  "log",
+]
+
+[[package]]
+name = "priority-queue"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e1340009a04e81f656a4e45e295f0b1191c81de424bf940c865e33577a8e223"
+dependencies = [
+ "autocfg",
+ "indexmap",
 ]
 
 [[package]]

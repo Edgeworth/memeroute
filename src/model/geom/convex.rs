@@ -1,8 +1,22 @@
-use crate::model::geom::math::{is_left_of, is_strictly_left_of};
+use crate::model::geom::math::{is_collinear, is_left_of, is_strictly_left_of};
 use crate::model::pt::Pt;
 
+pub fn remove_collinear(pts: &[Pt]) -> Vec<Pt> {
+    if pts.len() <= 2 {
+        return pts.iter().copied().collect();
+    }
+    let mut out = vec![pts[0], pts[1]];
+    for &p in pts.iter().skip(2) {
+        let l = out.len();
+        if is_collinear(out[l - 2], out[l - 1], p) {
+            out.pop();
+        }
+        out.push(p);
+    }
+    out
+}
+
 pub fn ensure_ccw(pts: &mut [Pt]) {
-    // TODO: Remove collinear.
     if pts.len() > 2 && !is_left_of(pts[2], pts[0], pts[1]) {
         pts.reverse()
     }

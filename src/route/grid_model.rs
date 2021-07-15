@@ -1,6 +1,6 @@
 use eyre::Result;
 
-use crate::model::pcb::{Id, Net, Padstack, Pcb, Pin, PinRef, Shape, Side, Wire, ANY_LAYER};
+use crate::model::pcb::{Id, Net, Padstack, Pcb, Pin, PinRef, Shape, Side, Via, Wire, ANY_LAYER};
 use crate::model::pt::{Pt, PtI};
 use crate::model::shape::rt::{Rt, RtI};
 use crate::model::shape::shape_type::ShapeType;
@@ -39,6 +39,12 @@ impl GridModel {
         }
     }
 
+    pub fn mark_wire(&self, blk: &mut BlockMap, count: i64, wire: &Wire) {
+        self.mark_shape(blk, count, &Tf::identity(), &wire.shape);
+    }
+
+    pub fn mark_via(&self, blk: &mut BlockMap, count: i64, via: &Via) {}
+
     pub fn mark_pin(&self, blk: &mut BlockMap, count: i64, tf: &Tf, pin: &Pin) {
         self.mark_padstack(blk, count, &(tf * pin.tf()), &pin.padstack);
     }
@@ -53,13 +59,20 @@ impl GridModel {
     }
 
     pub fn mark_blocked(&self, blk: &mut BlockMap) {
+        let tf = Tf::identity();
+        for wire in self.pcb.wires() {
+            self.mark_wire(blk, 1, wire);
+        }
+        for via in self.pcb.vias() {
+            self.mark_via(blk, 1, via);
+        }
         for keepout in self.pcb.keepouts() {
             // TODO: Handle only via vs only wire keepout.
-            self.mark_shape(blk, 1, &Tf::identity(), &keepout.shape);
+            self.mark_shape(blk, 1, &tf, &keepout.shape);
         }
 
         for c in self.pcb.components() {
-            let tf = c.tf();
+            let tf = tf * c.tf();
             for pin in c.pins() {
                 self.mark_pin(blk, 1, &tf, pin);
             }
@@ -72,29 +85,28 @@ impl GridModel {
 
     // Checks if the state |s| is routable (inside boundary, outside of
     // keepouts, etc).
-    pub fn is_blocked(&self, blk: &BlockMap, s: &State) -> Result<bool> {
+    pub fn is_blocked(&self, blk: &BlockMap, s: &State) -> bool {
         // TODO: Check which layer the boundary is for.
         let r = self.grid_square_in_world(s.p);
         if !self.pcb.boundary_contains_rt(&r) {
-            return Ok(true);
+            return true;
         }
 
         if *blk.get(s).unwrap_or(&0) > 0 {
-            return Ok(true);
+            return true;
         }
 
         if *blk.get(&State { p: s.p, layer: ANY_LAYER.to_owned() }).unwrap_or(&0) > 0 {
-            return Ok(true);
+            return true;
         }
 
-        Ok(false)
+        false
     }
-
 
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.
     pub fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
         let (component, pin) = self.pcb.pin_ref(pin_ref)?;
-        let p = self.grid_pt((component.tf() * pin.tf()).pt(pin.p));
+        let p = self.grid_pt((component.tf() * pin.tf()).pt(Pt::zero()));
         // TODO: Using component side for which layer is broken. Need to look at
         // padstack.
         let layer = match component.side {

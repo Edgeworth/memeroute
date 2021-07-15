@@ -78,13 +78,13 @@ impl Converter {
                 }
                 Shape {
                     layer: v.layer_id.clone(),
-                    shape: ShapeType::Polygon(Polygon::new(pts, self.coord(v.aperture_width))),
+                    shape: ShapeType::Polygon(Polygon::new(&pts, self.coord(v.aperture_width))),
                 }
             }
             DsnShape::Path(v) => Shape {
                 layer: v.layer_id.clone(),
                 shape: ShapeType::Path(Path::new(
-                    v.pts.iter().map(|&v| self.pt(v)).collect(),
+                    &v.pts.iter().map(|&v| self.pt(v)).collect::<Vec<_>>(),
                     self.coord(v.aperture_width),
                 )),
             },
