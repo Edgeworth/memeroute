@@ -3,19 +3,19 @@ use crate::model::primitive::path::Path;
 use crate::model::primitive::polygon::Polygon;
 use crate::model::primitive::rt::Rt;
 
-pub fn rect_intersects_rect(_a: &Rt, _b: &Rt) -> bool {
+pub fn rt_intersects_rt(_a: &Rt, _b: &Rt) -> bool {
     todo!()
 }
 
-pub fn rect_intersects_circle(_a: &Rt, _b: &Circle) -> bool {
+pub fn rt_intersects_circle(_a: &Rt, _b: &Circle) -> bool {
     todo!()
 }
 
-pub fn rect_intersects_polygon(_a: &Rt, _b: &Polygon) -> bool {
+pub fn rt_intersects_polygon(_a: &Rt, _b: &Polygon) -> bool {
     todo!()
 }
 
-pub fn rect_intersects_path(_a: &Rt, _b: &Path) -> bool {
+pub fn rt_intersects_path(_a: &Rt, _b: &Path) -> bool {
     todo!()
 }
 

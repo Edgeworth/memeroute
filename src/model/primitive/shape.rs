@@ -1,14 +1,13 @@
 use crate::model::geom::contains::{
-    circle_contains_circle, circle_contains_path, circle_contains_polygon, circle_contains_rect,
-    path_contains_circle, path_contains_path, path_contains_polygon, path_contains_rect,
-    polygon_contains_circle, polygon_contains_path, polygon_contains_polygon,
-    polygon_contains_rect, rect_contains_circle, rect_contains_path, rect_contains_polygon,
-    rect_contains_rect,
+    circle_contains_circle, circle_contains_path, circle_contains_polygon, circle_contains_rt,
+    path_contains_circle, path_contains_path, path_contains_polygon, path_contains_rt,
+    polygon_contains_circle, polygon_contains_path, polygon_contains_polygon, polygon_contains_rt,
+    rt_contains_circle, rt_contains_path, rt_contains_polygon, rt_contains_rt,
 };
 use crate::model::geom::intersects::{
     circle_intersects_circle, circle_intersects_path, circle_intersects_polygon,
     path_intersects_path, polygon_intersects_path, polygon_intersects_polygon,
-    rect_intersects_circle, rect_intersects_path, rect_intersects_polygon, rect_intersects_rect,
+    rt_intersects_circle, rt_intersects_path, rt_intersects_polygon, rt_intersects_rt,
 };
 use crate::model::primitive::arc::Arc;
 use crate::model::primitive::circle::Circle;
@@ -38,19 +37,19 @@ impl Shape {
 
     pub fn intersects(&self, s: &Shape) -> bool {
         match (self, s) {
-            (Shape::Rect(a), Shape::Rect(b)) => rect_intersects_rect(a, b),
-            (Shape::Rect(a), Shape::Circle(b)) => rect_intersects_circle(a, b),
-            (Shape::Rect(a), Shape::Polygon(b)) => rect_intersects_polygon(a, b),
-            (Shape::Rect(a), Shape::Path(b)) => rect_intersects_path(a, b),
-            (Shape::Circle(a), Shape::Rect(b)) => rect_intersects_circle(b, a),
+            (Shape::Rect(a), Shape::Rect(b)) => rt_intersects_rt(a, b),
+            (Shape::Rect(a), Shape::Circle(b)) => rt_intersects_circle(a, b),
+            (Shape::Rect(a), Shape::Polygon(b)) => rt_intersects_polygon(a, b),
+            (Shape::Rect(a), Shape::Path(b)) => rt_intersects_path(a, b),
+            (Shape::Circle(a), Shape::Rect(b)) => rt_intersects_circle(b, a),
             (Shape::Circle(a), Shape::Circle(b)) => circle_intersects_circle(a, b),
             (Shape::Circle(a), Shape::Polygon(b)) => circle_intersects_polygon(a, b),
             (Shape::Circle(a), Shape::Path(b)) => circle_intersects_path(a, b),
-            (Shape::Polygon(a), Shape::Rect(b)) => rect_intersects_polygon(b, a),
+            (Shape::Polygon(a), Shape::Rect(b)) => rt_intersects_polygon(b, a),
             (Shape::Polygon(a), Shape::Circle(b)) => circle_intersects_polygon(b, a),
             (Shape::Polygon(a), Shape::Polygon(b)) => polygon_intersects_polygon(a, b),
             (Shape::Polygon(a), Shape::Path(b)) => polygon_intersects_path(a, b),
-            (Shape::Path(a), Shape::Rect(b)) => rect_intersects_path(b, a),
+            (Shape::Path(a), Shape::Rect(b)) => rt_intersects_path(b, a),
             (Shape::Path(a), Shape::Circle(b)) => circle_intersects_path(b, a),
             (Shape::Path(a), Shape::Polygon(b)) => polygon_intersects_path(b, a),
             (Shape::Path(a), Shape::Path(b)) => path_intersects_path(a, b),
@@ -61,19 +60,19 @@ impl Shape {
 
     pub fn contains(&self, s: &Shape) -> bool {
         match (self, s) {
-            (Shape::Rect(a), Shape::Rect(b)) => rect_contains_rect(a, b),
-            (Shape::Rect(a), Shape::Circle(b)) => rect_contains_circle(a, b),
-            (Shape::Rect(a), Shape::Polygon(b)) => rect_contains_polygon(a, b),
-            (Shape::Rect(a), Shape::Path(b)) => rect_contains_path(a, b),
-            (Shape::Circle(a), Shape::Rect(b)) => circle_contains_rect(a, b),
+            (Shape::Rect(a), Shape::Rect(b)) => rt_contains_rt(a, b),
+            (Shape::Rect(a), Shape::Circle(b)) => rt_contains_circle(a, b),
+            (Shape::Rect(a), Shape::Polygon(b)) => rt_contains_polygon(a, b),
+            (Shape::Rect(a), Shape::Path(b)) => rt_contains_path(a, b),
+            (Shape::Circle(a), Shape::Rect(b)) => circle_contains_rt(a, b),
             (Shape::Circle(a), Shape::Circle(b)) => circle_contains_circle(a, b),
             (Shape::Circle(a), Shape::Polygon(b)) => circle_contains_polygon(a, b),
             (Shape::Circle(a), Shape::Path(b)) => circle_contains_path(a, b),
-            (Shape::Polygon(a), Shape::Rect(b)) => polygon_contains_rect(a, b),
+            (Shape::Polygon(a), Shape::Rect(b)) => polygon_contains_rt(a, b),
             (Shape::Polygon(a), Shape::Circle(b)) => polygon_contains_circle(a, b),
             (Shape::Polygon(a), Shape::Polygon(b)) => polygon_contains_polygon(a, b),
             (Shape::Polygon(a), Shape::Path(b)) => polygon_contains_path(a, b),
-            (Shape::Path(a), Shape::Rect(b)) => path_contains_rect(a, b),
+            (Shape::Path(a), Shape::Rect(b)) => path_contains_rt(a, b),
             (Shape::Path(a), Shape::Circle(b)) => path_contains_circle(a, b),
             (Shape::Path(a), Shape::Polygon(b)) => path_contains_polygon(a, b),
             (Shape::Path(a), Shape::Path(b)) => path_contains_path(a, b),
