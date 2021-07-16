@@ -3,23 +3,23 @@ use crate::model::primitive::path::Path;
 use crate::model::primitive::polygon::Polygon;
 use crate::model::primitive::rt::Rt;
 
-pub fn rect_contains_rect(_a: &Rt, _b: &Rt) -> bool {
+pub fn rt_contains_rt(_a: &Rt, _b: &Rt) -> bool {
     todo!()
 }
 
-pub fn rect_contains_circle(_a: &Rt, _b: &Circle) -> bool {
+pub fn rt_contains_circle(_a: &Rt, _b: &Circle) -> bool {
     todo!()
 }
 
-pub fn rect_contains_polygon(_a: &Rt, _b: &Polygon) -> bool {
+pub fn rt_contains_polygon(_a: &Rt, _b: &Polygon) -> bool {
     todo!()
 }
 
-pub fn rect_contains_path(_a: &Rt, _b: &Path) -> bool {
+pub fn rt_contains_path(_a: &Rt, _b: &Path) -> bool {
     todo!()
 }
 
-pub fn circle_contains_rect(_a: &Circle, _b: &Rt) -> bool {
+pub fn circle_contains_rt(_a: &Circle, _b: &Rt) -> bool {
     todo!()
 }
 
@@ -35,7 +35,7 @@ pub fn circle_contains_path(_a: &Circle, _b: &Path) -> bool {
     todo!()
 }
 
-pub fn polygon_contains_rect(_a: &Polygon, _b: &Rt) -> bool {
+pub fn polygon_contains_rt(_a: &Polygon, _b: &Rt) -> bool {
     // TODO: can't just test point containment for non-convex polygon.
     todo!()
 }
@@ -52,7 +52,7 @@ pub fn polygon_contains_path(_a: &Polygon, _b: &Path) -> bool {
     todo!()
 }
 
-pub fn path_contains_rect(_a: &Path, _b: &Rt) -> bool {
+pub fn path_contains_rt(_a: &Path, _b: &Rt) -> bool {
     todo!()
 }
 

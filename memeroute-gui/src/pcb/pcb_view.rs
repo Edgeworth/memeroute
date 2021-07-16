@@ -7,7 +7,7 @@ use memeroute::model::primitive::shape::Shape;
 use memeroute::model::pt::Pt;
 use memeroute::model::tf::Tf;
 
-use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
+use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rt, stroke_path, stroke_polygon};
 use crate::pcb::{to_pos2, to_pt, to_rt};
 
 // Index 0 is front, index 1 is back.
@@ -107,7 +107,7 @@ impl PcbView {
     fn draw_shape(&self, tf: &Tf, v: &LayerShape, col: Color32) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
         match &v.shape {
-            Shape::Rect(s) => shapes.push(fill_rect(tf, s, col)),
+            Shape::Rect(s) => shapes.push(fill_rt(tf, s, col)),
             Shape::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
             Shape::Polygon(s) => {
                 shapes.push(fill_polygon(tf, s.pts(), s.tris(), col));
