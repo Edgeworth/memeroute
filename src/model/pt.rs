@@ -2,7 +2,6 @@ use approx::{AbsDiffEq, RelativeEq};
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 use nalgebra::{vector, Vector2};
-use parry2d_f64::math::{Point, Real};
 use serde::{Deserialize, Serialize};
 
 use crate::model::sz::Sz;
@@ -87,24 +86,6 @@ impl RelativeEq for Pt {
 impl From<Pt> for Vector2<f64> {
     fn from(p: Pt) -> Self {
         vector![p.x, p.y]
-    }
-}
-
-impl From<Pt> for Point<Real> {
-    fn from(p: Pt) -> Self {
-        (&p).into()
-    }
-}
-
-impl From<&Pt> for Point<Real> {
-    fn from(p: &Pt) -> Self {
-        Point::new(p.x, p.y)
-    }
-}
-
-impl From<Point<Real>> for Pt {
-    fn from(p: Point<Real>) -> Self {
-        Pt::new(p.x, p.y)
     }
 }
 

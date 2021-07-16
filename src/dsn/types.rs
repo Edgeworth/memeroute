@@ -1,7 +1,7 @@
 use strum::{Display as EnumDisplay, EnumString};
 
-use crate::model::pt::Pt;
 use crate::model::primitive::rt::Rt;
+use crate::model::pt::Pt;
 
 // Types defined in DSN specification.
 

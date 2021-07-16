@@ -1,10 +1,10 @@
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
-use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Pin, LayerShape, Side};
-use memeroute::model::pt::Pt;
+use memeroute::model::pcb::{Component, Keepout, LayerShape, Padstack, Pcb, Pin, Side};
 use memeroute::model::primitive::rt::Rt;
 use memeroute::model::primitive::shape::Shape;
+use memeroute::model::pt::Pt;
 use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};

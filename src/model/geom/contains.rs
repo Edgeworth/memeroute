@@ -35,12 +35,9 @@ pub fn circle_contains_path(_a: &Circle, _b: &Path) -> bool {
     todo!()
 }
 
-pub fn polygon_contains_rect(a: &Polygon, b: &Rt) -> bool {
-    let a = a.as_parry();
-    a.contains_local_point(&b.bl().into())
-        && a.contains_local_point(&b.br().into())
-        && a.contains_local_point(&b.tl().into())
-        && a.contains_local_point(&b.tr().into())
+pub fn polygon_contains_rect(_a: &Polygon, _b: &Rt) -> bool {
+    // TODO: can't just test point containment for non-convex polygon.
+    todo!()
 }
 
 pub fn polygon_contains_circle(_a: &Polygon, _b: &Circle) -> bool {

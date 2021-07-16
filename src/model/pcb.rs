@@ -3,9 +3,9 @@ use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 
-use crate::model::pt::Pt;
 use crate::model::primitive::rt::Rt;
 use crate::model::primitive::shape::Shape;
+use crate::model::pt::Pt;
 use crate::model::tf::Tf;
 
 // File-format independent representation of a PCB.
@@ -271,7 +271,7 @@ impl Pcb {
 
     // Tests if the given rect is within the boundaries of the PCB.
     pub fn boundary_contains_rt(&self, r: &Rt) -> bool {
-        let r = r.clone().shape();
+        let r = r.shape();
         for boundary in self.boundaries() {
             if boundary.shape.contains(&r) {
                 return true;
