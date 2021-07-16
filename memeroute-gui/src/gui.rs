@@ -69,7 +69,12 @@ impl epi::App for MemerouteGui {
             if ui.button("Route").clicked() {
                 let mut router = Router::new(self.pcb.clone());
                 let resp = router.route().unwrap();
-
+                println!(
+                    "Route result succeeded: {}, {} wires {} vias",
+                    !resp.failed,
+                    resp.wires.len(),
+                    resp.vias.len()
+                );
                 for wire in resp.wires.into_iter() {
                     self.pcb.add_wire(wire);
                 }

@@ -1,21 +1,20 @@
 use std::collections::HashMap;
 
-use approx::relative_eq;
 use eyre::{eyre, Result};
 
 use crate::dsn::types::{
     DsnComponent, DsnDimensionUnit, DsnId, DsnImage, DsnKeepout, DsnKeepoutType, DsnNet,
     DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
 };
+use crate::model::geom::math::pt_eq;
 use crate::model::pcb::{
-    Component, Keepout, KeepoutType, Layer, Net, Padstack, Pcb, Pin, PinRef, Shape, Side,
+    Component, Keepout, KeepoutType, Layer, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Side,
 };
 use crate::model::pt::Pt;
-use crate::model::shape::circle::Circle;
-use crate::model::shape::path::Path;
-use crate::model::shape::polygon::Polygon;
-use crate::model::shape::rt::Rt;
-use crate::model::shape::shape_type::ShapeType;
+use crate::model::primitive::circle::Circle;
+use crate::model::primitive::path::Path;
+use crate::model::primitive::polygon::Polygon;
+use crate::model::primitive::rt::Rt;
 
 #[derive(Debug, Clone)]
 pub struct Converter {
@@ -61,32 +60,33 @@ impl Converter {
         r
     }
 
-    fn shape(&self, v: &DsnShape) -> Shape {
+    fn shape(&self, v: &DsnShape) -> LayerShape {
         match v {
             DsnShape::Rect(v) => {
-                Shape { layer: v.layer_id.clone(), shape: ShapeType::Rect(self.rect(v)) }
+                LayerShape { layer: v.layer_id.clone(), shape: self.rect(v).shape() }
             }
-            DsnShape::Circle(v) => Shape {
+            DsnShape::Circle(v) => LayerShape {
                 layer: v.layer_id.clone(),
-                shape: ShapeType::Circle(Circle::new(self.pt(v.p), self.coord(v.diameter / 2.0))),
+                shape: Circle::new(self.pt(v.p), self.coord(v.diameter / 2.0)).shape(),
             },
             DsnShape::Polygon(v) => {
                 let mut pts: Vec<Pt> = v.pts.iter().map(|&v| self.pt(v)).collect();
                 // Polygons seem to have the first vertex repeated.
-                if pts.len() >= 2 && relative_eq!(pts.first().unwrap(), pts.last().unwrap()) {
+                if pts.len() >= 2 && pt_eq(*pts.first().unwrap(), *pts.last().unwrap()) {
                     pts.pop();
                 }
-                Shape {
+                LayerShape {
                     layer: v.layer_id.clone(),
-                    shape: ShapeType::Polygon(Polygon::new(&pts, self.coord(v.aperture_width))),
+                    shape: Polygon::new(&pts, self.coord(v.aperture_width)).shape(),
                 }
             }
-            DsnShape::Path(v) => Shape {
+            DsnShape::Path(v) => LayerShape {
                 layer: v.layer_id.clone(),
-                shape: ShapeType::Path(Path::new(
+                shape: Path::new(
                     &v.pts.iter().map(|&v| self.pt(v)).collect::<Vec<_>>(),
                     self.coord(v.aperture_width),
-                )),
+                )
+                .shape(),
             },
             DsnShape::QArc(_v) => todo!(),
         }
@@ -203,8 +203,8 @@ impl Converter {
         }
         for v in self.dsn.structure.boundaries.iter() {
             // Convert boundaries to closed shapes.
-            let Shape { layer, shape } = self.shape(v);
-            self.pcb.add_boundary(Shape { layer, shape: shape.filled() });
+            let LayerShape { layer, shape } = self.shape(v);
+            self.pcb.add_boundary(LayerShape { layer, shape: shape.filled() });
         }
         for v in self.dsn.structure.keepouts.iter() {
             self.pcb.add_keepout(self.keepout(v));

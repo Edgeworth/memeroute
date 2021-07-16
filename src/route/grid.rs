@@ -1,18 +1,18 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
-use crate::model::pcb::{Id, Pcb, Shape, Via, Wire};
+use crate::model::pcb::{Id, LayerShape, Pcb, Via, Wire};
+use crate::model::primitive::path::Path;
 use crate::model::pt::PtI;
-use crate::model::shape::circle::Circle;
-use crate::model::shape::path::Path;
-use crate::model::shape::shape_type::ShapeType;
 use crate::route::grid_model::GridModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
-const DIR: [(PtI, f64); 8] = [
+const VIA_COST: f64 = 10.0;
+
+const DIR: [(PtI, f64); 9] = [
     (PtI::new(-1, 0), 1.0),
     (PtI::new(1, 0), 1.0),
     (PtI::new(0, -1), 1.0),
@@ -21,6 +21,7 @@ const DIR: [(PtI, f64); 8] = [
     (PtI::new(1, -1), 1.414),
     (PtI::new(-1, 1), 1.414),
     (PtI::new(-1, -1), 1.414),
+    (PtI::new(0, 0), VIA_COST),
 ];
 
 #[derive(Debug, Default, Hash, Clone, PartialEq, Eq)]
@@ -48,38 +49,77 @@ pub type BlockMap = HashMap<State, i64>;
 pub struct GridRouter {
     model: GridModel,
     net_order: Vec<Id>,
+    // Block map for drilling holes for vias. Includes pins even if we are currently routing those pins.
+    drill_blk: BlockMap,
     blk: BlockMap,
 }
 
 impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
-        let mut s = Self { model: GridModel::new(pcb), net_order, blk: BlockMap::new() };
-        s.model.mark_blocked(&mut s.blk);
-        s
+        let mut blk = BlockMap::new();
+        let model = GridModel::new(pcb);
+        model.mark_blocked(&mut blk);
+        Self { model, net_order, drill_blk: blk.clone(), blk }
+    }
+
+    fn wire_from_states(&self, states: &[State]) -> Wire {
+        let pts: Vec<_> = states.iter().map(|s| self.model.world_pt_mid(s.p)).collect();
+        Wire {
+            shape: LayerShape {
+                layer: states[0].layer.clone(),
+                // Use 0.49 size to guarantee
+                shape: Path::new(&pts, self.model.resolution * 0.8).shape(),
+            },
+        }
+    }
+
+    fn via_from_state(&self, state: &State) -> Via {
+        // TODO: Uses only one type of via.
+        Via {
+            padstack: self.model.pcb.via_padstacks()[0].clone(),
+            p: self.model.world_pt_mid(state.p),
+        }
+    }
+
+    fn push_path(
+        &self,
+        wires: &mut Vec<Wire>,
+        vias: &mut Vec<Via>,
+        cur: &mut Vec<State>,
+        last: bool,
+    ) {
+        let l = cur.len();
+        if cur.is_empty() {
+            return;
+        }
+        let is_via = l >= 2 && cur[l - 1].layer != cur[l - 2].layer;
+        // Add the via.
+        if is_via {
+            vias.push(self.via_from_state(&cur[l - 1]));
+        }
+        // Add the wire, if it exists.
+        if is_via || last {
+            // TODO: Assumes wire width some proportion of resolution.
+            // Keeps duplicated last point if we made a via. That allows for
+            // wires that only take up one square.
+            wires.push(self.wire_from_states(cur));
+            // Only keep the last element - for starting next wire in the same
+            // location as the via.
+            cur.swap(0, l - 1);
+            cur.truncate(1);
+        }
     }
 
     fn create_path(&self, path: &[State]) -> (Vec<Wire>, Vec<Via>) {
         let mut wires = Vec::new();
-        let mut cur_wire = Vec::new();
-        let mut prev = State::default();
-        for (idx, cur) in path.iter().enumerate() {
-            cur_wire.push(self.model.world_pt_mid(cur.p));
-
-            // Add the wire.
-            if !prev.layer.is_empty() && cur.layer != prev.layer || idx == path.len() - 1 {
-                // TODO: Assumes wire width some proportion of resolution.
-                wires.push(Wire {
-                    shape: Shape {
-                        layer: cur.layer.clone(),
-                        shape: ShapeType::Path(Path::new(&cur_wire, self.model.resolution * 0.8)),
-                    },
-                });
-                cur_wire.clear();
-                // TODO: Add a via.
-            }
-            prev = cur.clone();
+        let mut vias = Vec::new();
+        let mut cur_states = Vec::new();
+        for cur in path.iter() {
+            self.push_path(&mut wires, &mut vias, &mut cur_states, false);
+            cur_states.push(cur.clone());
         }
-        (wires, vec![])
+        self.push_path(&mut wires, &mut vias, &mut cur_states, true);
+        (wires, vias)
     }
 
     // Returns
@@ -95,19 +135,42 @@ impl GridRouter {
         while let Some((cur, cur_cost)) = q.pop() {
             let cur_cost = -cur_cost.0;
             for (dp, edge_cost) in DIR.iter() {
-                let next = State {
-                    p: cur.p + dp,
-                    layer: cur.layer.clone(), // TODO: transition
+                let is_via = dp.is_zero();
+                let layers = if is_via {
+                    let via_padstack = self.via_from_state(&cur).padstack;
+                    let layers = via_padstack.shapes.iter().map(|s| s.layer.clone());
+                    layers.filter(|v| v != &cur.layer).collect::<Vec<_>>()
+                } else {
+                    vec![cur.layer.clone()]
                 };
-                let cost = cur_cost + edge_cost;
-                let data = node_data.entry(next.clone()).or_insert_with(Default::default);
-                if data.seen || self.model.is_blocked(&self.blk, &next) {
-                    continue;
-                }
-                if cost <= data.cost {
-                    data.cost = cost;
-                    data.prev = cur.clone();
-                    q.push(next, OrderedFloat(-cost));
+                for layer in layers.into_iter() {
+                    let next = State { p: cur.p + dp, layer };
+                    let cost = cur_cost + edge_cost;
+                    let data = node_data.entry(next.clone()).or_insert_with(Default::default);
+
+                    if data.seen {
+                        continue;
+                    }
+
+                    // TODO: Don't check if wire with thickness is blocked
+                    // because wires already mark a 2x2 area around them (at
+                    // least).
+                    if !is_via && self.model.is_state_blocked(&self.blk, &next) {
+                        continue;
+                    }
+                    // Don't put vias through pins.
+                    let via = self.via_from_state(&next);
+                    if is_via
+                        && (self.model.is_via_blocked(&self.blk, &via)
+                            || self.model.is_via_blocked(&self.drill_blk, &via))
+                    {
+                        continue;
+                    }
+                    if cost <= data.cost {
+                        data.cost = cost;
+                        data.prev = cur.clone();
+                        q.push(next, OrderedFloat(-cost));
+                    }
                 }
             }
 
@@ -127,6 +190,8 @@ impl GridRouter {
                 path.push(cur);
                 cur = data.prev.clone();
             }
+            // Should reach the end of the path.
+            assert_eq!(cur, Default::default());
             path.reverse();
             path
         } else {
@@ -175,24 +240,30 @@ impl RouteStrategy for GridRouter {
                 net.pins.iter().map(|p| self.model.pin_ref_state(p)).collect::<Result<_>>()?;
 
             self.model.mark_net(&mut self.blk, -1, &net)?; // Temporarily remove pins as blocking.
-            res.merge(self.connect(states)?);
-            self.model.mark_net(&mut self.blk, 1, &net)?; // Add them back.
+            let sub_result = self.connect(states)?;
+            // Mark wires and vias.
+            for wire in sub_result.wires.iter() {
+                self.model.mark_wire(&mut self.blk, 1, wire);
+            }
+            for via in sub_result.vias.iter() {
+                self.model.mark_via(&mut self.blk, 1, via);
+            }
+            res.merge(sub_result);
+            self.model.mark_net(&mut self.blk, 1, &net)?; // Add pins back.
         }
 
-        let bounds = self.model.grid_rt(&self.model.pcb.bounds());
-        for l in bounds.l()..bounds.r() {
-            for b in bounds.b()..bounds.t() {
-                let p = PtI::new(l, b);
-                if self.model.is_blocked(&self.blk, &State { p, layer: "F.Cu".to_owned() }) {
-                    continue;
-                }
-                let shape = ShapeType::Circle(Circle::new(
-                    self.model.world_pt_mid(p),
-                    self.model.resolution / 2.0,
-                ));
-                res.wires.push(Wire { shape: Shape { layer: "F.Cu".to_owned(), shape } })
-            }
-        }
+        // let bounds = self.model.grid_rt(&self.model.pcb.bounds());
+        // for l in bounds.l()..bounds.r() {
+        //     for b in bounds.b()..bounds.t() {
+        //         let p = PtI::new(l, b);
+        //         if self.model.is_state_blocked(&self.blk, &State { p, layer: "F.Cu".to_owned() }) {
+        //             continue;
+        //         }
+        //         let shape =
+        //             Circle::new(self.model.world_pt_mid(p), self.model.resolution / 2.0).shape();
+        //         res.wires.push(Wire { shape: LayerShape { layer: "F.Cu".to_owned(), shape } })
+        //     }
+        // }
         Ok(res)
     }
 }

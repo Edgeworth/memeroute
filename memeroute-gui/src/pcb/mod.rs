@@ -1,6 +1,6 @@
 use eframe::egui::{Pos2, Rect};
 use memeroute::model::pt::Pt;
-use memeroute::model::shape::rt::Rt;
+use memeroute::model::primitive::rt::Rt;
 
 pub mod pcb_view;
 pub mod primitives;

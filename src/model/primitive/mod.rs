@@ -7,7 +7,7 @@ macro_rules! impl_parry2d {
         use parry2d_f64::math::{Isometry, Point, Real, Vector};
         use parry2d_f64::query::{PointProjection, PointQuery, Ray, RayCast, RayIntersection};
         use parry2d_f64::shape::{
-            FeatureId, PolygonalFeatureMap, Shape, SimdCompositeShape, SupportMap, TypedShape,
+            FeatureId, PolygonalFeatureMap, SimdCompositeShape, SupportMap, TypedShape,
         };
 
         impl PointQuery for $type {
@@ -99,7 +99,7 @@ macro_rules! impl_parry2d {
             }
         }
 
-        impl Shape for $type {
+        impl parry2d_f64::shape::Shape for $type {
             fn compute_local_aabb(&self) -> AABB {
                 self.as_parry().compute_local_aabb()
             }
@@ -108,7 +108,7 @@ macro_rules! impl_parry2d {
                 self.as_parry().compute_local_bounding_sphere()
             }
 
-            fn clone_box(&self) -> Box<dyn Shape> {
+            fn clone_box(&self) -> Box<dyn parry2d_f64::shape::Shape> {
                 self.as_parry().clone_box()
             }
 
@@ -184,4 +184,4 @@ pub mod circle;
 pub mod path;
 pub mod polygon;
 pub mod rt;
-pub mod shape_type;
+pub mod shape;

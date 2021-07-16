@@ -1,10 +1,11 @@
-use approx::assert_relative_eq;
 use earcutr::earcut;
 use parry2d_f64::shape::{ConvexPolygon, RoundShape, TriMesh};
 
 use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
+use crate::model::geom::math::f64_eq;
+use crate::model::primitive::rt::Rt;
+use crate::model::primitive::shape::Shape;
 use crate::model::pt::Pt;
-use crate::model::shape::rt::Rt;
 
 #[derive(Clone)]
 enum ParryShape {
@@ -28,7 +29,7 @@ pub struct Polygon {
 
 impl Polygon {
     pub fn new(pts: &[Pt], width: f64) -> Self {
-        let mut pts = remove_collinear(&pts);
+        let mut pts = remove_collinear(pts);
         ensure_ccw(&mut pts);
         let verts: Vec<f64> = pts.iter().map(|v| [v.x, v.y]).flatten().collect();
         let tris: Vec<_> = earcut(&verts, &vec![], 2).iter().map(|&v| v as u32).collect();
@@ -42,10 +43,14 @@ impl Polygon {
             })
         } else {
             // Currently don't support non-convex polygons with rounded corners.
-            assert_relative_eq!(width, 0.0);
+            assert!(f64_eq(width, 0.0));
             ParryShape::Concave(TriMesh::new(points, tris.array_chunks::<3>().copied().collect()))
         };
         Self { pts, tris, width, parry }
+    }
+
+    pub fn shape(self) -> Shape {
+        Shape::Polygon(self)
     }
 
     pub fn bounds(&self) -> Rt {
@@ -64,7 +69,7 @@ impl Polygon {
         self.width
     }
 
-    pub fn as_parry(&self) -> &dyn Shape {
+    pub fn as_parry(&self) -> &dyn parry2d_f64::shape::Shape {
         match &self.parry {
             ParryShape::Convex(v) => v,
             ParryShape::Concave(v) => v,
