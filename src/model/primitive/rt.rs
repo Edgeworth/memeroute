@@ -1,9 +1,10 @@
-use approx::relative_eq;
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 use parry2d_f64::shape::ConvexPolygon;
 
+use crate::model::geom::math::f64_eq;
 use crate::model::pt::{Pt, PtI};
+use crate::model::primitive::shape::Shape;
 use crate::model::sz::Sz;
 
 #[derive(Debug, Default, Clone, Display)]
@@ -27,6 +28,10 @@ impl Rt {
         ])
         .unwrap();
         Self { x, y, w, h, parry: Some(parry) }
+    }
+
+    pub fn shape(self) -> Shape {
+        Shape::Rect(self)
     }
 
     pub fn empty() -> Self {
@@ -127,9 +132,9 @@ impl Rt {
 
     // Returns a rectangle with the same area that matches the aspect ratio of |r|.
     pub fn match_aspect(&self, r: &Rt) -> Rt {
-        if relative_eq!(r.w, 0.0) {
+        if f64_eq(r.w, 0.0) {
             Rt::new(self.x, self.y, 0.0, self.h)
-        } else if relative_eq!(r.h, 0.0) {
+        } else if f64_eq(r.h, 0.0) {
             Rt::new(self.x, self.y, self.w, 0.0)
         } else {
             let aspect = (r.w / r.h).sqrt();

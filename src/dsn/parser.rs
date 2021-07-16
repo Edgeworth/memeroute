@@ -10,8 +10,8 @@ use crate::dsn::types::{
     DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect,
     DsnResolution, DsnRule, DsnShape, DsnSide, DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
+use crate::model::primitive::rt::Rt;
 use crate::model::pt::Pt;
-use crate::model::shape::rt::Rt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parser {
@@ -190,10 +190,17 @@ impl Parser {
     }
 
     fn wiring(&mut self) -> Result<DsnWiring> {
-        let v = DsnWiring::default();
+        let mut v = DsnWiring::default();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Wiring)?;
-        // TODO: Finish.
+        while self.peek(0)?.tok != Tok::Rparen {
+            let t = self.peek(1)?;
+            match t.tok {
+                Tok::Wire => v.wires.push(self.wire()?),
+                Tok::Via => v.vias.push(self.via()?),
+                _ => return Err(eyre!("unrecognised token '{}'", t)),
+            }
+        }
         self.expect(Tok::Rparen)?;
         Ok(v)
     }
@@ -419,6 +426,7 @@ impl Parser {
         Ok(v)
     }
 
+    #[allow(dead_code)]
     fn window(&mut self) -> Result<DsnWindow> {
         let v = DsnWindow::default();
         self.expect(Tok::Lparen)?;

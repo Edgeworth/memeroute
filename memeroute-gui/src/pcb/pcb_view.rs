@@ -1,10 +1,10 @@
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
-use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Pin, Shape, Side};
+use memeroute::model::pcb::{Component, Keepout, Padstack, Pcb, Pin, LayerShape, Side};
 use memeroute::model::pt::Pt;
-use memeroute::model::shape::rt::Rt;
-use memeroute::model::shape::shape_type::ShapeType;
+use memeroute::model::primitive::rt::Rt;
+use memeroute::model::primitive::shape::Shape;
 use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rect, stroke_path, stroke_polygon};
@@ -26,7 +26,12 @@ lazy_static! {
         Color32::from_rgba_unmultiplied(0, 27, 161, 180),
     ];
 
-    static ref WIRE: Color32 = Color32::from_rgba_unmultiplied(252, 3, 182, 180);
+    static ref WIRE: [Color32; 2] = [
+        Color32::from_rgba_unmultiplied(252, 3, 182, 180),
+        Color32::from_rgba_unmultiplied(0, 166, 52, 180)
+    ];
+
+    static ref VIA: Color32 = Color32::from_rgba_unmultiplied(100, 100, 100, 180);
 }
 
 #[derive(Debug, Clone)]
@@ -91,21 +96,29 @@ impl PcbView {
         self.dirty = true;
     }
 
-    fn draw_shape(&self, tf: &Tf, v: &Shape, col: Color32) -> Vec<epaint::Shape> {
+    fn layer_id_to_color_idx(&self, id: &str) -> usize {
+        match id {
+            "F.Cu" => 0,
+            "B.Cu" => 1,
+            _ => 0,
+        }
+    }
+
+    fn draw_shape(&self, tf: &Tf, v: &LayerShape, col: Color32) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
         match &v.shape {
-            ShapeType::Rect(s) => shapes.push(fill_rect(tf, s, col)),
-            ShapeType::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
-            ShapeType::Polygon(s) => {
+            Shape::Rect(s) => shapes.push(fill_rect(tf, s, col)),
+            Shape::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
+            Shape::Polygon(s) => {
                 shapes.push(fill_polygon(tf, s.pts(), s.tris(), col));
                 shapes.extend(stroke_polygon(tf, s.pts(), s.width(), col));
             }
-            ShapeType::Path(s) => {
+            Shape::Path(s) => {
                 // Treat paths with width 0 as having a width of 0.2 mm (arbitrary).
                 let w = if s.width() == 0.0 { 0.2 } else { s.width() };
                 shapes.extend(stroke_path(tf, s.pts(), w, col))
             }
-            ShapeType::Arc(_) => todo!(),
+            Shape::Arc(_) => todo!(),
         }
         shapes
     }
@@ -179,11 +192,13 @@ impl PcbView {
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for wire in self.pcb.wires() {
-                let shapes = self.draw_shape(&tf, &wire.shape, *WIRE);
+                let col = WIRE[self.layer_id_to_color_idx(&wire.shape.layer)];
+                let shapes = self.draw_shape(&tf, &wire.shape, col);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
-            for _via in self.pcb.vias() {
-                // TODO: Draw vias.
+            for via in self.pcb.vias() {
+                let shapes = self.draw_padstack(&via.tf(), &via.padstack, *VIA);
+                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             self.mesh = mesh;
         }

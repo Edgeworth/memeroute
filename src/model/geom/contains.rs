@@ -1,7 +1,7 @@
-use crate::model::shape::circle::Circle;
-use crate::model::shape::path::Path;
-use crate::model::shape::polygon::Polygon;
-use crate::model::shape::rt::Rt;
+use crate::model::primitive::circle::Circle;
+use crate::model::primitive::path::Path;
+use crate::model::primitive::polygon::Polygon;
+use crate::model::primitive::rt::Rt;
 
 pub fn rect_contains_rect(_a: &Rt, _b: &Rt) -> bool {
     todo!()

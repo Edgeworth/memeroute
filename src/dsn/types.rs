@@ -1,7 +1,7 @@
 use strum::{Display as EnumDisplay, EnumString};
 
 use crate::model::pt::Pt;
-use crate::model::shape::rt::Rt;
+use crate::model::primitive::rt::Rt;
 
 // Types defined in DSN specification.
 
@@ -588,8 +588,8 @@ pub struct DsnVia {}
 // Describes pre-existing traces and vias on the PCB.
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct DsnWiring {
-    pub wires: DsnWire,
-    pub vias: DsnVia,
+    pub wires: Vec<DsnWire>,
+    pub vias: Vec<DsnVia>,
 }
 
 // <design_descriptor> = (pcb <pcb_id>

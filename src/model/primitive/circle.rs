@@ -1,7 +1,8 @@
 use parry2d_f64::shape::{Capsule, Segment};
 
 use crate::model::pt::Pt;
-use crate::model::shape::rt::Rt;
+use crate::model::primitive::rt::Rt;
+use crate::model::primitive::shape::Shape;
 
 #[derive(Debug, Clone)]
 pub struct Circle {
@@ -11,6 +12,10 @@ pub struct Circle {
 impl Circle {
     pub fn new(p: Pt, r: f64) -> Self {
         Self { parry: Capsule { segment: Segment { a: p.into(), b: p.into() }, radius: r } }
+    }
+
+    pub fn shape(self) -> Shape {
+        Shape::Circle(self)
     }
 
     pub fn bounds(&self) -> Rt {

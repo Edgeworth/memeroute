@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use eyre::{eyre, Result};
 
 use crate::model::pt::Pt;
-use crate::model::shape::rt::Rt;
-use crate::model::shape::shape_type::ShapeType;
+use crate::model::primitive::rt::Rt;
+use crate::model::primitive::shape::Shape;
 use crate::model::tf::Tf;
 
 // File-format independent representation of a PCB.
@@ -18,9 +18,9 @@ pub const ANY_LAYER: &str = "signal";
 pub type Id = String;
 
 #[derive(Debug, Clone)]
-pub struct Shape {
+pub struct LayerShape {
     pub layer: Id,
-    pub shape: ShapeType,
+    pub shape: Shape,
 }
 
 // Keepout: No routing whatsoever.
@@ -37,7 +37,7 @@ pub enum KeepoutType {
 #[derive(Debug, Clone)]
 pub struct Keepout {
     pub kind: KeepoutType,
-    pub shape: Shape,
+    pub shape: LayerShape,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -74,7 +74,7 @@ pub struct Component {
     pub p: Pt,
     pub side: Side,
     pub rotation: f64,
-    pub outlines: Vec<Shape>,
+    pub outlines: Vec<LayerShape>,
     pub keepouts: Vec<Keepout>,
     pins: HashMap<Id, Pin>,
 }
@@ -103,7 +103,7 @@ impl Component {
 #[derive(Debug, Default, Clone)]
 pub struct Padstack {
     pub id: Id,
-    pub shapes: Vec<Shape>,
+    pub shapes: Vec<LayerShape>,
     pub attach: bool,
 }
 
@@ -134,12 +134,22 @@ pub struct Net {
 // Describes a route.
 #[derive(Debug, Clone)]
 pub struct Wire {
-    pub shape: Shape,
+    pub shape: LayerShape,
+    // TODO: Net ID?
 }
 
 // Describes a via.
 #[derive(Debug, Clone)]
-pub struct Via {}
+pub struct Via {
+    pub padstack: Padstack,
+    pub p: Pt,
+}
+
+impl Via {
+    pub fn tf(&self) -> Tf {
+        Tf::translate(self.p)
+    }
+}
 
 // Describes an overall PCB.
 #[derive(Debug, Default, Clone)]
@@ -148,7 +158,7 @@ pub struct Pcb {
 
     // Physical structure:
     layers: Vec<Layer>,
-    boundaries: Vec<Shape>,
+    boundaries: Vec<LayerShape>,
     keepouts: Vec<Keepout>,
     via_padstacks: Vec<Padstack>, // Types of vias available to use.
     components: HashMap<Id, Component>,
@@ -176,11 +186,11 @@ impl Pcb {
         &self.layers
     }
 
-    pub fn add_boundary(&mut self, s: Shape) {
+    pub fn add_boundary(&mut self, s: LayerShape) {
         self.boundaries.push(s);
     }
 
-    pub fn boundaries(&self) -> &[Shape] {
+    pub fn boundaries(&self) -> &[LayerShape] {
         &self.boundaries
     }
 
@@ -261,7 +271,7 @@ impl Pcb {
 
     // Tests if the given rect is within the boundaries of the PCB.
     pub fn boundary_contains_rt(&self, r: &Rt) -> bool {
-        let r = ShapeType::Rect(r.clone());
+        let r = r.clone().shape();
         for boundary in self.boundaries() {
             if boundary.shape.contains(&r) {
                 return true;

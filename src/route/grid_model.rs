@@ -1,9 +1,8 @@
 use eyre::Result;
 
-use crate::model::pcb::{Id, Net, Padstack, Pcb, Pin, PinRef, Shape, Side, Via, Wire, ANY_LAYER};
+use crate::model::pcb::{LayerShape, Net, Padstack, Pcb, Pin, PinRef, Side, Via, Wire, ANY_LAYER};
+use crate::model::primitive::rt::{Rt, RtI};
 use crate::model::pt::{Pt, PtI};
-use crate::model::shape::rt::{Rt, RtI};
-use crate::model::shape::shape_type::ShapeType;
 use crate::model::tf::Tf;
 use crate::route::grid::{BlockMap, State};
 
@@ -18,16 +17,16 @@ impl GridModel {
         Self { pcb, resolution: 0.5 }
     }
 
-    pub fn mark_shape(&self, blk: &mut BlockMap, count: i64, tf: &Tf, s: &Shape) {
-        let shape = tf.shape(&s.shape);
-        let bounds = self.grid_rt(&shape.bounds());
+    pub fn mark_shape(&self, blk: &mut BlockMap, count: i64, tf: &Tf, ls: &LayerShape) {
+        let s = tf.shape(&ls.shape);
+        let bounds = self.grid_rt(&s.bounds());
 
         for l in bounds.l()..bounds.r() {
             for b in bounds.b()..bounds.t() {
                 let p = PtI::new(l, b);
                 let r = self.grid_square_in_world(p);
-                if shape.intersects(&ShapeType::Rect(r)) {
-                    *blk.entry(State { p, layer: s.layer.clone() }).or_insert(0) += count;
+                if s.intersects(&r.shape()) {
+                    *blk.entry(State { p, layer: ls.layer.clone() }).or_insert(0) += count;
                 }
             }
         }
@@ -43,7 +42,9 @@ impl GridModel {
         self.mark_shape(blk, count, &Tf::identity(), &wire.shape);
     }
 
-    pub fn mark_via(&self, blk: &mut BlockMap, count: i64, via: &Via) {}
+    pub fn mark_via(&self, blk: &mut BlockMap, count: i64, via: &Via) {
+        self.mark_padstack(blk, count, &via.tf(), &via.padstack);
+    }
 
     pub fn mark_pin(&self, blk: &mut BlockMap, count: i64, tf: &Tf, pin: &Pin) {
         self.mark_padstack(blk, count, &(tf * pin.tf()), &pin.padstack);
@@ -85,7 +86,7 @@ impl GridModel {
 
     // Checks if the state |s| is routable (inside boundary, outside of
     // keepouts, etc).
-    pub fn is_blocked(&self, blk: &BlockMap, s: &State) -> bool {
+    pub fn is_state_blocked(&self, blk: &BlockMap, s: &State) -> bool {
         // TODO: Check which layer the boundary is for.
         let r = self.grid_square_in_world(s.p);
         if !self.pcb.boundary_contains_rt(&r) {
@@ -96,11 +97,44 @@ impl GridModel {
             return true;
         }
 
+        // TODO: This hardcodes "signal" as applying to all layers. Might also
+        // miss other layer names like pcb/power/etc.
+        // Handle keepouts
         if *blk.get(&State { p: s.p, layer: ANY_LAYER.to_owned() }).unwrap_or(&0) > 0 {
             return true;
         }
 
         false
+    }
+
+    pub fn is_shape_blocked(&self, blk: &BlockMap, tf: &Tf, ls: &LayerShape) -> bool {
+        let s = tf.shape(&ls.shape);
+        let bounds = self.grid_rt(&s.bounds());
+
+        for l in bounds.l()..bounds.r() {
+            for b in bounds.b()..bounds.t() {
+                let p = PtI::new(l, b);
+                let r = self.grid_square_in_world(p);
+                if s.intersects(&r.shape())
+                    && self.is_state_blocked(blk, &State { p, layer: ls.layer.clone() })
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_padstack_blocked(&self, blk: &BlockMap, tf: &Tf, padstack: &Padstack) -> bool {
+        padstack.shapes.iter().any(|shape| self.is_shape_blocked(blk, tf, shape))
+    }
+
+    pub fn is_wire_blocked(&self, blk: &BlockMap, wire: &Wire) -> bool {
+        self.is_shape_blocked(blk, &Tf::identity(), &wire.shape)
+    }
+
+    pub fn is_via_blocked(&self, blk: &BlockMap, via: &Via) -> bool {
+        self.is_padstack_blocked(blk, &via.tf(), &via.padstack)
     }
 
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.

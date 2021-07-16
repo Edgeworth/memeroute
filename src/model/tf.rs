@@ -1,15 +1,15 @@
 use std::f64::consts::PI;
 use std::ops::Mul;
 
-use approx::{assert_relative_eq, relative_eq};
 use nalgebra::{vector, Matrix3};
 
+use crate::model::geom::math::f64_eq;
 use crate::model::pt::Pt;
-use crate::model::shape::circle::Circle;
-use crate::model::shape::path::Path;
-use crate::model::shape::polygon::Polygon;
-use crate::model::shape::rt::Rt;
-use crate::model::shape::shape_type::ShapeType;
+use crate::model::primitive::circle::Circle;
+use crate::model::primitive::path::Path;
+use crate::model::primitive::polygon::Polygon;
+use crate::model::primitive::rt::Rt;
+use crate::model::primitive::shape::Shape;
 
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub struct Tf {
@@ -55,24 +55,24 @@ impl Tf {
     }
 
     // If there's a rotation, output will be a polygon not a Rt.
-    pub fn rt(&self, r: &Rt) -> ShapeType {
-        if relative_eq!(self.m[(1, 0)], 0.0) && relative_eq!(self.m[(0, 1)], 0.0) {
+    pub fn rt(&self, r: &Rt) -> Shape {
+        if f64_eq(self.m[(1, 0)], 0.0) && f64_eq(self.m[(0, 1)], 0.0) {
             let a = self.pt(r.bl());
             let b = self.pt(r.tr());
-            ShapeType::Rect(Rt::enclosing(a, b))
+            Rt::enclosing(a, b).shape()
         } else {
             let poly = Polygon::new(&[r.tl(), r.bl(), r.br(), r.tr()], 0.0);
-            ShapeType::Polygon(self.polygon(&poly))
+            self.polygon(&poly).shape()
         }
     }
 
     // TODO: Assumes similarity transformation.
     fn check_similarity(&self) {
-        assert_relative_eq!(self.m[(2, 0)], 0.0);
-        assert_relative_eq!(self.m[(2, 1)], 0.0);
-        assert_relative_eq!(self.m[(2, 2)], 1.0);
-        assert_relative_eq!(self.m[(0, 0)], self.m[(1, 1)]);
-        assert_relative_eq!(self.m[(0, 1)], -self.m[(1, 0)]);
+        assert!(f64_eq(self.m[(2, 0)], 0.0));
+        assert!(f64_eq(self.m[(2, 1)], 0.0));
+        assert!(f64_eq(self.m[(2, 2)], 1.0));
+        assert!(f64_eq(self.m[(0, 0)], self.m[(1, 1)]));
+        assert!(f64_eq(self.m[(0, 1)], -self.m[(1, 0)]));
     }
 
     pub fn length(&self, l: f64) -> f64 {
@@ -94,13 +94,13 @@ impl Tf {
         Path::new(&pts, self.length(p.width()))
     }
 
-    pub fn shape(&self, s: &ShapeType) -> ShapeType {
+    pub fn shape(&self, s: &Shape) -> Shape {
         match s {
-            ShapeType::Rect(s) => self.rt(s),
-            ShapeType::Circle(s) => ShapeType::Circle(self.circle(s)),
-            ShapeType::Polygon(s) => ShapeType::Polygon(self.polygon(s)),
-            ShapeType::Path(s) => ShapeType::Path(self.path(s)),
-            ShapeType::Arc(_) => todo!(),
+            Shape::Rect(s) => self.rt(s),
+            Shape::Circle(s) => Shape::Circle(self.circle(s)),
+            Shape::Polygon(s) => Shape::Polygon(self.polygon(s)),
+            Shape::Path(s) => Shape::Path(self.path(s)),
+            Shape::Arc(_) => todo!(),
         }
     }
 
