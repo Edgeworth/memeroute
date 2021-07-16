@@ -9,6 +9,7 @@ use crate::model::primitive::path::Path;
 use crate::model::primitive::polygon::Polygon;
 use crate::model::primitive::rt::Rt;
 use crate::model::primitive::shape::Shape;
+use crate::model::primitive::tri::Tri;
 use crate::model::pt::Pt;
 
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
@@ -94,13 +95,20 @@ impl Tf {
         Path::new(&pts, self.length(p.width()))
     }
 
+    pub fn tri(&self, t: &Tri) -> Tri {
+        let pts = t.pts();
+        Tri::new([self.pt(pts[0]), self.pt(pts[1]), self.pt(pts[2])])
+    }
+
+
     pub fn shape(&self, s: &Shape) -> Shape {
         match s {
-            Shape::Rect(s) => self.rt(s),
-            Shape::Circle(s) => Shape::Circle(self.circle(s)),
-            Shape::Polygon(s) => Shape::Polygon(self.polygon(s)),
-            Shape::Path(s) => Shape::Path(self.path(s)),
             Shape::Arc(_) => todo!(),
+            Shape::Circle(s) => self.circle(s).shape(),
+            Shape::Path(s) => self.path(s).shape(),
+            Shape::Polygon(s) => self.polygon(s).shape(),
+            Shape::Rect(s) => self.rt(s),
+            Shape::Tri(s) => self.tri(s).shape(),
         }
     }
 

@@ -6,6 +6,7 @@ use crate::model::primitive::rt::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::pt::Pt;
 
+// Represents a simple non-convex polygon.
 #[derive(Debug, Clone)]
 pub struct Polygon {
     pts: Vec<Pt>,

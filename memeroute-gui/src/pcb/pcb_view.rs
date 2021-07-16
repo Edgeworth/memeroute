@@ -118,7 +118,7 @@ impl PcbView {
                 let w = if s.width() == 0.0 { 0.2 } else { s.width() };
                 shapes.extend(stroke_path(tf, s.pts(), w, col))
             }
-            Shape::Arc(_) => todo!(),
+            _ => todo!(),
         }
         shapes
     }
