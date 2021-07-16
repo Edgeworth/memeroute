@@ -4,12 +4,12 @@ use std::ops::Mul;
 use nalgebra::{vector, Matrix3};
 
 use crate::model::geom::math::f64_eq;
-use crate::model::pt::Pt;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::path::Path;
 use crate::model::primitive::polygon::Polygon;
 use crate::model::primitive::rt::Rt;
 use crate::model::primitive::shape::Shape;
+use crate::model::pt::Pt;
 
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub struct Tf {

@@ -1,33 +1,24 @@
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
-use parry2d_f64::shape::ConvexPolygon;
 
 use crate::model::geom::math::f64_eq;
-use crate::model::pt::{Pt, PtI};
 use crate::model::primitive::shape::Shape;
+use crate::model::pt::{Pt, PtI};
 use crate::model::sz::Sz;
 
-#[derive(Debug, Default, Clone, Display)]
+#[derive(Debug, Default, Copy, Clone, Display)]
 #[display(fmt = "({}, {}, {}, {})", x, y, w, h)]
 pub struct Rt {
     x: f64,
     y: f64,
     w: f64,
     h: f64,
-    parry: Option<ConvexPolygon>,
 }
 
 impl Rt {
     // x and y denotes the bottom left point of the rectangle.
     pub fn new(x: f64, y: f64, w: f64, h: f64) -> Self {
-        let parry = ConvexPolygon::from_convex_polyline(vec![
-            Point::new(x, y),
-            Point::new(x + w, y),
-            Point::new(x + w, y + h),
-            Point::new(x, y + h),
-        ])
-        .unwrap();
-        Self { x, y, w, h, parry: Some(parry) }
+        Self { x, y, w, h }
     }
 
     pub fn shape(self) -> Shape {
@@ -110,9 +101,9 @@ impl Rt {
 
     pub fn united(&self, rt: &Rt) -> Rt {
         if rt.is_empty() {
-            self.clone()
+            *self
         } else if self.is_empty() {
-            rt.clone()
+            *rt
         } else {
             let x = self.x.min(rt.x);
             let y = self.y.min(rt.y);
@@ -142,22 +133,6 @@ impl Rt {
             Rt::new(self.x, self.y, len * aspect, len / aspect)
         }
     }
-
-    pub fn as_parry(&self) -> &ConvexPolygon {
-        self.parry.as_ref().unwrap()
-    }
-}
-
-impl From<AABB> for Rt {
-    fn from(r: AABB) -> Self {
-        (&r).into()
-    }
-}
-
-impl From<&AABB> for Rt {
-    fn from(r: &AABB) -> Self {
-        Rt::enclosing(r.mins.into(), r.maxs.into())
-    }
 }
 
 impl PartialEq for Rt {
@@ -184,8 +159,6 @@ impl_op_ex_commutative!(/|a: &Rt, b: &i64| -> Rt {
     let b = *b as f64;
     Rt::new(a.x / b, a.y / b, a.w / b, a.h / b)
 });
-
-impl_parry2d!(Rt);
 
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone, Display)]
 #[display(fmt = "({}, {}, {}, {})", x, y, w, h)]

@@ -15,8 +15,6 @@ earcutr = "*"
 eyre = "*"
 nalgebra = "*"
 ordered-float = "*"
-parry2d-f64 = "*"
-petgraph = "*"
 priority-queue = "*"
 regex = "*"
 serde = {version = "*", features = ["derive"]}

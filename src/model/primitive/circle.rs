@@ -1,17 +1,16 @@
-use parry2d_f64::shape::{Capsule, Segment};
-
-use crate::model::pt::Pt;
 use crate::model::primitive::rt::Rt;
 use crate::model::primitive::shape::Shape;
+use crate::model::pt::Pt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Circle {
-    parry: Capsule,
+    p: Pt,
+    r: f64,
 }
 
 impl Circle {
     pub fn new(p: Pt, r: f64) -> Self {
-        Self { parry: Capsule { segment: Segment { a: p.into(), b: p.into() }, radius: r } }
+        Self { p, r }
     }
 
     pub fn shape(self) -> Shape {
@@ -19,20 +18,14 @@ impl Circle {
     }
 
     pub fn bounds(&self) -> Rt {
-        self.parry.local_aabb().into()
+        Rt::new(self.p.x - self.r, self.p.y - self.r, 2.0 * self.r, 2.0 * self.r)
     }
 
     pub fn r(&self) -> f64 {
-        self.parry.radius
+        self.r
     }
 
     pub fn p(&self) -> Pt {
-        self.parry.segment.a.into()
-    }
-
-    pub fn as_parry(&self) -> &Capsule {
-        &self.parry
+        self.p
     }
 }
-
-impl_parry2d!(Circle);

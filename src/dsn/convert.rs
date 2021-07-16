@@ -10,11 +10,11 @@ use crate::model::geom::math::pt_eq;
 use crate::model::pcb::{
     Component, Keepout, KeepoutType, Layer, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Side,
 };
-use crate::model::pt::Pt;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::path::Path;
 use crate::model::primitive::polygon::Polygon;
 use crate::model::primitive::rt::Rt;
+use crate::model::pt::Pt;
 
 #[derive(Debug, Clone)]
 pub struct Converter {
