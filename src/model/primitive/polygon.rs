@@ -1,5 +1,6 @@
 use earcutr::earcut;
 
+use crate::model::geom::bounds::point_cloud_bounds;
 use crate::model::geom::convex::{ensure_ccw, remove_collinear};
 use crate::model::primitive::rt::Rt;
 use crate::model::primitive::shape::Shape;
@@ -26,7 +27,7 @@ impl Polygon {
     }
 
     pub fn bounds(&self) -> Rt {
-        todo!()
+        point_cloud_bounds(&self.pts).inset_xy(-self.width / 2.0, -self.width / 2.0)
     }
 
     pub fn pts(&self) -> &[Pt] {
