@@ -10,8 +10,9 @@ use crate::dsn::types::{
     DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect,
     DsnResolution, DsnRule, DsnShape, DsnSide, DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
-use crate::model::primitive::rt::Rt;
-use crate::model::pt::Pt;
+use crate::model::primitive::point::Pt;
+use crate::model::primitive::pt;
+use crate::model::primitive::rect::Rt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parser {
@@ -599,7 +600,7 @@ impl Parser {
     }
 
     fn vertex(&mut self) -> Result<Pt> {
-        Ok(Pt::new(self.number()?, self.number()?))
+        Ok(pt(self.number()?, self.number()?))
     }
 
     fn unit(&mut self) -> Result<DsnDimensionUnit> {

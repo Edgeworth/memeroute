@@ -2,9 +2,10 @@ use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
 use memeroute::model::pcb::{Component, Keepout, LayerShape, Padstack, Pcb, Pin, Side};
-use memeroute::model::primitive::rt::Rt;
+use memeroute::model::primitive::point::Pt;
+use memeroute::model::primitive::rect::Rt;
 use memeroute::model::primitive::shape::Shape;
-use memeroute::model::pt::Pt;
+use memeroute::model::primitive::{pt, rt};
 use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rt, stroke_path};
@@ -52,7 +53,7 @@ impl Widget for &mut PcbView {
 
         if response.dragged_by(PointerButton::Middle) {
             let p = response.drag_delta();
-            self.offset += Pt::new(p.x as f64, p.y as f64);
+            self.offset += pt(p.x as f64, p.y as f64);
         }
 
         if ui.rect_contains_pointer(response.rect) {
@@ -112,9 +113,9 @@ impl PcbView {
             Shape::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
             Shape::Polygon(s) => shapes.push(fill_polygon(tf, s.pts(), s.tri_idx(), col)),
             Shape::Path(s) => {
-                // Treat paths with width 0 as having a width of 0.2 mm (arbitrary).
-                let w = if s.width() == 0.0 { 0.2 } else { s.width() };
-                shapes.extend(stroke_path(tf, s.pts(), w, col))
+                // Treat paths with a radius of 0 as having a radius of 0.1 mm (arbitrary).
+                let r = if s.r() == 0.0 { 0.1 } else { s.r() };
+                shapes.extend(stroke_path(tf, s.pts(), r, col))
             }
             _ => todo!(),
         }
@@ -202,15 +203,15 @@ impl PcbView {
         }
         let mut mesh = self.mesh.clone();
         if self.dirty {
-            let inv = Tf::scale(Pt::new(1.0, -1.0)); // Invert y axis
-            let local_area = Rt::new(
+            let inv = Tf::scale(pt(1.0, -1.0)); // Invert y axis
+            let local_area = rt(
                 self.local_area.l(),
                 -self.local_area.t(),
                 self.local_area.w(),
                 self.local_area.h(),
             );
             let tf = Tf::translate(self.offset)
-                * Tf::scale(Pt::new(self.zoom, self.zoom))
+                * Tf::scale(pt(self.zoom, self.zoom))
                 * Tf::affine(&local_area, &self.screen_area)
                 * inv;
             for vert in mesh.vertices.iter_mut() {

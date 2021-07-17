@@ -3,9 +3,10 @@ use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 
-use crate::model::primitive::rt::Rt;
+use crate::model::primitive::point::Pt;
+use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
-use crate::model::pt::Pt;
+use crate::model::primitive::{pt, ShapeOps};
 use crate::model::tf::Tf;
 
 // File-format independent representation of a PCB.
@@ -94,7 +95,7 @@ impl Component {
 
     pub fn tf(&self) -> Tf {
         let side_tf =
-            if self.side == Side::Back { Tf::scale(Pt::new(-1.0, -1.0)) } else { Tf::identity() };
+            if self.side == Side::Back { Tf::scale(pt(-1.0, -1.0)) } else { Tf::identity() };
         Tf::translate(self.p) * Tf::rotate(self.rotation) * side_tf
     }
 }

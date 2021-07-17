@@ -1,6 +1,6 @@
 use approx::{relative_eq, relative_ne};
 
-use crate::model::pt::Pt;
+use crate::model::primitive::point::Pt;
 
 pub const EP: f64 = 1e-6;
 

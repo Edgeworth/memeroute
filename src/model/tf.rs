@@ -5,12 +5,15 @@ use nalgebra::{vector, Matrix3};
 
 use crate::model::geom::math::f64_eq;
 use crate::model::primitive::circle::Circle;
-use crate::model::primitive::path::Path;
+use crate::model::primitive::line_shape::Line;
+use crate::model::primitive::path_shape::Path;
+use crate::model::primitive::point::Pt;
 use crate::model::primitive::polygon::Polygon;
-use crate::model::primitive::rt::Rt;
+use crate::model::primitive::rect::Rt;
+use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
-use crate::model::primitive::tri::Tri;
-use crate::model::pt::Pt;
+use crate::model::primitive::triangle::Tri;
+use crate::model::primitive::{circ, line, path, poly, pt, seg, tri, ShapeOps};
 
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub struct Tf {
@@ -41,7 +44,7 @@ impl Tf {
     pub fn affine(from: &Rt, to: &Rt) -> Self {
         let xscale = to.w() / from.w();
         let yscale = to.h() / from.h();
-        let scale = Self::scale(Pt::new(xscale, yscale));
+        let scale = Self::scale(pt(xscale, yscale));
         let offset = to.bl() - scale.pt(from.bl());
         Self::translate(offset) * scale
     }
@@ -52,7 +55,7 @@ impl Tf {
 
     pub fn pt(&self, p: Pt) -> Pt {
         let v = self.m * vector![p.x, p.y, 1.0];
-        Pt::new(v.x, v.y)
+        pt(v.x, v.y)
     }
 
     // If there's a rotation, output will be a polygon not a Rt.
@@ -62,8 +65,8 @@ impl Tf {
             let b = self.pt(r.tr());
             Rt::enclosing(a, b).shape()
         } else {
-            let poly = Polygon::new(&[r.tl(), r.bl(), r.br(), r.tr()]);
-            self.polygon(&poly).shape()
+            let poly = poly(&[r.tl(), r.bl(), r.br(), r.tr()]);
+            self.poly(&poly).shape()
         }
     }
 
@@ -78,36 +81,46 @@ impl Tf {
 
     pub fn length(&self, l: f64) -> f64 {
         self.check_similarity();
-        l * Pt::new(self.m[(0, 0)], self.m[(1, 0)]).mag()
+        l * pt(self.m[(0, 0)], self.m[(1, 0)]).mag()
     }
 
-    pub fn circle(&self, c: &Circle) -> Circle {
-        Circle::new(self.pt(c.p()), self.length(c.r()))
+    pub fn circ(&self, c: &Circle) -> Circle {
+        circ(self.pt(c.p()), self.length(c.r()))
     }
 
-    pub fn polygon(&self, p: &Polygon) -> Polygon {
-        let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
-        Polygon::new(&pts)
+    pub fn line(&self, l: &Line) -> Line {
+        line(self.pt(l.st()), self.pt(l.en()))
     }
 
     pub fn path(&self, p: &Path) -> Path {
         let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
-        Path::new(&pts, self.length(p.width()))
+        path(&pts, self.length(p.r()))
+    }
+
+    pub fn poly(&self, p: &Polygon) -> Polygon {
+        let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
+        poly(&pts)
+    }
+
+    pub fn seg(&self, s: &Segment) -> Segment {
+        seg(self.pt(s.st()), self.pt(s.en()))
     }
 
     pub fn tri(&self, t: &Tri) -> Tri {
         let pts = t.pts();
-        Tri::new([self.pt(pts[0]), self.pt(pts[1]), self.pt(pts[2])])
+        tri(self.pt(pts[0]), self.pt(pts[1]), self.pt(pts[2]))
     }
 
 
     pub fn shape(&self, s: &Shape) -> Shape {
         match s {
-            Shape::Arc(_) => todo!(),
-            Shape::Circle(s) => self.circle(s).shape(),
+            Shape::Circle(s) => self.circ(s).shape(),
+            Shape::Line(s) => self.line(s).shape(),
             Shape::Path(s) => self.path(s).shape(),
-            Shape::Polygon(s) => self.polygon(s).shape(),
+            Shape::Point(s) => self.pt(*s).shape(),
+            Shape::Polygon(s) => self.poly(s).shape(),
             Shape::Rect(s) => self.rt(s),
+            Shape::Segment(s) => self.seg(s).shape(),
             Shape::Tri(s) => self.tri(s).shape(),
         }
     }

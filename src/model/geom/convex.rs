@@ -1,5 +1,5 @@
 use crate::model::geom::math::{is_collinear, is_left_of, is_strictly_left_of};
-use crate::model::pt::Pt;
+use crate::model::primitive::point::Pt;
 
 pub fn remove_collinear(pts: &[Pt]) -> Vec<Pt> {
     if pts.len() <= 2 {

@@ -10,11 +10,9 @@ use crate::model::geom::math::{f64_eq, pt_eq};
 use crate::model::pcb::{
     Component, Keepout, KeepoutType, Layer, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Side,
 };
-use crate::model::primitive::circle::Circle;
-use crate::model::primitive::path::Path;
-use crate::model::primitive::polygon::Polygon;
-use crate::model::primitive::rt::Rt;
-use crate::model::pt::Pt;
+use crate::model::primitive::point::Pt;
+use crate::model::primitive::rect::Rt;
+use crate::model::primitive::{circ, path, poly, rt, ShapeOps};
 
 #[derive(Debug, Clone)]
 pub struct Converter {
@@ -44,7 +42,7 @@ impl Converter {
     }
 
     fn rect(&self, v: &DsnRect) -> Rt {
-        Rt::new(
+        rt(
             self.coord(v.rect.l()),
             self.coord(v.rect.b()),
             self.coord(v.rect.w()),
@@ -67,7 +65,7 @@ impl Converter {
             }
             DsnShape::Circle(v) => LayerShape {
                 layer: v.layer_id.clone(),
-                shape: Circle::new(self.pt(v.p), self.coord(v.diameter / 2.0)).shape(),
+                shape: circ(self.pt(v.p), self.coord(v.diameter / 2.0)).shape(),
             },
             DsnShape::Polygon(v) => {
                 let mut pts: Vec<Pt> = v.pts.iter().map(|&v| self.pt(v)).collect();
@@ -79,13 +77,13 @@ impl Converter {
                     f64_eq(v.aperture_width, 0.0),
                     "aperture width for polygons is unsupported"
                 );
-                LayerShape { layer: v.layer_id.clone(), shape: Polygon::new(&pts).shape() }
+                LayerShape { layer: v.layer_id.clone(), shape: poly(&pts).shape() }
             }
             DsnShape::Path(v) => LayerShape {
                 layer: v.layer_id.clone(),
-                shape: Path::new(
+                shape: path(
                     &v.pts.iter().map(|&v| self.pt(v)).collect::<Vec<_>>(),
-                    self.coord(v.aperture_width),
+                    self.coord(v.aperture_width) / 2.0,
                 )
                 .shape(),
             },
