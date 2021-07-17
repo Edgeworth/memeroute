@@ -9,6 +9,7 @@ use crate::model::geom::intersects::{
     path_intersects_path, polygon_intersects_path, polygon_intersects_polygon,
     rt_intersects_circle, rt_intersects_path, rt_intersects_polygon, rt_intersects_rt,
 };
+use crate::model::geom::math::f64_eq;
 use crate::model::primitive::arc::Arc;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::path::Path;
@@ -122,7 +123,10 @@ impl Shape {
 
     pub fn filled(self) -> Shape {
         match self {
-            Shape::Path(s) => Shape::Polygon(Polygon::new(s.pts(), s.width())),
+            Shape::Path(s) => {
+                assert!(f64_eq(s.width(), 0.0), "path width not supported for polygons");
+                Polygon::new(s.pts()).shape()
+            }
             s => s,
         }
     }

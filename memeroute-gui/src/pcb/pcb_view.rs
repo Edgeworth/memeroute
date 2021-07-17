@@ -7,7 +7,7 @@ use memeroute::model::primitive::shape::Shape;
 use memeroute::model::pt::Pt;
 use memeroute::model::tf::Tf;
 
-use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rt, stroke_path, stroke_polygon};
+use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rt, stroke_path};
 use crate::pcb::{to_pos2, to_pt, to_rt};
 
 // Index 0 is front, index 1 is back.
@@ -97,6 +97,7 @@ impl PcbView {
     }
 
     fn layer_id_to_color_idx(&self, id: &str) -> usize {
+        // TODO: Generalise this?
         match id {
             "F.Cu" => 0,
             "B.Cu" => 1,
@@ -109,10 +110,7 @@ impl PcbView {
         match &v.shape {
             Shape::Rect(s) => shapes.push(fill_rt(tf, s, col)),
             Shape::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
-            Shape::Polygon(s) => {
-                shapes.push(fill_polygon(tf, s.pts(), s.tris(), col));
-                shapes.extend(stroke_polygon(tf, s.pts(), s.width(), col));
-            }
+            Shape::Polygon(s) => shapes.push(fill_polygon(tf, s.pts(), s.tri_idx(), col)),
             Shape::Path(s) => {
                 // Treat paths with width 0 as having a width of 0.2 mm (arbitrary).
                 let w = if s.width() == 0.0 { 0.2 } else { s.width() };
