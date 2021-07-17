@@ -62,7 +62,7 @@ impl Tf {
             let b = self.pt(r.tr());
             Rt::enclosing(a, b).shape()
         } else {
-            let poly = Polygon::new(&[r.tl(), r.bl(), r.br(), r.tr()], 0.0);
+            let poly = Polygon::new(&[r.tl(), r.bl(), r.br(), r.tr()]);
             self.polygon(&poly).shape()
         }
     }
@@ -87,7 +87,7 @@ impl Tf {
 
     pub fn polygon(&self, p: &Polygon) -> Polygon {
         let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
-        Polygon::new(&pts, self.length(p.width()))
+        Polygon::new(&pts)
     }
 
     pub fn path(&self, p: &Path) -> Path {

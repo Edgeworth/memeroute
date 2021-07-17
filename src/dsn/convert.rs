@@ -6,7 +6,7 @@ use crate::dsn::types::{
     DsnComponent, DsnDimensionUnit, DsnId, DsnImage, DsnKeepout, DsnKeepoutType, DsnNet,
     DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
 };
-use crate::model::geom::math::pt_eq;
+use crate::model::geom::math::{f64_eq, pt_eq};
 use crate::model::pcb::{
     Component, Keepout, KeepoutType, Layer, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Side,
 };
@@ -75,10 +75,11 @@ impl Converter {
                 if pts.len() >= 2 && pt_eq(*pts.first().unwrap(), *pts.last().unwrap()) {
                     pts.pop();
                 }
-                LayerShape {
-                    layer: v.layer_id.clone(),
-                    shape: Polygon::new(&pts, self.coord(v.aperture_width)).shape(),
-                }
+                assert!(
+                    f64_eq(v.aperture_width, 0.0),
+                    "aperture width for polygons is unsupported"
+                );
+                LayerShape { layer: v.layer_id.clone(), shape: Polygon::new(&pts).shape() }
             }
             DsnShape::Path(v) => LayerShape {
                 layer: v.layer_id.clone(),
