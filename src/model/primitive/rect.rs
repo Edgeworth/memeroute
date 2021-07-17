@@ -1,7 +1,7 @@
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 
-use crate::model::geom::math::f64_eq;
+use crate::model::geom::math::{eq, ge, gt, le, lt};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::{pt, pti, rt, ShapeOps};
@@ -15,8 +15,8 @@ pub struct Rt {
     h: f64,
 }
 
+// Rt covers the range [l, l + w) . [b, b + h)
 impl Rt {
-    // x and y denotes the bottom left point of the rectangle.
     pub const fn new(l: f64, b: f64, w: f64, h: f64) -> Self {
         Self { l, b, w, h }
     }
@@ -80,7 +80,11 @@ impl Rt {
     }
 
     pub fn contains(&self, p: Pt) -> bool {
-        p.x >= self.l() && p.y >= self.b() && p.x <= self.r() && p.y <= self.t()
+        ge(p.x, self.l()) && ge(p.y, self.b()) && lt(p.x, self.r()) && lt(p.y, self.t())
+    }
+
+    pub fn intersects(&self, r: &Rt) -> bool {
+        lt(self.l(), r.r()) && ge(self.r(), r.l()) && gt(self.t(), r.b()) && le(self.b(), r.t())
     }
 
     pub fn is_empty(&self) -> bool {
@@ -111,9 +115,9 @@ impl Rt {
 
     // Returns a rectangle with the same area that matches the aspect ratio of |r|.
     pub fn match_aspect(&self, r: &Rt) -> Rt {
-        if f64_eq(r.w, 0.0) {
+        if eq(r.w, 0.0) {
             rt(self.l, self.b, 0.0, self.h)
-        } else if f64_eq(r.h, 0.0) {
+        } else if eq(r.h, 0.0) {
             rt(self.l, self.b, self.w, 0.0)
         } else {
             let aspect = (r.w / r.h).sqrt();

@@ -1,6 +1,6 @@
 use earcutr::earcut;
 
-use crate::model::geom::bounds::point_cloud_bounds;
+use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::convex::{ensure_ccw, remove_collinear};
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -47,7 +47,7 @@ impl Polygon {
 
 impl ShapeOps for Polygon {
     fn bounds(&self) -> Rt {
-        point_cloud_bounds(&self.pts)
+        pt_cloud_bounds(&self.pts)
     }
 
     fn shape(self) -> Shape {
