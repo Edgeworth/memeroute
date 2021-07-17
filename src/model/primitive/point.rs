@@ -4,7 +4,9 @@ use derive_more::Display;
 use nalgebra::{vector, Vector2};
 use serde::{Deserialize, Serialize};
 
-use crate::model::sz::Sz;
+use crate::model::primitive::rect::Rt;
+use crate::model::primitive::shape::Shape;
+use crate::model::primitive::{pt, pti, rt, ShapeOps};
 
 #[derive(Debug, Default, PartialEq, Copy, Clone, Display, Serialize, Deserialize)]
 #[display(fmt = "({}, {})", x, y)]
@@ -30,12 +32,8 @@ impl Pt {
         [self.x, self.y]
     }
 
-    pub fn as_sz(&self) -> Sz {
-        Sz::new(self.x, self.y)
-    }
-
     pub fn offset(&self, dx: f64, dy: f64) -> Pt {
-        Pt::new(self.x + dx, self.y + dy)
+        pt(self.x + dx, self.y + dy)
     }
 
     pub fn cross(&self, p: Pt) -> f64 {
@@ -43,7 +41,7 @@ impl Pt {
     }
 
     pub fn perp(&self) -> Pt {
-        Pt::new(-self.y, self.x).norm()
+        pt(-self.y, self.x).norm()
     }
 
     pub fn dist(&self, b: Pt) -> f64 {
@@ -56,7 +54,7 @@ impl Pt {
 
     pub fn norm(&self) -> Pt {
         let mag = self.mag();
-        Pt::new(self.x / mag, self.y / mag)
+        pt(self.x / mag, self.y / mag)
     }
 }
 
@@ -89,20 +87,25 @@ impl From<Pt> for Vector2<f64> {
     }
 }
 
-impl_op_ex!(-|a: &Pt| -> Pt { Pt::new(-a.x, -a.y) });
+impl ShapeOps for Pt {
+    fn bounds(&self) -> Rt {
+        rt(self.x, self.y, 0.0, 0.0)
+    }
 
-impl_op_ex!(+ |a: &Pt, b: &Pt| -> Pt { Pt::new(a.x + b.x, a.y + b.y) });
+    fn shape(self) -> Shape {
+        Shape::Point(self)
+    }
+}
+
+impl_op_ex!(-|a: &Pt| -> Pt { pt(-a.x, -a.y) });
+
+impl_op_ex!(+ |a: &Pt, b: &Pt| -> Pt { pt(a.x + b.x, a.y + b.y) });
 impl_op_ex!(+= |a: &mut Pt, b: &Pt| { a.x += b.x; a.y += b.y; });
-impl_op_ex!(-|a: &Pt, b: &Pt| -> Pt { Pt::new(a.x - b.x, a.y - b.y) });
+impl_op_ex!(-|a: &Pt, b: &Pt| -> Pt { pt(a.x - b.x, a.y - b.y) });
 impl_op_ex!(-= |a: &mut Pt, b: &Pt| { a.x -= b.x; a.y -= b.y; });
 
-impl_op_ex_commutative!(*|a: &Pt, b: &f64| -> Pt { Pt::new(a.x * b, a.y * b) });
-impl_op_ex_commutative!(/|a: &Pt, b: &f64| -> Pt { Pt::new(a.x / b, a.y / b) });
-
-impl_op_ex_commutative!(+ |a: &Pt, b: &Sz| -> Pt { Pt::new(a.x + b.w, a.y + b.h) });
-impl_op_ex!(+= |a: &mut Pt, b: &Sz| { a.x += b.w; a.y += b.h; });
-impl_op_ex_commutative!(-|a: &Pt, b: &Sz| -> Pt { Pt::new(a.x - b.w, a.y - b.h) });
-impl_op_ex!(-= |a: &mut Pt, b: &Sz| { a.x -= b.w; a.y -= b.h; });
+impl_op_ex_commutative!(*|a: &Pt, b: &f64| -> Pt { pt(a.x * b, a.y * b) });
+impl_op_ex_commutative!(/|a: &Pt, b: &f64| -> Pt { pt(a.x / b, a.y / b) });
 
 #[derive(Debug, Default, PartialEq, Eq, Hash, Copy, Clone, Display, Serialize, Deserialize)]
 #[display(fmt = "({}, {})", x, y)]
@@ -116,7 +119,7 @@ impl PtI {
         Self { x, y }
     }
 
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self::new(0, 0)
     }
 
@@ -125,12 +128,12 @@ impl PtI {
     }
 }
 
-impl_op_ex!(-|a: &PtI| -> PtI { PtI::new(-a.x, -a.y) });
+impl_op_ex!(-|a: &PtI| -> PtI { pti(-a.x, -a.y) });
 
-impl_op_ex!(+ |a: &PtI, b: &PtI| -> PtI { PtI::new(a.x + b.x, a.y + b.y) });
+impl_op_ex!(+ |a: &PtI, b: &PtI| -> PtI { pti(a.x + b.x, a.y + b.y) });
 impl_op_ex!(+= |a: &mut PtI, b: &PtI| { a.x += b.x; a.y += b.y; });
-impl_op_ex!(-|a: &PtI, b: &PtI| -> PtI { PtI::new(a.x - b.x, a.y - b.y) });
+impl_op_ex!(-|a: &PtI, b: &PtI| -> PtI { pti(a.x - b.x, a.y - b.y) });
 impl_op_ex!(-= |a: &mut PtI, b: &PtI| { a.x -= b.x; a.y -= b.y; });
 
-impl_op_ex_commutative!(*|a: &PtI, b: &i64| -> PtI { PtI::new(a.x * b, a.y * b) });
-impl_op_ex_commutative!(/|a: &PtI, b: &i64| -> PtI { PtI::new(a.x / b, a.y / b) });
+impl_op_ex_commutative!(*|a: &PtI, b: &i64| -> PtI { pti(a.x * b, a.y * b) });
+impl_op_ex_commutative!(/|a: &PtI, b: &i64| -> PtI { pti(a.x / b, a.y / b) });

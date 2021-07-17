@@ -1,122 +1,163 @@
-use crate::model::geom::contains::{
-    circle_contains_circle, circle_contains_path, circle_contains_polygon, circle_contains_rt,
-    path_contains_circle, path_contains_path, path_contains_polygon, path_contains_rt,
-    polygon_contains_circle, polygon_contains_path, polygon_contains_polygon, polygon_contains_rt,
-    rt_contains_circle, rt_contains_path, rt_contains_polygon, rt_contains_rt,
-};
-use crate::model::geom::intersects::{
-    circle_intersects_circle, circle_intersects_path, circle_intersects_polygon,
-    path_intersects_path, polygon_intersects_path, polygon_intersects_polygon,
-    rt_intersects_circle, rt_intersects_path, rt_intersects_polygon, rt_intersects_rt,
-};
+use crate::model::geom::contains::polygon_contains_rt;
+use crate::model::geom::intersects::rt_intersects_polygon;
 use crate::model::geom::math::f64_eq;
-use crate::model::primitive::arc::Arc;
 use crate::model::primitive::circle::Circle;
-use crate::model::primitive::path::Path;
+use crate::model::primitive::line_shape::Line;
+use crate::model::primitive::path_shape::Path;
+use crate::model::primitive::point::Pt;
 use crate::model::primitive::polygon::Polygon;
-use crate::model::primitive::rt::Rt;
-use crate::model::primitive::tri::Tri;
+use crate::model::primitive::rect::Rt;
+use crate::model::primitive::segment::Segment;
+use crate::model::primitive::triangle::Tri;
+use crate::model::primitive::{poly, ShapeOps};
 
 #[derive(Debug, Clone)]
 pub enum Shape {
-    Arc(Arc),
     Circle(Circle),
+    Line(Line),
     Path(Path),
+    Point(Pt),
     Polygon(Polygon),
     Rect(Rt),
+    Segment(Segment),
     Tri(Tri),
 }
 
 impl Shape {
-    pub fn bounds(&self) -> Rt {
-        match self {
-            Shape::Arc(_) => todo!(),
-            Shape::Circle(s) => s.bounds(),
-            Shape::Path(s) => s.bounds(),
-            Shape::Polygon(s) => s.bounds(),
-            Shape::Rect(s) => *s,
-            Shape::Tri(s) => s.bounds(),
-        }
-    }
-
     pub fn intersects(&self, s: &Shape) -> bool {
         match (self, s) {
-            (Shape::Arc(_), Shape::Arc(_)) => todo!(),
-            (Shape::Arc(_), Shape::Circle(_)) => todo!(),
-            (Shape::Arc(_), Shape::Path(_)) => todo!(),
-            (Shape::Arc(_), Shape::Polygon(_)) => todo!(),
-            (Shape::Arc(_), Shape::Rect(_)) => todo!(),
-            (Shape::Arc(_), Shape::Tri(_)) => todo!(),
-            (Shape::Circle(_), Shape::Arc(_)) => todo!(),
+            (Shape::Circle(_), Shape::Line(_)) => todo!(),
+            (Shape::Circle(_), Shape::Point(_)) => todo!(),
+            (Shape::Circle(_), Shape::Segment(_)) => todo!(),
             (Shape::Circle(_), Shape::Tri(_)) => todo!(),
-            (Shape::Circle(a), Shape::Circle(b)) => circle_intersects_circle(a, b),
-            (Shape::Circle(a), Shape::Path(b)) => circle_intersects_path(a, b),
-            (Shape::Circle(a), Shape::Polygon(b)) => circle_intersects_polygon(a, b),
-            (Shape::Circle(a), Shape::Rect(b)) => rt_intersects_circle(b, a),
-            (Shape::Path(_), Shape::Arc(_)) => todo!(),
+            (Shape::Circle(_), Shape::Circle(_)) => todo!(),
+            (Shape::Circle(_), Shape::Path(_)) => todo!(),
+            (Shape::Circle(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Circle(_), Shape::Rect(_)) => todo!(),
+            (Shape::Line(_), Shape::Circle(_)) => todo!(),
+            (Shape::Line(_), Shape::Line(_)) => todo!(),
+            (Shape::Line(_), Shape::Path(_)) => todo!(),
+            (Shape::Line(_), Shape::Point(_)) => todo!(),
+            (Shape::Line(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Line(_), Shape::Rect(_)) => todo!(),
+            (Shape::Line(_), Shape::Segment(_)) => todo!(),
+            (Shape::Line(_), Shape::Tri(_)) => todo!(),
+            (Shape::Path(_), Shape::Line(_)) => todo!(),
+            (Shape::Path(_), Shape::Point(_)) => todo!(),
+            (Shape::Path(_), Shape::Segment(_)) => todo!(),
             (Shape::Path(_), Shape::Tri(_)) => todo!(),
-            (Shape::Path(a), Shape::Circle(b)) => circle_intersects_path(b, a),
-            (Shape::Path(a), Shape::Path(b)) => path_intersects_path(a, b),
-            (Shape::Path(a), Shape::Polygon(b)) => polygon_intersects_path(b, a),
-            (Shape::Path(a), Shape::Rect(b)) => rt_intersects_path(b, a),
-            (Shape::Polygon(_), Shape::Arc(_)) => todo!(),
+            (Shape::Path(_), Shape::Circle(_)) => todo!(),
+            (Shape::Path(_), Shape::Path(_)) => todo!(),
+            (Shape::Path(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Path(_), Shape::Rect(_)) => todo!(),
+            (Shape::Point(_), Shape::Circle(_)) => todo!(),
+            (Shape::Point(_), Shape::Line(_)) => todo!(),
+            (Shape::Point(_), Shape::Path(_)) => todo!(),
+            (Shape::Point(_), Shape::Point(_)) => todo!(),
+            (Shape::Point(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Point(_), Shape::Rect(_)) => todo!(),
+            (Shape::Point(_), Shape::Segment(_)) => todo!(),
+            (Shape::Point(_), Shape::Tri(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Line(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Point(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Segment(_)) => todo!(),
             (Shape::Polygon(_), Shape::Tri(_)) => todo!(),
-            (Shape::Polygon(a), Shape::Circle(b)) => circle_intersects_polygon(b, a),
-            (Shape::Polygon(a), Shape::Path(b)) => polygon_intersects_path(a, b),
-            (Shape::Polygon(a), Shape::Polygon(b)) => polygon_intersects_polygon(a, b),
+            (Shape::Polygon(_), Shape::Circle(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Path(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Polygon(_)) => todo!(),
             (Shape::Polygon(a), Shape::Rect(b)) => rt_intersects_polygon(b, a),
-            (Shape::Rect(_), Shape::Arc(_)) => todo!(),
+            (Shape::Rect(_), Shape::Line(_)) => todo!(),
+            (Shape::Rect(_), Shape::Point(_)) => todo!(),
+            (Shape::Rect(_), Shape::Segment(_)) => todo!(),
             (Shape::Rect(_), Shape::Tri(_)) => todo!(),
-            (Shape::Rect(a), Shape::Circle(b)) => rt_intersects_circle(a, b),
-            (Shape::Rect(a), Shape::Path(b)) => rt_intersects_path(a, b),
+            (Shape::Rect(_), Shape::Circle(_)) => todo!(),
+            (Shape::Rect(_), Shape::Path(_)) => todo!(),
             (Shape::Rect(a), Shape::Polygon(b)) => rt_intersects_polygon(a, b),
-            (Shape::Rect(a), Shape::Rect(b)) => rt_intersects_rt(a, b),
-            (Shape::Tri(_), Shape::Arc(_)) => todo!(),
+            (Shape::Rect(_), Shape::Rect(_)) => todo!(),
+            (Shape::Segment(_), Shape::Circle(_)) => todo!(),
+            (Shape::Segment(_), Shape::Line(_)) => todo!(),
+            (Shape::Segment(_), Shape::Path(_)) => todo!(),
+            (Shape::Segment(_), Shape::Point(_)) => todo!(),
+            (Shape::Segment(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Segment(_), Shape::Rect(_)) => todo!(),
+            (Shape::Segment(_), Shape::Segment(_)) => todo!(),
+            (Shape::Segment(_), Shape::Tri(_)) => todo!(),
             (Shape::Tri(_), Shape::Circle(_)) => todo!(),
+            (Shape::Tri(_), Shape::Line(_)) => todo!(),
             (Shape::Tri(_), Shape::Path(_)) => todo!(),
+            (Shape::Tri(_), Shape::Point(_)) => todo!(),
             (Shape::Tri(_), Shape::Polygon(_)) => todo!(),
             (Shape::Tri(_), Shape::Rect(_)) => todo!(),
+            (Shape::Tri(_), Shape::Segment(_)) => todo!(),
             (Shape::Tri(_), Shape::Tri(_)) => todo!(),
         }
     }
 
     pub fn contains(&self, s: &Shape) -> bool {
         match (self, s) {
-            (Shape::Arc(_), Shape::Arc(_)) => todo!(),
-            (Shape::Arc(_), Shape::Circle(_)) => todo!(),
-            (Shape::Arc(_), Shape::Path(_)) => todo!(),
-            (Shape::Arc(_), Shape::Polygon(_)) => todo!(),
-            (Shape::Arc(_), Shape::Rect(_)) => todo!(),
-            (Shape::Arc(_), Shape::Tri(_)) => todo!(),
-            (Shape::Circle(_), Shape::Arc(_)) => todo!(),
+            (Shape::Circle(_), Shape::Line(_)) => todo!(),
+            (Shape::Circle(_), Shape::Point(_)) => todo!(),
+            (Shape::Circle(_), Shape::Segment(_)) => todo!(),
             (Shape::Circle(_), Shape::Tri(_)) => todo!(),
-            (Shape::Circle(a), Shape::Circle(b)) => circle_contains_circle(a, b),
-            (Shape::Circle(a), Shape::Path(b)) => circle_contains_path(a, b),
-            (Shape::Circle(a), Shape::Polygon(b)) => circle_contains_polygon(a, b),
-            (Shape::Circle(a), Shape::Rect(b)) => circle_contains_rt(a, b),
-            (Shape::Path(_), Shape::Arc(_)) => todo!(),
+            (Shape::Circle(_), Shape::Circle(_)) => todo!(),
+            (Shape::Circle(_), Shape::Path(_)) => todo!(),
+            (Shape::Circle(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Circle(_), Shape::Rect(_)) => todo!(),
+            (Shape::Line(_), Shape::Circle(_)) => todo!(),
+            (Shape::Line(_), Shape::Line(_)) => todo!(),
+            (Shape::Line(_), Shape::Path(_)) => todo!(),
+            (Shape::Line(_), Shape::Point(_)) => todo!(),
+            (Shape::Line(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Line(_), Shape::Rect(_)) => todo!(),
+            (Shape::Line(_), Shape::Segment(_)) => todo!(),
+            (Shape::Line(_), Shape::Tri(_)) => todo!(),
+            (Shape::Path(_), Shape::Line(_)) => todo!(),
+            (Shape::Path(_), Shape::Point(_)) => todo!(),
+            (Shape::Path(_), Shape::Segment(_)) => todo!(),
             (Shape::Path(_), Shape::Tri(_)) => todo!(),
-            (Shape::Path(a), Shape::Circle(b)) => path_contains_circle(a, b),
-            (Shape::Path(a), Shape::Path(b)) => path_contains_path(a, b),
-            (Shape::Path(a), Shape::Polygon(b)) => path_contains_polygon(a, b),
-            (Shape::Path(a), Shape::Rect(b)) => path_contains_rt(a, b),
-            (Shape::Polygon(_), Shape::Arc(_)) => todo!(),
+            (Shape::Path(_), Shape::Circle(_)) => todo!(),
+            (Shape::Path(_), Shape::Path(_)) => todo!(),
+            (Shape::Path(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Path(_), Shape::Rect(_)) => todo!(),
+            (Shape::Point(_), Shape::Circle(_)) => todo!(),
+            (Shape::Point(_), Shape::Line(_)) => todo!(),
+            (Shape::Point(_), Shape::Path(_)) => todo!(),
+            (Shape::Point(_), Shape::Point(_)) => todo!(),
+            (Shape::Point(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Point(_), Shape::Rect(_)) => todo!(),
+            (Shape::Point(_), Shape::Segment(_)) => todo!(),
+            (Shape::Point(_), Shape::Tri(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Line(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Point(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Segment(_)) => todo!(),
             (Shape::Polygon(_), Shape::Tri(_)) => todo!(),
-            (Shape::Polygon(a), Shape::Circle(b)) => polygon_contains_circle(a, b),
-            (Shape::Polygon(a), Shape::Path(b)) => polygon_contains_path(a, b),
-            (Shape::Polygon(a), Shape::Polygon(b)) => polygon_contains_polygon(a, b),
+            (Shape::Polygon(_), Shape::Circle(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Path(_)) => todo!(),
+            (Shape::Polygon(_), Shape::Polygon(_)) => todo!(),
             (Shape::Polygon(a), Shape::Rect(b)) => polygon_contains_rt(a, b),
-            (Shape::Rect(_), Shape::Arc(_)) => todo!(),
+            (Shape::Rect(_), Shape::Line(_)) => todo!(),
+            (Shape::Rect(_), Shape::Point(_)) => todo!(),
+            (Shape::Rect(_), Shape::Segment(_)) => todo!(),
             (Shape::Rect(_), Shape::Tri(_)) => todo!(),
-            (Shape::Rect(a), Shape::Circle(b)) => rt_contains_circle(a, b),
-            (Shape::Rect(a), Shape::Path(b)) => rt_contains_path(a, b),
-            (Shape::Rect(a), Shape::Polygon(b)) => rt_contains_polygon(a, b),
-            (Shape::Rect(a), Shape::Rect(b)) => rt_contains_rt(a, b),
-            (Shape::Tri(_), Shape::Arc(_)) => todo!(),
+            (Shape::Rect(_), Shape::Circle(_)) => todo!(),
+            (Shape::Rect(_), Shape::Path(_)) => todo!(),
+            (Shape::Rect(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Rect(_), Shape::Rect(_)) => todo!(),
+            (Shape::Segment(_), Shape::Circle(_)) => todo!(),
+            (Shape::Segment(_), Shape::Line(_)) => todo!(),
+            (Shape::Segment(_), Shape::Path(_)) => todo!(),
+            (Shape::Segment(_), Shape::Point(_)) => todo!(),
+            (Shape::Segment(_), Shape::Polygon(_)) => todo!(),
+            (Shape::Segment(_), Shape::Rect(_)) => todo!(),
+            (Shape::Segment(_), Shape::Segment(_)) => todo!(),
+            (Shape::Segment(_), Shape::Tri(_)) => todo!(),
             (Shape::Tri(_), Shape::Circle(_)) => todo!(),
+            (Shape::Tri(_), Shape::Line(_)) => todo!(),
             (Shape::Tri(_), Shape::Path(_)) => todo!(),
+            (Shape::Tri(_), Shape::Point(_)) => todo!(),
             (Shape::Tri(_), Shape::Polygon(_)) => todo!(),
             (Shape::Tri(_), Shape::Rect(_)) => todo!(),
+            (Shape::Tri(_), Shape::Segment(_)) => todo!(),
             (Shape::Tri(_), Shape::Tri(_)) => todo!(),
         }
     }
@@ -124,10 +165,29 @@ impl Shape {
     pub fn filled(self) -> Shape {
         match self {
             Shape::Path(s) => {
-                assert!(f64_eq(s.width(), 0.0), "path width not supported for polygons");
-                Polygon::new(s.pts()).shape()
+                assert!(f64_eq(s.r(), 0.0), "path width not supported for polygons");
+                poly(s.pts()).shape()
             }
             s => s,
         }
+    }
+}
+
+impl ShapeOps for Shape {
+    fn bounds(&self) -> Rt {
+        match self {
+            Shape::Circle(s) => s.bounds(),
+            Shape::Line(s) => s.bounds(),
+            Shape::Path(s) => s.bounds(),
+            Shape::Point(s) => s.bounds(),
+            Shape::Polygon(s) => s.bounds(),
+            Shape::Rect(s) => s.bounds(),
+            Shape::Segment(s) => s.bounds(),
+            Shape::Tri(s) => s.bounds(),
+        }
+    }
+
+    fn shape(self) -> Shape {
+        self
     }
 }

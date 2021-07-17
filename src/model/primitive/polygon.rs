@@ -2,10 +2,11 @@ use earcutr::earcut;
 
 use crate::model::geom::bounds::point_cloud_bounds;
 use crate::model::geom::convex::{ensure_ccw, remove_collinear};
-use crate::model::primitive::rt::Rt;
+use crate::model::primitive::point::Pt;
+use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
-use crate::model::primitive::tri::Tri;
-use crate::model::pt::Pt;
+use crate::model::primitive::triangle::Tri;
+use crate::model::primitive::{tri, ShapeOps};
 
 // Represents a simple non-convex polygon.
 #[derive(Debug, Clone)]
@@ -23,18 +24,13 @@ impl Polygon {
         let tri_idx: Vec<_> = earcut(&verts, &vec![], 2).iter().map(|&v| v as u32).collect();
         let tri = tri_idx
             .array_chunks::<3>()
-            .map(|v| Tri::new([pts[v[0] as usize], pts[v[1] as usize], pts[v[2] as usize]]))
+            .map(|v| tri(pts[v[0] as usize], pts[v[1] as usize], pts[v[2] as usize]))
             .collect();
         Self { pts, tri, tri_idx }
     }
 
-    pub fn shape(self) -> Shape {
-        Shape::Polygon(self)
-    }
 
-    pub fn bounds(&self) -> Rt {
-        point_cloud_bounds(&self.pts)
-    }
+
 
     pub fn pts(&self) -> &[Pt] {
         &self.pts
@@ -46,5 +42,15 @@ impl Polygon {
 
     pub fn tri_idx(&self) -> &[u32] {
         &self.tri_idx
+    }
+}
+
+impl ShapeOps for Polygon {
+    fn bounds(&self) -> Rt {
+        point_cloud_bounds(&self.pts)
+    }
+
+    fn shape(self) -> Shape {
+        Shape::Polygon(self)
     }
 }

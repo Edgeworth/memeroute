@@ -5,23 +5,23 @@ use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
 use crate::model::pcb::{Id, LayerShape, Pcb, Via, Wire};
-use crate::model::primitive::path::Path;
-use crate::model::pt::PtI;
+use crate::model::primitive::point::PtI;
+use crate::model::primitive::{path, pti, ShapeOps};
 use crate::route::grid_model::GridModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
 const VIA_COST: f64 = 10.0;
 
 const DIR: [(PtI, f64); 9] = [
-    (PtI::new(-1, 0), 1.0),
-    (PtI::new(1, 0), 1.0),
-    (PtI::new(0, -1), 1.0),
-    (PtI::new(0, 1), 1.0),
-    (PtI::new(1, 1), 1.414),
-    (PtI::new(1, -1), 1.414),
-    (PtI::new(-1, 1), 1.414),
-    (PtI::new(-1, -1), 1.414),
-    (PtI::new(0, 0), VIA_COST),
+    (pti(-1, 0), 1.0),
+    (pti(1, 0), 1.0),
+    (pti(0, -1), 1.0),
+    (pti(0, 1), 1.0),
+    (pti(1, 1), 1.414),
+    (pti(1, -1), 1.414),
+    (pti(-1, 1), 1.414),
+    (pti(-1, -1), 1.414),
+    (pti(0, 0), VIA_COST),
 ];
 
 #[derive(Debug, Default, Hash, Clone, PartialEq, Eq)]
@@ -67,8 +67,7 @@ impl GridRouter {
         Wire {
             shape: LayerShape {
                 layer: states[0].layer.clone(),
-                // Use 0.49 size to guarantee
-                shape: Path::new(&pts, self.model.resolution * 0.8).shape(),
+                shape: path(&pts, self.model.resolution * 0.4).shape(),
             },
         }
     }
@@ -255,12 +254,12 @@ impl RouteStrategy for GridRouter {
         // let bounds = self.model.grid_rt(&self.model.pcb.bounds());
         // for l in bounds.l()..bounds.r() {
         //     for b in bounds.b()..bounds.t() {
-        //         let p = PtI::new(l, b);
+        //         let p = pti(l, b);
         //         if self.model.is_state_blocked(&self.blk, &State { p, layer: "F.Cu".to_owned() }) {
         //             continue;
         //         }
         //         let shape =
-        //             Circle::new(self.model.world_pt_mid(p), self.model.resolution / 2.0).shape();
+        //             circ(self.model.world_pt_mid(p), self.model.resolution / 2.0).shape();
         //         res.wires.push(Wire { shape: LayerShape { layer: "F.Cu".to_owned(), shape } })
         //     }
         // }

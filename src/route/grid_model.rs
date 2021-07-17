@@ -1,8 +1,9 @@
 use eyre::Result;
 
 use crate::model::pcb::{LayerShape, Net, Padstack, Pcb, Pin, PinRef, Side, Via, Wire, ANY_LAYER};
-use crate::model::primitive::rt::{Rt, RtI};
-use crate::model::pt::{Pt, PtI};
+use crate::model::primitive::point::{Pt, PtI};
+use crate::model::primitive::rect::{Rt, RtI};
+use crate::model::primitive::{pt, pti, ShapeOps};
 use crate::model::tf::Tf;
 use crate::route::grid::{BlockMap, State};
 
@@ -23,7 +24,7 @@ impl GridModel {
 
         for l in bounds.l()..bounds.r() {
             for b in bounds.b()..bounds.t() {
-                let p = PtI::new(l, b);
+                let p = pti(l, b);
                 let r = self.grid_square_in_world(p);
                 if s.intersects(&r.shape()) {
                     *blk.entry(State { p, layer: ls.layer.clone() }).or_insert(0) += count;
@@ -113,7 +114,7 @@ impl GridModel {
 
         for l in bounds.l()..bounds.r() {
             for b in bounds.b()..bounds.t() {
-                let p = PtI::new(l, b);
+                let p = pti(l, b);
                 let r = self.grid_square_in_world(p);
                 if s.intersects(&r.shape())
                     && self.is_state_blocked(blk, &State { p, layer: ls.layer.clone() })
@@ -152,22 +153,22 @@ impl GridModel {
 
     pub fn grid_pt(&self, p: Pt) -> PtI {
         // Map points to the lower left corner.
-        PtI::new((p.x / self.resolution).floor() as i64, (p.y / self.resolution).floor() as i64)
+        pti((p.x / self.resolution).floor() as i64, (p.y / self.resolution).floor() as i64)
     }
 
     pub fn grid_rt(&self, r: &Rt) -> RtI {
-        RtI::enclosing(self.grid_pt(r.bl()), self.grid_pt(r.tr()) + PtI::new(1, 1))
+        RtI::enclosing(self.grid_pt(r.bl()), self.grid_pt(r.tr()) + pti(1, 1))
     }
 
     pub fn grid_square_in_world(&self, p: PtI) -> Rt {
-        Rt::enclosing(self.world_pt(p), self.world_pt(PtI::new(p.x + 1, p.y + 1)))
+        Rt::enclosing(self.world_pt(p), self.world_pt(pti(p.x + 1, p.y + 1)))
     }
 
     pub fn world_pt(&self, p: PtI) -> Pt {
-        Pt::new(p.x as f64 * self.resolution, p.y as f64 * self.resolution)
+        pt(p.x as f64 * self.resolution, p.y as f64 * self.resolution)
     }
 
     pub fn world_pt_mid(&self, p: PtI) -> Pt {
-        self.world_pt(p) + Pt::new(self.resolution / 2.0, self.resolution / 2.0)
+        self.world_pt(p) + pt(self.resolution / 2.0, self.resolution / 2.0)
     }
 }
