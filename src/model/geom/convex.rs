@@ -1,4 +1,5 @@
 use crate::model::geom::math::{is_collinear, is_left_of, is_strictly_left_of};
+use crate::model::primitive::line;
 use crate::model::primitive::point::Pt;
 
 pub fn remove_collinear(pts: &[Pt]) -> Vec<Pt> {
@@ -17,7 +18,7 @@ pub fn remove_collinear(pts: &[Pt]) -> Vec<Pt> {
 }
 
 pub fn ensure_ccw(pts: &mut [Pt]) {
-    if pts.len() > 2 && !is_left_of(pts[2], pts[0], pts[1]) {
+    if pts.len() > 2 && !is_left_of(&line(pts[0], pts[1]), pts[2]) {
         pts.reverse()
     }
 }
@@ -27,7 +28,7 @@ pub fn is_convex_ccw(pts: &[Pt]) -> bool {
         let a = pts[i];
         let b = pts[(i + 1) % pts.len()];
         let c = pts[(i + 2) % pts.len()];
-        if !is_strictly_left_of(c, a, b) {
+        if !is_strictly_left_of(&line(a, b), c) {
             return false;
         }
     }

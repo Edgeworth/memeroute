@@ -1,7 +1,7 @@
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 
-pub fn point_cloud_bounds(pts: &[Pt]) -> Rt {
+pub fn pt_cloud_bounds(pts: &[Pt]) -> Rt {
     if pts.is_empty() {
         Rt::default()
     } else {

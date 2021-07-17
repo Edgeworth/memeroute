@@ -3,7 +3,7 @@ use std::ops::Mul;
 
 use nalgebra::{vector, Matrix3};
 
-use crate::model::geom::math::f64_eq;
+use crate::model::geom::math::eq;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
@@ -60,7 +60,7 @@ impl Tf {
 
     // If there's a rotation, output will be a polygon not a Rt.
     pub fn rt(&self, r: &Rt) -> Shape {
-        if f64_eq(self.m[(1, 0)], 0.0) && f64_eq(self.m[(0, 1)], 0.0) {
+        if eq(self.m[(1, 0)], 0.0) && eq(self.m[(0, 1)], 0.0) {
             let a = self.pt(r.bl());
             let b = self.pt(r.tr());
             Rt::enclosing(a, b).shape()
@@ -72,11 +72,11 @@ impl Tf {
 
     // TODO: Assumes similarity transformation.
     fn check_similarity(&self) {
-        assert!(f64_eq(self.m[(2, 0)], 0.0));
-        assert!(f64_eq(self.m[(2, 1)], 0.0));
-        assert!(f64_eq(self.m[(2, 2)], 1.0));
-        assert!(f64_eq(self.m[(0, 0)], self.m[(1, 1)]));
-        assert!(f64_eq(self.m[(0, 1)], -self.m[(1, 0)]));
+        assert!(eq(self.m[(2, 0)], 0.0));
+        assert!(eq(self.m[(2, 1)], 0.0));
+        assert!(eq(self.m[(2, 2)], 1.0));
+        assert!(eq(self.m[(0, 0)], self.m[(1, 1)]));
+        assert!(eq(self.m[(0, 1)], -self.m[(1, 0)]));
     }
 
     pub fn length(&self, l: f64) -> f64 {

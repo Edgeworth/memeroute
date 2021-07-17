@@ -1,4 +1,4 @@
-use crate::model::geom::bounds::point_cloud_bounds;
+use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::convex::remove_collinear;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -33,7 +33,7 @@ impl Path {
 
 impl ShapeOps for Path {
     fn bounds(&self) -> Rt {
-        point_cloud_bounds(&self.pts).inset(-self.r / 2.0, -self.r / 2.0)
+        pt_cloud_bounds(&self.pts).inset(-self.r / 2.0, -self.r / 2.0)
     }
 
     fn shape(self) -> Shape {
