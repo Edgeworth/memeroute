@@ -65,6 +65,10 @@ impl Rt {
         pt(self.r(), self.t())
     }
 
+    pub fn pts(&self) -> [Pt; 4] {
+        [self.bl(), self.br(), self.tr(), self.tl()]
+    }
+
     pub fn center(&self) -> Pt {
         pt(self.l + self.w / 2.0, self.b + self.h / 2.0)
     }

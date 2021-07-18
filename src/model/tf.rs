@@ -65,7 +65,7 @@ impl Tf {
             let b = self.pt(r.tr());
             Rt::enclosing(a, b).shape()
         } else {
-            let poly = poly(&[r.tl(), r.bl(), r.br(), r.tr()]);
+            let poly = poly(&r.pts());
             self.poly(&poly).shape()
         }
     }

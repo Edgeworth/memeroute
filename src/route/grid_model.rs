@@ -15,7 +15,7 @@ pub struct GridModel {
 
 impl GridModel {
     pub fn new(pcb: Pcb) -> Self {
-        Self { pcb, resolution: 0.5 }
+        Self { pcb, resolution: 0.8 }
     }
 
     pub fn mark_shape(&self, blk: &mut BlockMap, count: i64, tf: &Tf, ls: &LayerShape) {

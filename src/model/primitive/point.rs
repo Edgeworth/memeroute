@@ -56,6 +56,11 @@ impl Pt {
         let mag = self.mag();
         pt(self.x / mag, self.y / mag)
     }
+
+    // Clamps the point to be in the range defined by |r|.
+    pub fn clamp(&self, r: &Rt) -> Pt {
+        pt(self.x.clamp(r.l(), r.r()), self.y.clamp(r.b(), r.t()))
+    }
 }
 
 impl AbsDiffEq for Pt {

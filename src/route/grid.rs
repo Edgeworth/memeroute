@@ -6,7 +6,7 @@ use priority_queue::PriorityQueue;
 
 use crate::model::pcb::{Id, LayerShape, Pcb, Via, Wire};
 use crate::model::primitive::point::PtI;
-use crate::model::primitive::{path, pti, ShapeOps};
+use crate::model::primitive::{circ, path, pti, ShapeOps};
 use crate::route::grid_model::GridModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
@@ -258,8 +258,7 @@ impl RouteStrategy for GridRouter {
         //         if self.model.is_state_blocked(&self.blk, &State { p, layer: "F.Cu".to_owned() }) {
         //             continue;
         //         }
-        //         let shape =
-        //             circ(self.model.world_pt_mid(p), self.model.resolution / 2.0).shape();
+        //         let shape = circ(self.model.world_pt_mid(p), self.model.resolution / 2.0).shape();
         //         res.wires.push(Wire { shape: LayerShape { layer: "F.Cu".to_owned(), shape } })
         //     }
         // }
