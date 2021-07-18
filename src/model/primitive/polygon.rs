@@ -9,6 +9,7 @@ use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{tri, ShapeOps};
 
 // Represents a simple non-convex polygon.
+// Stored in CCW order.
 #[derive(Debug, Clone)]
 pub struct Polygon {
     pts: Vec<Pt>,

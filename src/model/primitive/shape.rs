@@ -1,5 +1,7 @@
-use crate::model::geom::contains::poly_contains_rt;
-use crate::model::geom::intersects::{poly_intersects_rt, rt_intersects_rt, rt_intersects_tri};
+use crate::model::geom::contains::{poly_contains_pt, poly_contains_rt};
+use crate::model::geom::intersects::{
+    circ_intersect_rt, path_intersects_rt, poly_intersects_rt, rt_intersects_rt, rt_intersects_tri,
+};
 use crate::model::geom::math::eq;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
@@ -33,7 +35,7 @@ impl Shape {
             (Shape::Circle(_), Shape::Circle(_)) => todo!(),
             (Shape::Circle(_), Shape::Path(_)) => todo!(),
             (Shape::Circle(_), Shape::Polygon(_)) => todo!(),
-            (Shape::Circle(_), Shape::Rect(_)) => todo!(),
+            (Shape::Circle(a), Shape::Rect(b)) => circ_intersect_rt(a, b),
             (Shape::Line(_), Shape::Circle(_)) => todo!(),
             (Shape::Line(_), Shape::Line(_)) => todo!(),
             (Shape::Line(_), Shape::Path(_)) => todo!(),
@@ -49,7 +51,7 @@ impl Shape {
             (Shape::Path(_), Shape::Circle(_)) => todo!(),
             (Shape::Path(_), Shape::Path(_)) => todo!(),
             (Shape::Path(_), Shape::Polygon(_)) => todo!(),
-            (Shape::Path(_), Shape::Rect(_)) => todo!(),
+            (Shape::Path(a), Shape::Rect(b)) => path_intersects_rt(a, b),
             (Shape::Point(_), Shape::Circle(_)) => todo!(),
             (Shape::Point(_), Shape::Line(_)) => todo!(),
             (Shape::Point(_), Shape::Path(_)) => todo!(),
@@ -59,7 +61,7 @@ impl Shape {
             (Shape::Point(_), Shape::Segment(_)) => todo!(),
             (Shape::Point(_), Shape::Tri(_)) => todo!(),
             (Shape::Polygon(_), Shape::Line(_)) => todo!(),
-            (Shape::Polygon(_), Shape::Point(_)) => todo!(),
+            (Shape::Polygon(a), Shape::Point(b)) => poly_contains_pt(a, b),
             (Shape::Polygon(_), Shape::Segment(_)) => todo!(),
             (Shape::Polygon(_), Shape::Tri(_)) => todo!(),
             (Shape::Polygon(_), Shape::Circle(_)) => todo!(),
@@ -70,8 +72,8 @@ impl Shape {
             (Shape::Rect(_), Shape::Point(_)) => todo!(),
             (Shape::Rect(_), Shape::Segment(_)) => todo!(),
             (Shape::Rect(a), Shape::Tri(b)) => rt_intersects_tri(a, b),
-            (Shape::Rect(_), Shape::Circle(_)) => todo!(),
-            (Shape::Rect(_), Shape::Path(_)) => todo!(),
+            (Shape::Rect(a), Shape::Circle(b)) => circ_intersect_rt(b, a),
+            (Shape::Rect(a), Shape::Path(b)) => path_intersects_rt(b, a),
             (Shape::Rect(a), Shape::Polygon(b)) => poly_intersects_rt(b, a),
             (Shape::Rect(a), Shape::Rect(b)) => rt_intersects_rt(a, b),
             (Shape::Segment(_), Shape::Circle(_)) => todo!(),

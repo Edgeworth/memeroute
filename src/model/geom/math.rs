@@ -47,6 +47,10 @@ pub fn is_left_of(l: &Line, p: Pt) -> bool {
     ge(cross_at(l.st(), l.en(), p), 0.0)
 }
 
+pub fn is_right_of(l: &Line, p: Pt) -> bool {
+    le(cross_at(l.st(), l.en(), p), 0.0)
+}
+
 pub fn is_collinear(a: Pt, b: Pt, c: Pt) -> bool {
     eq(cross_at(a, b, c), 0.0)
 }
