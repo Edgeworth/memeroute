@@ -20,5 +20,5 @@ pub fn to_rect(r: &Rt) -> Rect {
 
 pub fn to_rt(r: Rect) -> Rt {
     // Using r.top() is correct here because our Rt's are flipped compared to Rects.
-    rt(r.left() as f64, r.top() as f64, r.width() as f64, r.height() as f64)
+    rt(r.left() as f64, r.top() as f64, r.right() as f64, r.bottom() as f64)
 }

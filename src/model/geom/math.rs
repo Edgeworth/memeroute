@@ -38,6 +38,18 @@ pub fn cross_at(o: Pt, a: Pt, b: Pt) -> f64 {
     (o - a).cross(o - b)
 }
 
+// -1 for CW (right of), 0 for collinear, 1 for CCW (left of)
+pub fn orientation(l: &Line, p: Pt) -> i32 {
+    let v = cross_at(l.st(), l.en(), p);
+    if eq(v, 0.0) {
+        0
+    } else if v > 0.0 {
+        1
+    } else {
+        -1
+    }
+}
+
 // Returns true iff p is strictly left of line.
 pub fn is_strictly_left_of(l: &Line, p: Pt) -> bool {
     gt(cross_at(l.st(), l.en(), p), 0.0)
@@ -61,7 +73,7 @@ pub fn pts_same_side(l: &Line, pts: &[Pt]) -> bool {
         return true;
     }
     let is_left = is_left_of(l, pts[0]);
-    for p in pts.iter() {
+    for p in pts {
         if is_left != is_left_of(l, *p) {
             return false;
         }

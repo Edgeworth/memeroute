@@ -23,6 +23,7 @@ pub fn ensure_ccw(pts: &mut [Pt]) {
     }
 }
 
+// Tests if a CCW polygon |pts| is convex.
 pub fn is_convex_ccw(pts: &[Pt]) -> bool {
     for i in 0..pts.len() {
         let a = pts[i];

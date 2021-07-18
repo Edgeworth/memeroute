@@ -25,7 +25,7 @@ impl Circle {
 
 impl ShapeOps for Circle {
     fn bounds(&self) -> Rt {
-        rt(self.p.x - self.r, self.p.y - self.r, 2.0 * self.r, 2.0 * self.r)
+        rt(self.p.x - self.r, self.p.y - self.r, self.p.x + self.r, self.p.y + self.r)
     }
 
     fn shape(self) -> Shape {

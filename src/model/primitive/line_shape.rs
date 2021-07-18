@@ -21,6 +21,10 @@ impl Line {
     pub const fn en(&self) -> Pt {
         self.en
     }
+
+    pub fn dir(&self) -> Pt {
+        self.en - self.st
+    }
 }
 
 impl ShapeOps for Line {

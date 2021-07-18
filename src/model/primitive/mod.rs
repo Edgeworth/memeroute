@@ -27,7 +27,7 @@ pub fn circ(p: Pt, r: f64) -> Circle {
     Circle::new(p, r)
 }
 
-pub fn line(st: Pt, en: Pt) -> Line {
+pub const fn line(st: Pt, en: Pt) -> Line {
     Line::new(st, en)
 }
 

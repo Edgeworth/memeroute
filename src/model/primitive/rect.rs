@@ -6,43 +6,55 @@ use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::{pt, pti, rt, ShapeOps};
 
-#[derive(Debug, Default, Copy, Clone, Display)]
-#[display(fmt = "({}, {}, {}, {})", l, b, w, h)]
+#[derive(Debug, Copy, Clone, Display)]
+#[display(fmt = "({}, {}, {}, {})", l, b, r, t)]
 pub struct Rt {
     l: f64,
     b: f64,
-    w: f64,
-    h: f64,
+    r: f64,
+    t: f64,
 }
 
-// Rt covers the range [l, l + w) . [b, b + h)
+impl Default for Rt {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+// Rt covers the range [l, r] . [b, t]. Empty rectangles have r < l or t < b.
+// Note that a rectangle with l == r and b == t may not be empty although have
+// a width and height of zero.
 impl Rt {
-    pub const fn new(l: f64, b: f64, w: f64, h: f64) -> Self {
-        Self { l, b, w, h }
+    pub const fn new(l: f64, b: f64, r: f64, t: f64) -> Self {
+        Self { l, b, r, t }
     }
 
     pub const fn empty() -> Self {
-        rt(0.0, 0.0, 0.0, 0.0)
+        rt(0.0, 0.0, -1.0, -1.0)
     }
 
-    pub const fn w(&self) -> f64 {
-        self.w
+    pub fn is_empty(&self) -> bool {
+        lt(self.r, self.l) || lt(self.t, self.b)
     }
 
-    pub const fn h(&self) -> f64 {
-        self.h
+    pub fn w(&self) -> f64 {
+        self.r - self.l
+    }
+
+    pub fn h(&self) -> f64 {
+        self.t - self.b
     }
 
     pub const fn l(&self) -> f64 {
         self.l
     }
 
-    pub fn t(&self) -> f64 {
-        self.b + self.h
+    pub const fn t(&self) -> f64 {
+        self.t
     }
 
-    pub fn r(&self) -> f64 {
-        self.l + self.w
+    pub const fn r(&self) -> f64 {
+        self.r
     }
 
     pub const fn b(&self) -> f64 {
@@ -53,46 +65,44 @@ impl Rt {
         pt(self.l(), self.b())
     }
 
-    pub fn br(&self) -> Pt {
+    pub const fn br(&self) -> Pt {
         pt(self.r(), self.b())
     }
 
-    pub fn tl(&self) -> Pt {
+    pub const fn tl(&self) -> Pt {
         pt(self.l(), self.t())
     }
 
-    pub fn tr(&self) -> Pt {
+    pub const fn tr(&self) -> Pt {
         pt(self.r(), self.t())
     }
 
-    pub fn pts(&self) -> [Pt; 4] {
+    pub const fn pts(&self) -> [Pt; 4] {
         [self.bl(), self.br(), self.tr(), self.tl()]
     }
 
     pub fn center(&self) -> Pt {
-        pt(self.l + self.w / 2.0, self.b + self.h / 2.0)
+        pt((self.l + self.r) / 2.0, (self.b + self.t) / 2.0)
     }
 
     pub fn area(&self) -> f64 {
-        self.w * self.h
+        self.w() * self.h()
     }
 
+    // Insetting a rectangle more than its size will produce a rectangle
+    // containing the single center point .
     pub fn inset(&self, dx: f64, dy: f64) -> Rt {
-        let wsub = if 2.0 * dx < self.w { 2.0 * dx } else { self.w };
-        let hsub = if 2.0 * dy < self.h { 2.0 * dy } else { self.h };
-        rt(self.l + wsub / 2.0, self.b + hsub / 2.0, self.w - wsub, self.h - hsub)
+        let wsub = self.w().min(2.0 * dx) / 2.0;
+        let hsub = self.h().min(2.0 * dy) / 2.0;
+        rt(self.l + wsub, self.b + hsub, self.r - wsub, self.t - hsub)
     }
 
     pub fn contains(&self, p: Pt) -> bool {
-        ge(p.x, self.l()) && ge(p.y, self.b()) && lt(p.x, self.r()) && lt(p.y, self.t())
+        ge(p.x, self.l()) && ge(p.y, self.b()) && le(p.x, self.r()) && le(p.y, self.t())
     }
 
     pub fn intersects(&self, r: &Rt) -> bool {
-        lt(self.l(), r.r()) && ge(self.r(), r.l()) && gt(self.t(), r.b()) && le(self.b(), r.t())
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.w == 0.0 && self.h == 0.0
+        le(self.l(), r.r()) && ge(self.r(), r.l()) && gt(self.t(), r.b()) && le(self.b(), r.t())
     }
 
     pub fn united(&self, rect: &Rt) -> Rt {
@@ -105,7 +115,7 @@ impl Rt {
             let b = self.b.min(rect.b);
             let r = self.r().max(rect.r());
             let t = self.t().max(rect.t());
-            rt(l, b, r - l, t - b)
+            rt(l, b, r, t)
         }
     }
 
@@ -114,19 +124,19 @@ impl Rt {
         let b = pa.y.min(pb.y);
         let r = pa.x.max(pb.x);
         let t = pa.y.max(pb.y);
-        rt(l, b, r - l, t - b)
+        rt(l, b, r, t)
     }
 
     // Returns a rectangle with the same area that matches the aspect ratio of |r|.
     pub fn match_aspect(&self, r: &Rt) -> Rt {
-        if eq(r.w, 0.0) {
-            rt(self.l, self.b, 0.0, self.h)
-        } else if eq(r.h, 0.0) {
-            rt(self.l, self.b, self.w, 0.0)
+        if eq(r.w(), 0.0) {
+            rt(self.l, self.b, self.l, self.t)
+        } else if eq(r.h(), 0.0) {
+            rt(self.l, self.b, self.r, self.b)
         } else {
-            let aspect = (r.w / r.h).sqrt();
+            let aspect = (r.w() / r.h()).sqrt();
             let len = self.area().sqrt();
-            rt(self.l, self.b, len * aspect, len / aspect)
+            rt(self.l, self.b, self.l + len * aspect, self.b + len / aspect)
         }
     }
 }
@@ -147,23 +157,23 @@ impl ShapeOps for Rt {
     }
 }
 
-impl_op_ex!(+ |a: &Rt, b: &Rt| -> Rt { rt(a.l + b.l, a.b + b.b, a.w + b.w, a.h + b.h) });
-impl_op_ex!(+= |a: &mut Rt, b: &Rt| { a.l += b.l; a.b += b.b; a.w += b.w; a.h += b.h; });
-impl_op_ex!(-|a: &Rt, b: &Rt| -> Rt { rt(a.l - b.l, a.b - b.b, a.w - b.w, a.h - b.h) });
-impl_op_ex!(-= |a: &mut Rt, b: &Rt| { a.l -= b.l; a.b -= b.b; a.w -= b.w; a.h -= b.h; });
+// impl_op_ex!(+ |a: &Rt, b: &Rt| -> Rt { rt(a.l + b.l, a.b + b.b, a.w + b.w, a.h + b.h) });
+// impl_op_ex!(+= |a: &mut Rt, b: &Rt| { a.l += b.l; a.b += b.b; a.w += b.w; a.h += b.h; });
+// impl_op_ex!(-|a: &Rt, b: &Rt| -> Rt { rt(a.l - b.l, a.b - b.b, a.w - b.w, a.h - b.h) });
+// impl_op_ex!(-= |a: &mut Rt, b: &Rt| { a.l -= b.l; a.b -= b.b; a.w -= b.w; a.h -= b.h; });
 
-impl_op_ex_commutative!(+|a: &Rt, b: &Pt| -> Rt { rt(a.l + b.x, a.b + b.y, a.w, a.h) });
-impl_op_ex_commutative!(-|a: &Rt, b: &Pt| -> Rt { rt(a.l - b.x, a.b - b.y, a.w, a.h) });
+// impl_op_ex_commutative!(+|a: &Rt, b: &Pt| -> Rt { rt(a.l + b.x, a.b + b.y, a.w, a.h) });
+// impl_op_ex_commutative!(-|a: &Rt, b: &Pt| -> Rt { rt(a.l - b.x, a.b - b.y, a.w, a.h) });
 
-impl_op_ex_commutative!(*|a: &Rt, b: &f64| -> Rt { rt(a.l * b, a.b * b, a.w * b, a.h * b) });
-impl_op_ex_commutative!(/|a: &Rt, b: &f64| -> Rt { rt(a.l / b, a.b / b, a.w / b, a.h / b) });
+impl_op_ex_commutative!(*|a: &Rt, b: &f64| -> Rt { rt(a.l * b, a.b * b, a.r * b, a.t * b) });
+impl_op_ex_commutative!(/|a: &Rt, b: &f64| -> Rt { rt(a.l / b, a.b / b, a.r / b, a.t / b) });
 impl_op_ex_commutative!(*|a: &Rt, b: &i64| -> Rt {
     let b = *b as f64;
-    rt(a.l * b, a.b * b, a.w * b, a.h * b)
+    rt(a.l * b, a.b * b, a.r * b, a.t * b)
 });
 impl_op_ex_commutative!(/|a: &Rt, b: &i64| -> Rt {
     let b = *b as f64;
-    rt(a.l / b, a.b / b, a.w / b, a.h / b)
+    rt(a.l / b, a.b / b, a.r / b, a.t / b)
 });
 
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone, Display)]

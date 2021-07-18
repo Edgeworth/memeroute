@@ -1,7 +1,7 @@
 use earcutr::earcut;
 
 use crate::model::geom::bounds::pt_cloud_bounds;
-use crate::model::geom::convex::{ensure_ccw, remove_collinear};
+use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -15,6 +15,7 @@ pub struct Polygon {
     pts: Vec<Pt>,
     tri: Vec<Tri>,
     tri_idx: Vec<u32>,
+    is_convex: bool,
 }
 
 impl Polygon {
@@ -27,11 +28,9 @@ impl Polygon {
             .array_chunks::<3>()
             .map(|v| tri(pts[v[0] as usize], pts[v[1] as usize], pts[v[2] as usize]))
             .collect();
-        Self { pts, tri, tri_idx }
+        let is_convex = is_convex_ccw(&pts);
+        Self { pts, tri, tri_idx, is_convex }
     }
-
-
-
 
     pub fn pts(&self) -> &[Pt] {
         &self.pts
@@ -43,6 +42,10 @@ impl Polygon {
 
     pub fn tri_idx(&self) -> &[u32] {
         &self.tri_idx
+    }
+
+    pub fn is_convex(&self) -> bool {
+        self.is_convex
     }
 }
 
