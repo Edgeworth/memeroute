@@ -6,7 +6,7 @@ use priority_queue::PriorityQueue;
 
 use crate::model::pcb::{Id, LayerShape, Pcb, Via, Wire};
 use crate::model::primitive::point::PtI;
-use crate::model::primitive::{circ, path, pti, ShapeOps};
+use crate::model::primitive::{path, pti, ShapeOps};
 use crate::route::grid_model::GridModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
@@ -113,7 +113,7 @@ impl GridRouter {
         let mut wires = Vec::new();
         let mut vias = Vec::new();
         let mut cur_states = Vec::new();
-        for cur in path.iter() {
+        for cur in path {
             self.push_path(&mut wires, &mut vias, &mut cur_states, false);
             cur_states.push(cur.clone());
         }
@@ -121,19 +121,18 @@ impl GridRouter {
         (wires, vias)
     }
 
-    // Returns
     fn dijkstra(&self, srcs: &[State], dsts: &[State]) -> Vec<State> {
         let mut q: PriorityQueue<State, OrderedFloat<f64>> = PriorityQueue::new();
         let mut node_data: HashMap<State, NodeData> = HashMap::new();
 
-        for src in srcs.iter() {
+        for src in srcs {
             q.push(src.clone(), OrderedFloat(0.0));
         }
 
         let mut dst = None;
         while let Some((cur, cur_cost)) = q.pop() {
             let cur_cost = -cur_cost.0;
-            for (dp, edge_cost) in DIR.iter() {
+            for (dp, edge_cost) in DIR {
                 let is_via = dp.is_zero();
                 let layers = if is_via {
                     let via_padstack = self.via_from_state(&cur).padstack;

@@ -7,7 +7,7 @@ pub fn pt_cloud_bounds(pts: &[Pt]) -> Rt {
     } else {
         let mut bl = pts[0];
         let mut tr = pts[0];
-        for pt in pts.iter() {
+        for pt in pts {
             bl.x = bl.x.min(pt.x);
             bl.y = bl.y.min(pt.y);
             tr.x = tr.x.max(pt.x);

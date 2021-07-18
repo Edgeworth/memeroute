@@ -5,7 +5,7 @@ use memeroute::model::pcb::{Component, Keepout, LayerShape, Padstack, Pcb, Pin, 
 use memeroute::model::primitive::point::Pt;
 use memeroute::model::primitive::rect::Rt;
 use memeroute::model::primitive::shape::Shape;
-use memeroute::model::primitive::{pt, rt};
+use memeroute::model::primitive::{pt, ShapeOps};
 use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rt, stroke_path};
@@ -204,12 +204,7 @@ impl PcbView {
         let mut mesh = self.mesh.clone();
         if self.dirty {
             let inv = Tf::scale(pt(1.0, -1.0)); // Invert y axis
-            let local_area = rt(
-                self.local_area.l(),
-                -self.local_area.t(),
-                self.local_area.w(),
-                self.local_area.h(),
-            );
+            let local_area = inv.rt(&self.local_area).bounds();
             let tf = Tf::translate(self.offset)
                 * Tf::scale(pt(self.zoom, self.zoom))
                 * Tf::affine(&local_area, &self.screen_area)

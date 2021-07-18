@@ -1,9 +1,13 @@
+use derive_more::Display;
+
+use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
-use crate::model::primitive::ShapeOps;
+use crate::model::primitive::{line, ShapeOps};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Display, Copy, Clone)]
+#[display(fmt = "Seg[{}, {}]", st, en)]
 pub struct Segment {
     st: Pt,
     en: Pt,
@@ -20,6 +24,14 @@ impl Segment {
 
     pub const fn en(&self) -> Pt {
         self.en
+    }
+
+    pub fn dir(&self) -> Pt {
+        self.en - self.st
+    }
+
+    pub const fn line(&self) -> Line {
+        line(self.st, self.en)
     }
 }
 

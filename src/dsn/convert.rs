@@ -45,8 +45,8 @@ impl Converter {
         rt(
             self.coord(v.rect.l()),
             self.coord(v.rect.b()),
-            self.coord(v.rect.w()),
-            self.coord(v.rect.h()),
+            self.coord(v.rect.r()),
+            self.coord(v.rect.t()),
         )
     }
 

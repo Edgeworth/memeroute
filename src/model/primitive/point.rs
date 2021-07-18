@@ -94,7 +94,7 @@ impl From<Pt> for Vector2<f64> {
 
 impl ShapeOps for Pt {
     fn bounds(&self) -> Rt {
-        rt(self.x, self.y, 0.0, 0.0)
+        rt(self.x, self.y, self.x, self.y)
     }
 
     fn shape(self) -> Shape {
