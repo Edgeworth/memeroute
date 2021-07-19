@@ -49,7 +49,15 @@ impl Pt {
     }
 
     pub fn mag(&self) -> f64 {
-        (self.x * self.x + self.y * self.y).sqrt()
+        self.mag2().sqrt()
+    }
+
+    pub fn mag2(&self) -> f64 {
+        self.x * self.x + self.y * self.y
+    }
+
+    pub fn dot(&self, p: Pt) -> f64 {
+        self.x * p.x + self.y * p.y
     }
 
     pub fn norm(&self) -> Pt {

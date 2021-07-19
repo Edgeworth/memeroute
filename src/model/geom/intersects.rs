@@ -1,13 +1,22 @@
-use crate::model::geom::distance::circ_rt_dist;
-use crate::model::geom::math::{lt, ne, orientation, pts_same_side};
+use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist};
+use crate::model::geom::math::{le, lt, ne, orientation, pts_same_side};
+use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
-use crate::model::primitive::line;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::polygon::Polygon;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
+use crate::model::primitive::{cap, line};
+
+pub fn cap_intersect_rt(a: &Capsule, b: &Rt) -> bool {
+    if b.contains(a.st()) || b.contains(a.en()) {
+        true
+    } else {
+        le(rt_seg_dist(b, &a.seg()), a.r())
+    }
+}
 
 pub fn circ_intersect_rt(a: &Circle, b: &Rt) -> bool {
     // Check if the circle centre is contained in the rect or
@@ -24,8 +33,14 @@ pub fn line_intersects_seg(_a: &Line, _b: &Segment) -> bool {
     todo!()
 }
 
-pub fn path_intersects_rt(_a: &Path, _b: &Rt) -> bool {
-    todo!()
+pub fn path_intersects_rt(a: &Path, b: &Rt) -> bool {
+    // Check whether each capsule in the path intersects the rectangle.
+    for &[st, en] in a.pts().array_windows::<2>() {
+        if cap_intersect_rt(&cap(st, en, a.r()), b) {
+            return true;
+        }
+    }
+    false
 }
 
 pub fn poly_intersects_rt(a: &Polygon, b: &Rt) -> bool {
@@ -75,6 +90,7 @@ pub fn rt_intersects_seg(_a: &Rt, _b: &Segment) -> bool {
 }
 
 pub fn seg_intersects_seg(a: &Segment, b: &Segment) -> bool {
+    // Check if the segment endpoints are on opposite sides of the other segment.
     let a_st = orientation(&b.line(), a.st());
     let a_en = orientation(&b.line(), a.en());
     let b_st = orientation(&a.line(), b.st());

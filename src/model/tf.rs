@@ -4,6 +4,7 @@ use std::ops::Mul;
 use nalgebra::{vector, Matrix3};
 
 use crate::model::geom::math::eq;
+use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
@@ -13,7 +14,7 @@ use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::triangle::Tri;
-use crate::model::primitive::{circ, line, path, poly, pt, seg, tri, ShapeOps};
+use crate::model::primitive::{cap, circ, line, path, poly, pt, seg, tri, ShapeOps};
 
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub struct Tf {
@@ -84,6 +85,10 @@ impl Tf {
         l * pt(self.m[(0, 0)], self.m[(1, 0)]).mag()
     }
 
+    pub fn cap(&self, c: &Capsule) -> Capsule {
+        cap(self.pt(c.st()), self.pt(c.en()), self.length(c.r()))
+    }
+
     pub fn circ(&self, c: &Circle) -> Circle {
         circ(self.pt(c.p()), self.length(c.r()))
     }
@@ -114,6 +119,7 @@ impl Tf {
 
     pub fn shape(&self, s: &Shape) -> Shape {
         match s {
+            Shape::Capsule(s) => self.cap(s).shape(),
             Shape::Circle(s) => self.circ(s).shape(),
             Shape::Line(s) => self.line(s).shape(),
             Shape::Path(s) => self.path(s).shape(),
