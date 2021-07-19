@@ -1,6 +1,11 @@
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 
+use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist};
+use crate::model::geom::intersects::{
+    cap_intersect_rt, circ_intersect_rt, path_intersects_rt, poly_intersects_rt, rt_intersects_rt,
+    rt_intersects_seg, rt_intersects_tri,
+};
 use crate::model::geom::math::{eq, ge, gt, le, lt};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::shape::Shape;
@@ -155,15 +160,49 @@ impl ShapeOps for Rt {
     fn shape(self) -> Shape {
         Shape::Rect(self)
     }
+
+    fn intersects_shape(&self, s: &Shape) -> bool {
+        match s {
+            Shape::Capsule(s) => cap_intersect_rt(s, self),
+            Shape::Circle(s) => circ_intersect_rt(s, self),
+            Shape::Line(_) => todo!(),
+            Shape::Path(s) => path_intersects_rt(s, self),
+            Shape::Point(s) => self.contains(*s),
+            Shape::Polygon(s) => poly_intersects_rt(s, self),
+            Shape::Rect(s) => rt_intersects_rt(self, s),
+            Shape::Segment(s) => rt_intersects_seg(self, s),
+            Shape::Tri(s) => rt_intersects_tri(self, s),
+        }
+    }
+
+    fn contains_shape(&self, s: &Shape) -> bool {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(s) => self.contains(*s),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(_) => todo!(),
+            Shape::Segment(_) => todo!(),
+            Shape::Tri(_) => todo!(),
+        }
+    }
+
+    fn dist_to_shape(&self, s: &Shape) -> f64 {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(s) => circ_rt_dist(s, self),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(_) => todo!(),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(_) => todo!(),
+            Shape::Segment(s) => rt_seg_dist(self, s),
+            Shape::Tri(_) => todo!(),
+        }
+    }
 }
-
-// impl_op_ex!(+ |a: &Rt, b: &Rt| -> Rt { rt(a.l + b.l, a.b + b.b, a.w + b.w, a.h + b.h) });
-// impl_op_ex!(+= |a: &mut Rt, b: &Rt| { a.l += b.l; a.b += b.b; a.w += b.w; a.h += b.h; });
-// impl_op_ex!(-|a: &Rt, b: &Rt| -> Rt { rt(a.l - b.l, a.b - b.b, a.w - b.w, a.h - b.h) });
-// impl_op_ex!(-= |a: &mut Rt, b: &Rt| { a.l -= b.l; a.b -= b.b; a.w -= b.w; a.h -= b.h; });
-
-// impl_op_ex_commutative!(+|a: &Rt, b: &Pt| -> Rt { rt(a.l + b.x, a.b + b.y, a.w, a.h) });
-// impl_op_ex_commutative!(-|a: &Rt, b: &Pt| -> Rt { rt(a.l - b.x, a.b - b.y, a.w, a.h) });
 
 impl_op_ex_commutative!(*|a: &Rt, b: &f64| -> Rt { rt(a.l * b, a.b * b, a.r * b, a.t * b) });
 impl_op_ex_commutative!(/|a: &Rt, b: &f64| -> Rt { rt(a.l / b, a.b / b, a.r / b, a.t / b) });
