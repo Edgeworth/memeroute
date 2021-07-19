@@ -1,6 +1,6 @@
-use crate::model::geom::math::{ge, is_left_of, is_right_of, lt};
+use crate::model::geom::math::{ge, is_left_of, is_right_of, lt, orientation};
 use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::Polygon;
+use crate::model::primitive::polygon::{edges, Polygon};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::{line, seg};
@@ -15,9 +15,7 @@ pub fn poly_contains_rt(a: &Polygon, b: &Rt) -> bool {
     }
     // Check segment containment of |b| in |a| if |a| is non-convex.
     if !a.is_convex() {
-        for i in 0..pts.len() {
-            let p0 = pts[i];
-            let p1 = pts[(i + 1) % pts.len()];
+        for [&p0, &p1] in edges(&pts) {
             if !poly_contains_seg(a, &seg(p0, p1)) {
                 return false;
             }
@@ -31,10 +29,7 @@ pub fn poly_contains_pt(a: &Polygon, b: &Pt) -> bool {
     // of edges from |a|. Treats points on the boundary of the polygon as
     // contained.
     let mut winding = 0;
-    let pts = a.pts();
-    for i in 0..pts.len() {
-        let p0 = pts[i];
-        let p1 = pts[(i + 1) % pts.len()];
+    for [&p0, &p1] in a.edges() {
         // Treat points at b.y as slightly above it.
         if ge(p0.y, b.y) {
             // Downward crossing edge with |b| to the right of it decreases
@@ -51,6 +46,27 @@ pub fn poly_contains_pt(a: &Polygon, b: &Pt) -> bool {
     winding != 0
 }
 
-pub fn poly_contains_seg(_a: &Polygon, _b: &Segment) -> bool {
-    todo!()
+pub fn poly_contains_seg(a: &Polygon, b: &Segment) -> bool {
+    // Check that both endpoints of |b| are in a.
+    if !poly_contains_pt(a, &b.st()) || !poly_contains_pt(a, &b.en()) {
+        return false;
+    }
+
+    // If |a| is convex only need to check endpoint containment.
+    if a.is_convex() {
+        return true;
+    }
+
+    // Check that |b| does not cross any edge of |a|.
+    for [&p0, &p1] in a.edges() {
+        let p_st = orientation(&b.line(), p0);
+        let p_en = orientation(&b.line(), p1);
+        let b_st = orientation(&line(p0, p1), b.st());
+        let b_en = orientation(&line(p0, p1), b.en());
+        // Segments are crossing and no collinear points.
+        if p_st != p_en && b_st != b_en {
+            return false;
+        }
+    }
+    true
 }

@@ -83,17 +83,25 @@ impl GridModel {
                 self.mark_shape(blk, 1, &tf, &keepout.shape);
             }
         }
+
+        // Mark boundary. Grab bounds and expand by one to generate at least
+        // a blocking border of 1 grid square around boundary.
+        let bounds = self.grid_rt(&self.pcb.bounds()).inset(-1, -1);
+        for l in bounds.l()..bounds.r() {
+            for b in bounds.b()..bounds.t() {
+                // TODO: Check which layer the boundary is for.
+                let p = pti(l, b);
+                let r = self.grid_square_in_world(p);
+                if !self.pcb.boundary_contains_rt(&r) {
+                    *blk.entry(State { p, layer: ANY_LAYER.to_owned() }).or_insert(0) += 1;
+                }
+            }
+        }
     }
 
     // Checks if the state |s| is routable (inside boundary, outside of
     // keepouts, etc).
     pub fn is_state_blocked(&self, blk: &BlockMap, s: &State) -> bool {
-        // TODO: Check which layer the boundary is for.
-        let r = self.grid_square_in_world(s.p);
-        if !self.pcb.boundary_contains_rt(&r) {
-            return true;
-        }
-
         if *blk.get(s).unwrap_or(&0) > 0 {
             return true;
         }

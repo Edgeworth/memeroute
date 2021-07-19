@@ -1,3 +1,6 @@
+use std::cmp::Ordering;
+use std::ops::Index;
+
 use earcutr::earcut;
 
 use crate::model::geom::bounds::pt_cloud_bounds;
@@ -36,6 +39,10 @@ impl Polygon {
         &self.pts
     }
 
+    pub fn edges(&self) -> EdgeIterator<'_> {
+        edges(&self.pts)
+    }
+
     pub fn tri(&self) -> &[Tri] {
         &self.tri
     }
@@ -57,4 +64,39 @@ impl ShapeOps for Polygon {
     fn shape(self) -> Shape {
         Shape::Polygon(self)
     }
+}
+
+impl Index<usize> for Polygon {
+    type Output = Pt;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.pts[index]
+    }
+}
+
+pub struct EdgeIterator<'a> {
+    pts: &'a [Pt],
+    idx: usize,
+}
+
+impl<'a> EdgeIterator<'a> {
+    pub fn new(pts: &'a [Pt]) -> Self {
+        Self { pts, idx: 0 }
+    }
+}
+
+impl<'a> Iterator for EdgeIterator<'a> {
+    type Item = [&'a Pt; 2];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.pts.len().cmp(&(self.idx + 1)) {
+            Ordering::Less => None,
+            Ordering::Equal => Some([&self.pts[self.idx], &self.pts[0]]),
+            Ordering::Greater => Some([&self.pts[self.idx], &self.pts[self.idx + 1]]),
+        }
+    }
+}
+
+pub fn edges(pts: &[Pt]) -> EdgeIterator<'_> {
+    EdgeIterator::new(pts)
 }
