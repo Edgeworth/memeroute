@@ -1,3 +1,4 @@
+use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
@@ -17,10 +18,15 @@ pub mod rect;
 pub mod segment;
 pub mod shape;
 pub mod triangle;
+pub mod capsule;
 
 pub trait ShapeOps {
     fn bounds(&self) -> Rt;
     fn shape(self) -> Shape;
+}
+
+pub fn cap(st: Pt, en: Pt, r: f64) -> Capsule {
+    Capsule::new(st, en, r)
 }
 
 pub fn circ(p: Pt, r: f64) -> Circle {

@@ -1,5 +1,12 @@
 use crate::model::primitive::circle::Circle;
+use crate::model::primitive::line_shape::Line;
+use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
+use crate::model::primitive::seg;
+use crate::model::primitive::segment::Segment;
+
+// Currently these don't return signed distance. They kind of assume
+// the shapes don't intersect.
 
 // Returns the distance from the circle to the boundary of the
 // rectangle.
@@ -7,4 +14,32 @@ pub fn circ_rt_dist(a: &Circle, b: &Rt) -> f64 {
     // Project circle centre onto the rectangle:
     let p = a.p().clamp(b);
     p.dist(a.p()) - a.r()
+}
+
+pub fn line_pt_dist(a: &Line, b: &Pt) -> f64 {
+    b.dist(a.project(*b))
+}
+
+pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
+    let st_dist = a.dist(b.st());
+    let en_dist = a.dist(b.en());
+    let project = b.line().project(*a);
+    let dist = st_dist.min(en_dist);
+    if b.contains(project) { dist.min(a.dist(project)) } else { dist }
+}
+
+pub fn rt_seg_dist(a: &Rt, b: &Segment) -> f64 {
+    // Check for closest distance from the segment to the edges of the rectangle.
+    let pts = a.pts();
+    let segs = [seg(pts[0], pts[1]), seg(pts[1], pts[2]), seg(pts[2], pts[3]), seg(pts[3], pts[0])];
+    segs.iter().map(|seg| seg_seg_dist(seg, b)).min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+}
+
+pub fn seg_seg_dist(a: &Segment, b: &Segment) -> f64 {
+    // Closest distance must be between an endpoint and a segment.
+    let mut best = pt_seg_dist(&a.st(), b);
+    best = best.min(pt_seg_dist(&a.en(), b));
+    best = best.min(pt_seg_dist(&b.st(), a));
+    best = best.min(pt_seg_dist(&b.en(), a));
+    best
 }

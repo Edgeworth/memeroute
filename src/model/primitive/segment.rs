@@ -1,5 +1,6 @@
 use derive_more::Display;
 
+use crate::model::geom::math::is_collinear;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -32,6 +33,10 @@ impl Segment {
 
     pub const fn line(&self) -> Line {
         line(self.st, self.en)
+    }
+
+    pub fn contains(&self, p: Pt) -> bool {
+        Rt::enclosing(self.st, self.en).contains(p) && is_collinear(self.st, self.en, p)
     }
 }
 
