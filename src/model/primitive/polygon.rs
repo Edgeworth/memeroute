@@ -4,7 +4,9 @@ use std::ops::Index;
 use earcutr::earcut;
 
 use crate::model::geom::bounds::pt_cloud_bounds;
+use crate::model::geom::contains::{poly_contains_pt, poly_contains_rt, poly_contains_seg};
 use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
+use crate::model::geom::intersects::poly_intersects_rt;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -63,6 +65,48 @@ impl ShapeOps for Polygon {
 
     fn shape(self) -> Shape {
         Shape::Polygon(self)
+    }
+
+    fn intersects_shape(&self, s: &Shape) -> bool {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(s) => poly_contains_pt(self, s),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(s) => poly_intersects_rt(self, s),
+            Shape::Segment(_) => todo!(),
+            Shape::Tri(_) => todo!(),
+        }
+    }
+
+    fn contains_shape(&self, s: &Shape) -> bool {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(s) => poly_contains_pt(self, s),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(s) => poly_contains_rt(self, s),
+            Shape::Segment(s) => poly_contains_seg(self, s),
+            Shape::Tri(_) => todo!(),
+        }
+    }
+
+    fn dist_to_shape(&self, s: &Shape) -> f64 {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(_) => todo!(),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(_) => todo!(),
+            Shape::Segment(_) => todo!(),
+            Shape::Tri(_) => todo!(),
+        }
     }
 }
 

@@ -9,6 +9,7 @@ use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::triangle::Tri;
 
+pub mod capsule;
 pub mod circle;
 pub mod line_shape;
 pub mod path_shape;
@@ -18,11 +19,16 @@ pub mod rect;
 pub mod segment;
 pub mod shape;
 pub mod triangle;
-pub mod capsule;
 
 pub trait ShapeOps {
     fn bounds(&self) -> Rt;
     fn shape(self) -> Shape;
+    // Returns true iff the two shapes have a non-zero intersection.
+    fn intersects_shape(&self, s: &Shape) -> bool;
+    // Returns true iff |s| is fully contained within this shape.
+    fn contains_shape(&self, s: &Shape) -> bool;
+    // Returns the minimum distance between the two shapes.
+    fn dist_to_shape(&self, s: &Shape) -> f64;
 }
 
 pub fn cap(st: Pt, en: Pt, r: f64) -> Capsule {

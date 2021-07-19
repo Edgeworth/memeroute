@@ -4,6 +4,8 @@ use derive_more::Display;
 use nalgebra::{vector, Vector2};
 use serde::{Deserialize, Serialize};
 
+use crate::model::geom::contains::poly_contains_pt;
+use crate::model::geom::distance::{line_pt_dist, pt_seg_dist};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::{pt, pti, rt, ShapeOps};
@@ -107,6 +109,48 @@ impl ShapeOps for Pt {
 
     fn shape(self) -> Shape {
         Shape::Point(self)
+    }
+
+    fn intersects_shape(&self, s: &Shape) -> bool {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(_) => todo!(),
+            Shape::Polygon(s) => poly_contains_pt(s, self),
+            Shape::Rect(_) => todo!(),
+            Shape::Segment(_) => todo!(),
+            Shape::Tri(_) => todo!(),
+        }
+    }
+
+    fn contains_shape(&self, s: &Shape) -> bool {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(_) => todo!(),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(_) => todo!(),
+            Shape::Segment(_) => todo!(),
+            Shape::Tri(_) => todo!(),
+        }
+    }
+
+    fn dist_to_shape(&self, s: &Shape) -> f64 {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(s) => line_pt_dist(s, self),
+            Shape::Path(_) => todo!(),
+            Shape::Point(_) => todo!(),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(_) => todo!(),
+            Shape::Segment(s) => pt_seg_dist(self, s),
+            Shape::Tri(_) => todo!(),
+        }
     }
 }
 

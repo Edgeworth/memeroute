@@ -274,7 +274,7 @@ impl Pcb {
     pub fn boundary_contains_rt(&self, r: &Rt) -> bool {
         let r = r.shape();
         for boundary in self.boundaries() {
-            if boundary.shape.contains(&r) {
+            if boundary.shape.contains_shape(&r) {
                 return true;
             }
         }

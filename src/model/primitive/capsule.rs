@@ -1,3 +1,4 @@
+use crate::model::geom::intersects::cap_intersect_rt;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
@@ -41,5 +42,47 @@ impl ShapeOps for Capsule {
 
     fn shape(self) -> Shape {
         Shape::Capsule(self)
+    }
+
+    fn intersects_shape(&self, s: &Shape) -> bool {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(_) => todo!(),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(s) => cap_intersect_rt(self, s),
+            Shape::Segment(_) => todo!(),
+            Shape::Tri(_) => todo!(),
+        }
+    }
+
+    fn contains_shape(&self, s: &Shape) -> bool {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(_) => todo!(),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(_) => todo!(),
+            Shape::Segment(_) => todo!(),
+            Shape::Tri(_) => todo!(),
+        }
+    }
+
+    fn dist_to_shape(&self, s: &Shape) -> f64 {
+        match s {
+            Shape::Capsule(_) => todo!(),
+            Shape::Circle(_) => todo!(),
+            Shape::Line(_) => todo!(),
+            Shape::Path(_) => todo!(),
+            Shape::Point(_) => todo!(),
+            Shape::Polygon(_) => todo!(),
+            Shape::Rect(_) => todo!(),
+            Shape::Segment(_) => todo!(),
+            Shape::Tri(_) => todo!(),
+        }
     }
 }

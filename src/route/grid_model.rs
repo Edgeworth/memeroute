@@ -26,7 +26,7 @@ impl GridModel {
             for b in bounds.b()..bounds.t() {
                 let p = pti(l, b);
                 let r = self.grid_square_in_world(p);
-                if s.intersects(&r.shape()) {
+                if s.intersects_shape(&r.shape()) {
                     *blk.entry(State { p, layer: ls.layer.clone() }).or_insert(0) += count;
                 }
             }
@@ -124,7 +124,7 @@ impl GridModel {
             for b in bounds.b()..bounds.t() {
                 let p = pti(l, b);
                 let r = self.grid_square_in_world(p);
-                if s.intersects(&r.shape())
+                if s.intersects_shape(&r.shape())
                     && self.is_state_blocked(blk, &State { p, layer: ls.layer.clone() })
                 {
                     return true;
