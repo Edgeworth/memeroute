@@ -231,6 +231,12 @@ impl RtI {
         pti(self.r(), self.t())
     }
 
+    pub fn inset(&self, dx: i64, dy: i64) -> RtI {
+        let wsub = if 2 * dx < self.w { 2 * dx } else { self.w };
+        let hsub = if 2 * dy < self.h { 2 * dy } else { self.h };
+        RtI::new(self.x + wsub / 2, self.y + hsub / 2, self.w - wsub, self.h - hsub)
+    }
+
     pub fn enclosing(pa: PtI, pb: PtI) -> RtI {
         let x = pa.x.min(pb.x);
         let y = pa.y.min(pb.y);
