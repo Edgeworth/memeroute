@@ -3,6 +3,8 @@ use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 
+use crate::model::geom::bounds::rt_cloud_bounds;
+use crate::model::primitive::compound::Compound;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -168,6 +170,9 @@ pub struct Pcb {
     wires: Vec<Wire>,
     vias: Vec<Via>,
     nets: HashMap<Id, Net>,
+
+    // TODO: Separate compound shapes for each layer.
+    boundaries_qt: HashMap<Id, Compound>,
 }
 
 impl Pcb {
@@ -223,8 +228,16 @@ impl Pcb {
         self.components.get(id)
     }
 
+    pub fn add_wire(&mut self, w: Wire) {
+        self.wires.push(w);
+    }
+
     pub fn wires(&self) -> &[Wire] {
         &self.wires
+    }
+
+    pub fn add_via(&mut self, v: Via) {
+        self.vias.push(v);
     }
 
     pub fn vias(&self) -> &[Via] {
@@ -243,14 +256,6 @@ impl Pcb {
         self.nets.get(id)
     }
 
-    pub fn add_wire(&mut self, w: Wire) {
-        self.wires.push(w);
-    }
-
-    pub fn add_via(&mut self, v: Via) {
-        self.vias.push(v);
-    }
-
     pub fn pin_ref(&self, p: &PinRef) -> Result<(&Component, &Pin)> {
         let component = self
             .component(&p.component)
@@ -263,11 +268,7 @@ impl Pcb {
 
     pub fn bounds(&self) -> Rt {
         // Assumes boundaries are valid.
-        let mut b = Rt::empty();
-        for boundary in self.boundaries() {
-            b = b.united(&boundary.shape.bounds());
-        }
-        b
+        rt_cloud_bounds(self.boundaries().iter().map(|v| v.shape.bounds()))
     }
 
     // Tests if the given rect is within the boundaries of the PCB.

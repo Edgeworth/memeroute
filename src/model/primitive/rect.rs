@@ -70,16 +70,32 @@ impl Rt {
         pt(self.l(), self.b())
     }
 
+    pub fn bl_quadrant(&self) -> Rt {
+        rt(self.l(), self.b(), self.center().x, self.center().y)
+    }
+
     pub const fn br(&self) -> Pt {
         pt(self.r(), self.b())
+    }
+
+    pub fn br_quadrant(&self) -> Rt {
+        rt(self.center().x, self.b(), self.r(), self.center().y)
     }
 
     pub const fn tl(&self) -> Pt {
         pt(self.l(), self.t())
     }
 
+    pub fn tl_quadrant(&self) -> Rt {
+        rt(self.l(), self.center().y, self.center().x, self.t())
+    }
+
     pub const fn tr(&self) -> Pt {
         pt(self.r(), self.t())
+    }
+
+    pub fn tr_quadrant(&self) -> Rt {
+        rt(self.center().x, self.center().y, self.r(), self.t())
     }
 
     pub const fn pts(&self) -> [Pt; 4] {
@@ -165,6 +181,7 @@ impl ShapeOps for Rt {
         match s {
             Shape::Capsule(s) => cap_intersect_rt(s, self),
             Shape::Circle(s) => circ_intersect_rt(s, self),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => path_intersects_rt(s, self),
             Shape::Point(s) => self.contains(*s),
@@ -179,6 +196,7 @@ impl ShapeOps for Rt {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(s) => self.contains(*s),
@@ -193,6 +211,7 @@ impl ShapeOps for Rt {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(s) => circ_rt_dist(s, self),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),

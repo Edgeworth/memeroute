@@ -5,6 +5,7 @@
     bool_to_option,
     const_fn_trait_bound,
     destructuring_assignment,
+    drain_filter,
     is_sorted,
     map_first_last,
     option_result_contains,

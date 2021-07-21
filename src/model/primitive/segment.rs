@@ -55,6 +55,7 @@ impl ShapeOps for Segment {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(s) => line_intersects_seg(s, self),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
@@ -69,6 +70,7 @@ impl ShapeOps for Segment {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
@@ -83,6 +85,7 @@ impl ShapeOps for Segment {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(s) => pt_seg_dist(s, self),

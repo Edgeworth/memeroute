@@ -1,6 +1,7 @@
 use crate::model::geom::math::eq;
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
+use crate::model::primitive::compound::Compound;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
@@ -14,6 +15,7 @@ use crate::model::primitive::{poly, ShapeOps};
 pub enum Shape {
     Capsule(Capsule),
     Circle(Circle),
+    Compound(Compound),
     Line(Line),
     Path(Path),
     Point(Pt),
@@ -40,6 +42,7 @@ impl ShapeOps for Shape {
         match self {
             Shape::Capsule(s) => s.bounds(),
             Shape::Circle(s) => s.bounds(),
+            Shape::Compound(s) => s.bounds(),
             Shape::Line(s) => s.bounds(),
             Shape::Path(s) => s.bounds(),
             Shape::Point(s) => s.bounds(),
@@ -58,6 +61,7 @@ impl ShapeOps for Shape {
         match self {
             Shape::Capsule(us) => us.intersects_shape(s),
             Shape::Circle(us) => us.intersects_shape(s),
+            Shape::Compound(us) => us.intersects_shape(s),
             Shape::Line(us) => us.intersects_shape(s),
             Shape::Path(us) => us.intersects_shape(s),
             Shape::Point(us) => us.intersects_shape(s),
@@ -72,6 +76,7 @@ impl ShapeOps for Shape {
         match self {
             Shape::Capsule(us) => us.contains_shape(s),
             Shape::Circle(us) => us.contains_shape(s),
+            Shape::Compound(us) => us.contains_shape(s),
             Shape::Line(us) => us.contains_shape(s),
             Shape::Path(us) => us.contains_shape(s),
             Shape::Point(us) => us.contains_shape(s),
@@ -86,6 +91,7 @@ impl ShapeOps for Shape {
         match self {
             Shape::Capsule(us) => us.dist_to_shape(s),
             Shape::Circle(us) => us.dist_to_shape(s),
+            Shape::Compound(us) => us.dist_to_shape(s),
             Shape::Line(us) => us.dist_to_shape(s),
             Shape::Path(us) => us.dist_to_shape(s),
             Shape::Point(us) => us.dist_to_shape(s),

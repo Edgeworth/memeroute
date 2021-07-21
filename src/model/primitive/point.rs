@@ -115,6 +115,7 @@ impl ShapeOps for Pt {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
@@ -129,6 +130,7 @@ impl ShapeOps for Pt {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
@@ -143,6 +145,7 @@ impl ShapeOps for Pt {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(s) => line_pt_dist(s, self),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
