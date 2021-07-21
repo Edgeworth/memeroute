@@ -121,6 +121,7 @@ impl Tf {
         match s {
             Shape::Capsule(s) => self.cap(s).shape(),
             Shape::Circle(s) => self.circ(s).shape(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(s) => self.line(s).shape(),
             Shape::Path(s) => self.path(s).shape(),
             Shape::Point(s) => self.pt(*s).shape(),

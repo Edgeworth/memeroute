@@ -38,6 +38,7 @@ impl ShapeOps for Circle {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
@@ -52,6 +53,7 @@ impl ShapeOps for Circle {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
@@ -66,6 +68,7 @@ impl ShapeOps for Circle {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),

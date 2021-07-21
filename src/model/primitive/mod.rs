@@ -19,6 +19,7 @@ pub mod rect;
 pub mod segment;
 pub mod shape;
 pub mod triangle;
+pub mod compound;
 
 pub trait ShapeOps {
     fn bounds(&self) -> Rt;
@@ -59,8 +60,8 @@ pub fn poly(pts: &[Pt]) -> Polygon {
     Polygon::new(pts)
 }
 
-pub const fn rt(l: f64, b: f64, w: f64, h: f64) -> Rt {
-    Rt::new(l, b, w, h)
+pub const fn rt(l: f64, b: f64, r: f64, t: f64) -> Rt {
+    Rt::new(l, b, r, t)
 }
 
 pub const fn seg(st: Pt, en: Pt) -> Segment {

@@ -16,3 +16,11 @@ pub fn pt_cloud_bounds(pts: &[Pt]) -> Rt {
         Rt::enclosing(bl, tr)
     }
 }
+
+pub fn rt_cloud_bounds<I: IntoIterator<Item = Rt>>(rts: I) -> Rt {
+    let mut b = Rt::empty();
+    for r in rts {
+        b = b.united(&r);
+    }
+    b
+}

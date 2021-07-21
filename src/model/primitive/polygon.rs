@@ -71,6 +71,7 @@ impl ShapeOps for Polygon {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(s) => poly_contains_pt(self, s),
@@ -85,6 +86,7 @@ impl ShapeOps for Polygon {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(s) => poly_contains_pt(self, s),
@@ -99,6 +101,7 @@ impl ShapeOps for Polygon {
         match s {
             Shape::Capsule(_) => todo!(),
             Shape::Circle(_) => todo!(),
+            Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
