@@ -13,7 +13,7 @@ pub type PlaceId = (String, ShapeIdx);
 
 // Need to handle:
 // but also keeping them for hole drils
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct PlaceModel {
     boundary: HashMap<Id, Compound>,
     blocked: HashMap<Id, Compound>,

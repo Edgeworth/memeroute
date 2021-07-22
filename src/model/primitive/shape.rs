@@ -5,7 +5,7 @@ use crate::model::primitive::compound::Compound;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::Polygon;
+use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
@@ -19,7 +19,7 @@ pub enum Shape {
     Line(Line),
     Path(Path),
     Point(Pt),
-    Polygon(Polygon),
+    Polygon(Poly),
     Rect(Rt),
     Segment(Segment),
     Tri(Tri),

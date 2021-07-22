@@ -4,7 +4,9 @@ use std::ops::Index;
 use earcutr::earcut;
 
 use crate::model::geom::bounds::pt_cloud_bounds;
-use crate::model::geom::contains::{poly_contains_pt, poly_contains_rt, poly_contains_seg};
+use crate::model::geom::contains::{
+    poly_contains_cap, poly_contains_path, poly_contains_pt, poly_contains_rt, poly_contains_seg,
+};
 use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
 use crate::model::geom::intersects::poly_intersects_rt;
 use crate::model::primitive::point::Pt;
@@ -17,14 +19,14 @@ use crate::model::primitive::{tri, ShapeOps};
 // Stored in CCW order.
 // TODO: make polygons use quadtree?
 #[derive(Debug, Clone)]
-pub struct Polygon {
+pub struct Poly {
     pts: Vec<Pt>,
     tri: Vec<Tri>,
     tri_idx: Vec<u32>,
     is_convex: bool,
 }
 
-impl Polygon {
+impl Poly {
     pub fn new(pts: &[Pt]) -> Self {
         let mut pts = remove_collinear(pts);
         ensure_ccw(&mut pts);
@@ -59,7 +61,7 @@ impl Polygon {
     }
 }
 
-impl ShapeOps for Polygon {
+impl ShapeOps for Poly {
     fn bounds(&self) -> Rt {
         pt_cloud_bounds(&self.pts)
     }
@@ -85,11 +87,11 @@ impl ShapeOps for Polygon {
 
     fn contains_shape(&self, s: &Shape) -> bool {
         match s {
-            Shape::Capsule(_) => todo!(),
+            Shape::Capsule(s) => poly_contains_cap(self, s),
             Shape::Circle(_) => todo!(),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
-            Shape::Path(_) => todo!(),
+            Shape::Path(s) => poly_contains_path(self, s),
             Shape::Point(s) => poly_contains_pt(self, s),
             Shape::Polygon(_) => todo!(),
             Shape::Rect(s) => poly_contains_rt(self, s),
@@ -114,7 +116,7 @@ impl ShapeOps for Polygon {
     }
 }
 
-impl Index<usize> for Polygon {
+impl Index<usize> for Poly {
     type Output = Pt;
 
     fn index(&self, index: usize) -> &Self::Output {
