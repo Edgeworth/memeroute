@@ -9,7 +9,7 @@ use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::Polygon;
+use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
@@ -102,7 +102,7 @@ impl Tf {
         path(&pts, self.length(p.r()))
     }
 
-    pub fn poly(&self, p: &Polygon) -> Polygon {
+    pub fn poly(&self, p: &Poly) -> Poly {
         let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
         poly(&pts)
     }

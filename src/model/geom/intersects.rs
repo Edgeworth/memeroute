@@ -4,7 +4,7 @@ use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
-use crate::model::primitive::polygon::Polygon;
+use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
@@ -44,7 +44,7 @@ pub fn path_intersects_rt(a: &Path, b: &Rt) -> bool {
     false
 }
 
-pub fn poly_intersects_rt(a: &Polygon, b: &Rt) -> bool {
+pub fn poly_intersects_rt(a: &Poly, b: &Rt) -> bool {
     for tri in a.tri() {
         if rt_intersects_tri(b, tri) {
             return true;

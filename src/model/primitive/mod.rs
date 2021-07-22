@@ -3,7 +3,7 @@ use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::{Pt, PtI};
-use crate::model::primitive::polygon::Polygon;
+use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
@@ -56,8 +56,8 @@ pub const fn pti(x: i64, y: i64) -> PtI {
     PtI::new(x, y)
 }
 
-pub fn poly(pts: &[Pt]) -> Polygon {
-    Polygon::new(pts)
+pub fn poly(pts: &[Pt]) -> Poly {
+    Poly::new(pts)
 }
 
 pub const fn rt(l: f64, b: f64, r: f64, t: f64) -> Rt {

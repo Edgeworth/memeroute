@@ -1,31 +1,22 @@
 use crate::model::geom::math::{ge, is_left_of, is_right_of, lt, orientation};
+use crate::model::primitive::capsule::Capsule;
+use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::{edges, Polygon};
+use crate::model::primitive::polygon::{edges, Poly};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{line, seg};
 
-pub fn poly_contains_rt(a: &Polygon, b: &Rt) -> bool {
-    // Check point containment of |b| in |a|.
-    let pts = b.pts();
-    for p in pts {
-        if !poly_contains_pt(a, &p) {
-            return false;
-        }
-    }
-    // Check segment containment of |b| in |a| if |a| is non-convex.
-    if !a.is_convex() {
-        for [&p0, &p1] in edges(&pts) {
-            if !poly_contains_seg(a, &seg(p0, p1)) {
-                return false;
-            }
-        }
-    }
-    true
+pub fn poly_contains_cap(a: &Poly, b: &Capsule) -> bool {
+    todo!()
 }
 
-pub fn poly_contains_pt(a: &Polygon, b: &Pt) -> bool {
+pub fn poly_contains_path(a: &Poly, b: &Path) -> bool {
+    todo!()
+}
+
+pub fn poly_contains_pt(a: &Poly, b: &Pt) -> bool {
     // Winding number test. Look at horizontal line at b.y and count crossings
     // of edges from |a|. Treats points on the boundary of the polygon as
     // contained.
@@ -47,7 +38,26 @@ pub fn poly_contains_pt(a: &Polygon, b: &Pt) -> bool {
     winding != 0
 }
 
-pub fn poly_contains_seg(a: &Polygon, b: &Segment) -> bool {
+pub fn poly_contains_rt(a: &Poly, b: &Rt) -> bool {
+    // Check point containment of |b| in |a|.
+    let pts = b.pts();
+    for p in pts {
+        if !poly_contains_pt(a, &p) {
+            return false;
+        }
+    }
+    // Check segment containment of |b| in |a| if |a| is non-convex.
+    if !a.is_convex() {
+        for [&p0, &p1] in edges(&pts) {
+            if !poly_contains_seg(a, &seg(p0, p1)) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
     // Check that both endpoints of |b| are in a.
     if !poly_contains_pt(a, &b.st()) || !poly_contains_pt(a, &b.en()) {
         return false;
@@ -72,7 +82,7 @@ pub fn poly_contains_seg(a: &Polygon, b: &Segment) -> bool {
     true
 }
 
-pub fn rt_contains_poly(a: &Rt, b: &Polygon) -> bool {
+pub fn rt_contains_poly(a: &Rt, b: &Poly) -> bool {
     // Just check all points in |b| are in |a|.
     for p in b.pts() {
         if !a.contains(*p) {
