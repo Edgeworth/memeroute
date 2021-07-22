@@ -1,6 +1,6 @@
 use eyre::Result;
 
-use crate::model::pcb::{LayerShape, Net, Padstack, Pcb, Pin, PinRef, Side, Via, Wire, ANY_LAYER};
+use crate::model::pcb::{LayerShape, Net, Padstack, Pcb, Pin, PinRef, Via, Wire, ANY_LAYER};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::rect::{Rt, RtI};
 use crate::model::primitive::{pt, pti, ShapeOps};
@@ -150,12 +150,12 @@ impl GridModel {
     pub fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
         let (component, pin) = self.pcb.pin_ref(pin_ref)?;
         let p = self.grid_pt((component.tf() * pin.tf()).pt(Pt::zero()));
-        // TODO: Using component side for which layer is broken. Need to look at
-        // padstack.
-        let layer = match component.side {
-            Side::Front => "F.Cu".to_owned(),
-            Side::Back => "B.Cu".to_owned(),
-        };
+
+        // TODO: return all layers in padstack somehow.
+        let mut layer = "F.Cu".to_owned();
+        for shape in pin.padstack.shapes.iter() {
+            layer = shape.layer.clone();
+        }
         Ok(State { p, layer })
     }
 
