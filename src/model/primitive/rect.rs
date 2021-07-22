@@ -4,7 +4,7 @@ use derive_more::Display;
 use crate::model::geom::contains::{rt_contains_poly, rt_contains_tri};
 use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist};
 use crate::model::geom::intersects::{
-    cap_intersect_rt, circ_intersect_rt, path_intersects_rt, poly_intersects_rt, rt_intersects_rt,
+    cap_intersects_rt, circ_intersects_rt, path_intersects_rt, poly_intersects_rt, rt_intersects_rt,
     rt_intersects_seg, rt_intersects_tri,
 };
 use crate::model::geom::math::{eq, ge, gt, le, lt};
@@ -184,8 +184,8 @@ impl ShapeOps for Rt {
 
     fn intersects_shape(&self, s: &Shape) -> bool {
         match s {
-            Shape::Capsule(s) => cap_intersect_rt(s, self),
-            Shape::Circle(s) => circ_intersect_rt(s, self),
+            Shape::Capsule(s) => cap_intersects_rt(s, self),
+            Shape::Circle(s) => circ_intersects_rt(s, self),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => path_intersects_rt(s, self),

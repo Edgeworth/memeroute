@@ -1,4 +1,5 @@
-use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist};
+use crate::model::geom::contains::cap_contains_pt;
+use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist, seg_seg_dist};
 use crate::model::geom::math::{le, lt, ne, orientation, pts_strictly_right_of};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
@@ -10,11 +11,21 @@ use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{cap, line};
 
-pub fn cap_intersect_cap(_a: &Capsule, _b: &Capsule) -> bool {
+pub fn cap_intersects_cap(a: &Capsule, b: &Capsule) -> bool {
+    le(seg_seg_dist(&a.seg(), &b.seg()), a.r() + b.r())
+}
+
+pub fn cap_intersects_circ(a: &Capsule, b: &Circle) -> bool {
+    // Compute minkowski sum of |a| and |b| and check containment.
+    let sum = cap(a.st(), a.en(), b.r());
+    cap_contains_pt(&sum, &b.p())
+}
+
+pub fn cap_intersects_poly(a: &Capsule, b: &Poly) -> bool {
     todo!()
 }
 
-pub fn cap_intersect_rt(a: &Capsule, b: &Rt) -> bool {
+pub fn cap_intersects_rt(a: &Capsule, b: &Rt) -> bool {
     if b.contains(a.st()) || b.contains(a.en()) {
         true
     } else {
@@ -22,7 +33,17 @@ pub fn cap_intersect_rt(a: &Capsule, b: &Rt) -> bool {
     }
 }
 
-pub fn circ_intersect_rt(a: &Circle, b: &Rt) -> bool {
+pub fn circ_intersects_path(a: &Circle, b: &Path) -> bool {
+    // Test all capsules in path against circle.
+    for cap in b.caps() {
+        if cap_intersects_circ(&cap, a) {
+            return true;
+        }
+    }
+    false
+}
+
+pub fn circ_intersects_rt(a: &Circle, b: &Rt) -> bool {
     // Check if the circle centre is contained in the rect or
     // the distance from the boundary of the rect to the circle is less than 0.
     b.contains(a.p()) || lt(circ_rt_dist(a, b), 0.0)
@@ -43,7 +64,7 @@ pub fn path_intersects_path(a: &Path, b: &Path) -> bool {
         for j in i..b.len() - 1 {
             let cap0 = cap(a[i], a[i + 1], a.r());
             let cap1 = cap(b[j], b[j + 1], b.r());
-            if cap_intersect_cap(&cap0, &cap1) {
+            if cap_intersects_cap(&cap0, &cap1) {
                 return true;
             }
         }
@@ -54,7 +75,17 @@ pub fn path_intersects_path(a: &Path, b: &Path) -> bool {
 pub fn path_intersects_rt(a: &Path, b: &Rt) -> bool {
     // Check whether each capsule in the path intersects the rectangle.
     for cap in a.caps() {
-        if cap_intersect_rt(&cap, b) {
+        if cap_intersects_rt(&cap, b) {
+            return true;
+        }
+    }
+    false
+}
+
+pub fn path_intersects_poly(a: &Path, b: &Poly) -> bool {
+    // Check path capsules.
+    for cap in a.caps() {
+        if cap_intersects_poly(&cap, b) {
             return true;
         }
     }
@@ -255,7 +286,7 @@ mod tests {
         ];
 
         for (a, b, res) in tests {
-            assert_eq!(cap_intersect_rt(a, b), *res, "{} {} intersect? {}", a, b, res);
+            assert_eq!(cap_intersects_rt(a, b), *res, "{} {} intersect? {}", a, b, res);
         }
     }
 }

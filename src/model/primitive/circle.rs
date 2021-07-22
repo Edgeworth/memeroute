@@ -1,5 +1,5 @@
 use crate::model::geom::distance::circ_rt_dist;
-use crate::model::geom::intersects::circ_intersect_rt;
+use crate::model::geom::intersects::{circ_intersects_path, circ_intersects_rt};
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -40,10 +40,10 @@ impl ShapeOps for Circle {
             Shape::Circle(_) => todo!(),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
-            Shape::Path(_) => todo!(),
+            Shape::Path(s) => circ_intersects_path(self, s),
             Shape::Point(_) => todo!(),
             Shape::Polygon(_) => todo!(),
-            Shape::Rect(s) => circ_intersect_rt(self, s),
+            Shape::Rect(s) => circ_intersects_rt(self, s),
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),
         }

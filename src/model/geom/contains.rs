@@ -1,5 +1,5 @@
-use crate::model::geom::distance::pt_poly_dist;
-use crate::model::geom::math::{ge, is_left_of, is_right_of, lt, orientation};
+use crate::model::geom::distance::{pt_poly_dist, pt_seg_dist};
+use crate::model::geom::math::{ge, is_left_of, is_right_of, le, lt, orientation};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::path_shape::Path;
@@ -9,6 +9,10 @@ use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{line, seg};
+
+pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
+    le(pt_seg_dist(b, &a.seg()), a.r())
+}
 
 pub fn poly_contains_cap(a: &Poly, b: &Capsule) -> bool {
     // First check both end caps are in the polygon.
