@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use crate::model::geom::quadtree::QuadTree;
+use crate::model::geom::quadtree::{QuadTree, ShapeIdx};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
@@ -21,8 +21,16 @@ impl Compound {
         Self { qt: RefCell::new(QuadTree::empty()) }
     }
 
-    pub fn add_shape(&self, s: Shape) {
-        self.qt.borrow_mut().add_shape(s);
+    pub fn with_bounds(r: &Rt) -> Self {
+        Self { qt: RefCell::new(QuadTree::with_bounds(r)) }
+    }
+
+    pub fn add_shape(&self, s: Shape) -> ShapeIdx {
+        self.qt.borrow_mut().add_shape(s)
+    }
+
+    pub fn remove_shape(&mut self, s: ShapeIdx) {
+        self.qt.borrow_mut().remove_shape(s)
     }
 }
 
