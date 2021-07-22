@@ -1,9 +1,15 @@
+use std::cmp::Ordering;
+
 use approx::{relative_eq, relative_ne};
 
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::point::Pt;
 
 pub const EP: f64 = 1e-6;
+
+pub fn f64_cmp(a: &f64, b: &f64) -> Ordering {
+    a.partial_cmp(b).unwrap()
+}
 
 pub fn pt_eq(a: Pt, b: Pt) -> bool {
     relative_eq!(a, b, epsilon = EP)

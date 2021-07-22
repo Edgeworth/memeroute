@@ -10,7 +10,10 @@ use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{cap, line};
 
-// TODO: This is broken?
+pub fn cap_intersect_cap(_a: &Capsule, _b: &Capsule) -> bool {
+    todo!()
+}
+
 pub fn cap_intersect_rt(a: &Capsule, b: &Rt) -> bool {
     if b.contains(a.st()) || b.contains(a.en()) {
         true
@@ -34,10 +37,24 @@ pub fn line_intersects_seg(_a: &Line, _b: &Segment) -> bool {
     todo!()
 }
 
+pub fn path_intersects_path(a: &Path, b: &Path) -> bool {
+    // Try pairwise intersection of capsules.
+    for i in 0..a.len() - 1 {
+        for j in i..b.len() - 1 {
+            let cap0 = cap(a[i], a[i + 1], a.r());
+            let cap1 = cap(b[j], b[j + 1], b.r());
+            if cap_intersect_cap(&cap0, &cap1) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 pub fn path_intersects_rt(a: &Path, b: &Rt) -> bool {
     // Check whether each capsule in the path intersects the rectangle.
-    for &[st, en] in a.pts().array_windows::<2>() {
-        if cap_intersect_rt(&cap(st, en, a.r()), b) {
+    for cap in a.caps() {
+        if cap_intersect_rt(&cap, b) {
             return true;
         }
     }

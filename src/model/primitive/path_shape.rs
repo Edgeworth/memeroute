@@ -1,10 +1,13 @@
+use std::ops::Index;
+
 use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::convex::remove_collinear;
-use crate::model::geom::intersects::path_intersects_rt;
+use crate::model::geom::intersects::{path_intersects_path, path_intersects_rt};
+use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
-use crate::model::primitive::ShapeOps;
+use crate::model::primitive::{cap, ShapeOps};
 
 #[derive(Clone)]
 pub struct Path {
@@ -23,8 +26,16 @@ impl Path {
         Self { pts: remove_collinear(pts), r }
     }
 
+    pub fn len(&self) -> usize {
+        self.pts.len()
+    }
+
     pub fn pts(&self) -> &[Pt] {
         &self.pts
+    }
+
+    pub fn caps(&self) -> impl '_ + Iterator<Item = Capsule> {
+        self.pts.array_windows::<2>().map(move |v| cap(v[0], v[1], self.r))
     }
 
     pub const fn r(&self) -> f64 {
@@ -47,7 +58,7 @@ impl ShapeOps for Path {
             Shape::Circle(_) => todo!(),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
-            Shape::Path(_) => todo!(),
+            Shape::Path(s) => path_intersects_path(self, s),
             Shape::Point(_) => todo!(),
             Shape::Polygon(_) => todo!(),
             Shape::Rect(s) => path_intersects_rt(self, s),
@@ -84,5 +95,13 @@ impl ShapeOps for Path {
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),
         }
+    }
+}
+
+impl Index<usize> for Path {
+    type Output = Pt;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.pts[index]
     }
 }

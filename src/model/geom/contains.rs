@@ -1,5 +1,7 @@
+use crate::model::geom::distance::pt_poly_dist;
 use crate::model::geom::math::{ge, is_left_of, is_right_of, lt, orientation};
 use crate::model::primitive::capsule::Capsule;
+use crate::model::primitive::circle::Circle;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::polygon::{edges, Poly};
@@ -9,11 +11,38 @@ use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{line, seg};
 
 pub fn poly_contains_cap(a: &Poly, b: &Capsule) -> bool {
-    todo!()
+    // First check both end caps are in the polygon.
+    if !poly_contains_circ(a, &b.st_cap()) {
+        return false;
+    }
+    if !poly_contains_circ(a, &b.en_cap()) {
+        return false;
+    }
+    // Check left and right walls of the segment are in the polygon.
+    if !poly_contains_seg(a, &b.left_seg()) {
+        return false;
+    }
+    if !poly_contains_seg(a, &b.right_seg()) {
+        return false;
+    }
+    true
+}
+
+pub fn poly_contains_circ(a: &Poly, b: &Circle) -> bool {
+    // Test that the centre of the circle is in the polygon.
+    if !poly_contains_pt(a, &b.p()) {
+        return false;
+    }
+    ge(pt_poly_dist(&b.p(), a), b.r())
 }
 
 pub fn poly_contains_path(a: &Poly, b: &Path) -> bool {
-    todo!()
+    for cap in b.caps() {
+        if !poly_contains_cap(a, &cap) {
+            return false;
+        }
+    }
+    true
 }
 
 pub fn poly_contains_pt(a: &Poly, b: &Pt) -> bool {
