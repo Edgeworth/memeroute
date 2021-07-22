@@ -120,7 +120,7 @@ impl ShapeOps for Pt {
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
             Shape::Polygon(s) => poly_contains_pt(s, self),
-            Shape::Rect(_) => todo!(),
+            Shape::Rect(s) => s.contains(*self),
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),
         }

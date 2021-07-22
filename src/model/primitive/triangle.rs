@@ -1,12 +1,17 @@
+use std::ops::Index;
+
 use derive_more::Display;
 
 use crate::model::geom::bounds::pt_cloud_bounds;
+use crate::model::geom::contains::tri_contains_pt;
+use crate::model::geom::convex::ensure_ccw;
 use crate::model::geom::intersects::rt_intersects_tri;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
 
+// Is in CCW order.
 #[derive(Debug, Display, Copy, Clone)]
 #[display(fmt = "Tri[{}, {}, {}]", "self.pts[0]", "self.pts[1]", "self.pts[2]")]
 pub struct Tri {
@@ -14,7 +19,8 @@ pub struct Tri {
 }
 
 impl Tri {
-    pub const fn new(pts: [Pt; 3]) -> Self {
+    pub fn new(mut pts: [Pt; 3]) -> Self {
+        ensure_ccw(&mut pts);
         Self { pts }
     }
 
@@ -39,7 +45,7 @@ impl ShapeOps for Tri {
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
-            Shape::Point(_) => todo!(),
+            Shape::Point(s) => tri_contains_pt(self, s),
             Shape::Polygon(_) => todo!(),
             Shape::Rect(s) => rt_intersects_tri(s, self),
             Shape::Segment(_) => todo!(),
@@ -75,5 +81,13 @@ impl ShapeOps for Tri {
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),
         }
+    }
+}
+
+impl Index<usize> for Tri {
+    type Output = Pt;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.pts[index]
     }
 }

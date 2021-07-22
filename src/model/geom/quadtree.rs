@@ -195,3 +195,31 @@ impl QuadTree {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::primitive::{poly, pt, rt, tri};
+
+    #[test]
+    fn test_quadtree_tri() {
+        let mut qt = QuadTree::new(vec![tri(pt(1.0, 2.0), pt(5.0, 2.0), pt(4.0, 5.0)).shape()]);
+        for _ in 0..TEST_THRESHOLD {
+            assert!(qt.intersects(&pt(3.0, 3.0).shape()));
+        }
+
+        assert!(qt.intersects(&pt(3.0, 3.0).shape()));
+        assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape()));
+    }
+
+    #[test]
+    fn test_quadtree_poly() {
+        let mut qt = QuadTree::new(vec![poly(&[pt(1.0, 2.0), pt(5.0, 2.0), pt(4.0, 5.0)]).shape()]);
+        for _ in 0..TEST_THRESHOLD {
+            assert!(qt.intersects(&pt(3.0, 3.0).shape()));
+        }
+
+        assert!(qt.intersects(&pt(3.0, 3.0).shape()));
+        assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape()));
+    }
+}

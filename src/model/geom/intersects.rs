@@ -1,5 +1,7 @@
 use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist};
-use crate::model::geom::math::{le, lt, ne, orientation, pts_same_side};
+use crate::model::geom::math::{
+    le, lt, ne, orientation, pts_same_side, pts_strictly_right_of, pts_strictly_same_side,
+};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
@@ -60,29 +62,29 @@ pub fn rt_intersects_tri(a: &Rt, b: &Tri) -> bool {
     let rt = &a.pts();
     let tri = b.pts();
     // Test tri axes:
-    if !pts_same_side(&line(tri[0], tri[1]), rt) {
-        return true;
+    if pts_strictly_right_of(&line(tri[0], tri[1]), rt) {
+        return false;
     }
-    if !pts_same_side(&line(tri[1], tri[2]), rt) {
-        return true;
+    if pts_strictly_right_of(&line(tri[1], tri[2]), rt) {
+        return false;
     }
-    if !pts_same_side(&line(tri[2], tri[0]), rt) {
-        return true;
+    if pts_strictly_right_of(&line(tri[2], tri[0]), rt) {
+        return false;
     }
     // Test rect axes:
-    if !pts_same_side(&line(rt[0], rt[1]), tri) {
-        return true;
+    if pts_strictly_right_of(&line(rt[0], rt[1]), tri) {
+        return false;
     }
-    if !pts_same_side(&line(rt[1], rt[2]), tri) {
-        return true;
+    if pts_strictly_right_of(&line(rt[1], rt[2]), tri) {
+        return false;
     }
-    if !pts_same_side(&line(rt[2], rt[3]), tri) {
-        return true;
+    if pts_strictly_right_of(&line(rt[2], rt[3]), tri) {
+        return false;
     }
-    if !pts_same_side(&line(rt[3], rt[0]), tri) {
-        return true;
+    if pts_strictly_right_of(&line(rt[3], rt[0]), tri) {
+        return false;
     }
-    false
+    true
 }
 
 pub fn rt_intersects_seg(_a: &Rt, _b: &Segment) -> bool {
@@ -126,44 +128,6 @@ mod tests {
     use crate::model::primitive::{pt, rt, seg, tri};
     use crate::model::tf::Tf;
 
-    const SEG_SEG_TESTS: &[(Segment, Segment, bool)] = &[
-        // Crossing
-        (seg(pt(1.0, 1.0), pt(3.0, 4.0)), seg(pt(2.0, 4.0), pt(3.0, 1.0)), true),
-        // Shared endpoints, not parallel
-        (seg(pt(1.0, 1.0), pt(2.0, 3.0)), seg(pt(2.0, 3.0), pt(4.0, 1.0)), true),
-        // Shared endpoints, parallel, one point of intersection
-        (seg(pt(1.0, 1.0), pt(3.0, 2.0)), seg(pt(3.0, 2.0), pt(5.0, 3.0)), true),
-        // Endpoint abutting segment, perpendicular
-        (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(2.0, 4.0), pt(4.0, 2.0)), true),
-        // Same segments
-        (seg(pt(1.0, 1.0), pt(1.0, 1.0)), seg(pt(1.0, 1.0), pt(1.0, 1.0)), true),
-        // Parallel and overlapping
-        (seg(pt(1.0, 1.0), pt(3.0, 1.0)), seg(pt(2.0, 1.0), pt(4.0, 1.0)), true),
-        // Parallel and contained
-        (seg(pt(1.0, 1.0), pt(4.0, 1.0)), seg(pt(2.0, 1.0), pt(3.0, 1.0)), true),
-        // Parallel segments with one shared endpoint overlapping
-        (seg(pt(1.0, 1.0), pt(3.0, 1.0)), seg(pt(1.0, 1.0), pt(4.0, 1.0)), true),
-        // Degenerate: One segment is a point, on the other segment.
-        (seg(pt(1.0, 1.0), pt(3.0, 1.0)), seg(pt(2.0, 1.0), pt(2.0, 1.0)), true),
-        // Degenerate: One segment is a point, on the other segment's endpoint
-        (seg(pt(1.0, 1.0), pt(3.0, 1.0)), seg(pt(3.0, 1.0), pt(3.0, 1.0)), true),
-        // Degenerate: Same segments and they are points
-        (seg(pt(1.0, 1.0), pt(1.0, 1.0)), seg(pt(1.0, 1.0), pt(1.0, 1.0)), true),
-        // Parallel, not intersecting
-        (seg(pt(1.0, 3.0), pt(3.0, 1.0)), seg(pt(2.0, 4.0), pt(4.0, 2.0)), false),
-        // Perpendicular, not intersecting, projection of endpoint onto other is
-        // an endpoint
-        (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(4.0, 2.0), pt(5.0, 1.0)), false),
-        // Perpendicular, not intersecting
-        (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(3.0, 1.0), pt(4.0, 0.0)), false),
-        // Degenerate: Both are points, not intersecting
-        (seg(pt(1.0, 1.0), pt(1.0, 1.0)), seg(pt(2.0, 1.0), pt(2.0, 1.0)), false),
-        // Degenerate: One is a point, collinear with the other segment, not intersecting.
-        (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(4.0, 4.0), pt(4.0, 4.0)), false),
-        // Degenerate: One is a point, not intersecting.
-        (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(1.0, 2.0), pt(1.0, 2.0)), false),
-    ];
-
     fn test_seg_seg_permutations(a: &Segment, b: &Segment, res: bool) {
         // Try each permutation of orderings
         assert_eq!(seg_intersects_seg(a, b), res, "{} {} intersects? {}", a, b, res);
@@ -176,7 +140,45 @@ mod tests {
 
     #[test]
     fn test_seg_seg() {
-        for (a, b, res) in SEG_SEG_TESTS {
+        let tests = &[
+            // Crossing
+            (seg(pt(1.0, 1.0), pt(3.0, 4.0)), seg(pt(2.0, 4.0), pt(3.0, 1.0)), true),
+            // Shared endpoints, not parallel
+            (seg(pt(1.0, 1.0), pt(2.0, 3.0)), seg(pt(2.0, 3.0), pt(4.0, 1.0)), true),
+            // Shared endpoints, parallel, one point of intersection
+            (seg(pt(1.0, 1.0), pt(3.0, 2.0)), seg(pt(3.0, 2.0), pt(5.0, 3.0)), true),
+            // Endpoint abutting segment, perpendicular
+            (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(2.0, 4.0), pt(4.0, 2.0)), true),
+            // Same segments
+            (seg(pt(1.0, 1.0), pt(1.0, 1.0)), seg(pt(1.0, 1.0), pt(1.0, 1.0)), true),
+            // Parallel and overlapping
+            (seg(pt(1.0, 1.0), pt(3.0, 1.0)), seg(pt(2.0, 1.0), pt(4.0, 1.0)), true),
+            // Parallel and contained
+            (seg(pt(1.0, 1.0), pt(4.0, 1.0)), seg(pt(2.0, 1.0), pt(3.0, 1.0)), true),
+            // Parallel segments with one shared endpoint overlapping
+            (seg(pt(1.0, 1.0), pt(3.0, 1.0)), seg(pt(1.0, 1.0), pt(4.0, 1.0)), true),
+            // Degenerate: One segment is a point, on the other segment.
+            (seg(pt(1.0, 1.0), pt(3.0, 1.0)), seg(pt(2.0, 1.0), pt(2.0, 1.0)), true),
+            // Degenerate: One segment is a point, on the other segment's endpoint
+            (seg(pt(1.0, 1.0), pt(3.0, 1.0)), seg(pt(3.0, 1.0), pt(3.0, 1.0)), true),
+            // Degenerate: Same segments and they are points
+            (seg(pt(1.0, 1.0), pt(1.0, 1.0)), seg(pt(1.0, 1.0), pt(1.0, 1.0)), true),
+            // Parallel, not intersecting
+            (seg(pt(1.0, 3.0), pt(3.0, 1.0)), seg(pt(2.0, 4.0), pt(4.0, 2.0)), false),
+            // Perpendicular, not intersecting, projection of endpoint onto other is
+            // an endpoint
+            (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(4.0, 2.0), pt(5.0, 1.0)), false),
+            // Perpendicular, not intersecting
+            (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(3.0, 1.0), pt(4.0, 0.0)), false),
+            // Degenerate: Both are points, not intersecting
+            (seg(pt(1.0, 1.0), pt(1.0, 1.0)), seg(pt(2.0, 1.0), pt(2.0, 1.0)), false),
+            // Degenerate: One is a point, collinear with the other segment, not intersecting.
+            (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(4.0, 4.0), pt(4.0, 4.0)), false),
+            // Degenerate: One is a point, not intersecting.
+            (seg(pt(1.0, 1.0), pt(3.0, 3.0)), seg(pt(1.0, 2.0), pt(1.0, 2.0)), false),
+        ];
+
+        for (a, b, res) in tests {
             test_seg_seg_permutations(a, b, *res);
             // Negating pts should not change result.
             let a = &seg(-a.st(), -a.en());
@@ -200,21 +202,26 @@ mod tests {
         }
     }
 
-    const RT_TRI_TESTS: &[(Rt, Tri, bool)] = &[
-        // Regular intersection
-        (rt(1.0, 2.0, 3.0, 3.0), tri(pt(2.0, 2.5), pt(2.0, 1.0), pt(3.0, 1.0)), true),
-        // Just touching the rect.
-        (rt(1.0, 2.0, 3.0, 3.0), tri(pt(3.0, 3.0), pt(4.0, 3.0), pt(4.0, 5.0)), true),
-        (rt(1.0, 2.0, 3.0, 3.0), tri(pt(1.0, 4.0), pt(3.0, 4.0), pt(2.0, 5.0)), false),
-    ];
-
     fn permute_tri(t: &Tri) -> Vec<Tri> {
         t.pts().iter().permutations(3).map(|v| tri(*v[0], *v[1], *v[2])).collect()
     }
 
     #[test]
     fn test_rt_tri() {
-        for (a, t, res) in RT_TRI_TESTS {
+        let tests = &[
+            // Regular intersection
+            (rt(1.0, 2.0, 3.0, 3.0), tri(pt(2.0, 2.5), pt(2.0, 1.0), pt(3.0, 1.0)), true),
+            // Just touching the rect.
+            (rt(1.0, 2.0, 3.0, 3.0), tri(pt(3.0, 3.0), pt(4.0, 3.0), pt(4.0, 5.0)), true),
+            (rt(1.0, 2.0, 3.0, 3.0), tri(pt(1.0, 4.0), pt(3.0, 4.0), pt(2.0, 5.0)), false),
+            (
+                rt(14.4, -148.8, 15.20, -148.0),
+                tri(pt(52.5, -19.75), pt(34.0, -19.75), pt(15.0, -50.75)),
+                false,
+            ),
+        ];
+
+        for (a, t, res) in tests {
             for b in permute_tri(t) {
                 assert_eq!(rt_intersects_tri(a, &b), *res, "{} {} intersect? {}", a, b, res);
             }
