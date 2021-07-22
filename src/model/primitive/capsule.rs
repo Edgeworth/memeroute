@@ -1,3 +1,5 @@
+use derive_more::Display;
+
 use crate::model::geom::intersects::cap_intersect_rt;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -5,7 +7,8 @@ use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::{line, seg, ShapeOps};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Display, Copy, Clone)]
+#[display(fmt = "Cap[{}, {}; {}]", st, en, r)]
 pub struct Capsule {
     st: Pt,
     en: Pt,

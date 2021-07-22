@@ -151,14 +151,14 @@ impl QuadTree {
     }
 
     fn contain(&mut self, s: &Shape, idx: NodeIdx, r: Rt) -> bool {
-        // No containment of |s| if the bounds don't even contain |s|.
-        if !r.contains_shape(s) {
+        // No containment of |s| if the bounds don't intersect |s|.
+        if !r.intersects_shape(s) {
             return false;
         }
 
         // If bounds contains |s| and there is something that contains the
         // bounds, then that contains |s|.
-        if !self.nodes[idx].contain.is_empty() {
+        if !self.nodes[idx].contain.is_empty() && r.contains_shape(s) {
             return true;
         }
 
