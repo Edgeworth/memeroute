@@ -1,6 +1,7 @@
 use derive_more::Display;
 
-use crate::model::geom::intersects::{cap_intersect_cap, cap_intersect_rt};
+use crate::model::geom::contains::cap_contains_pt;
+use crate::model::geom::intersects::{cap_intersects_cap, cap_intersects_poly, cap_intersects_rt};
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -74,14 +75,14 @@ impl ShapeOps for Capsule {
 
     fn intersects_shape(&self, s: &Shape) -> bool {
         match s {
-            Shape::Capsule(s) => cap_intersect_cap(self, s),
+            Shape::Capsule(s) => cap_intersects_cap(self, s),
             Shape::Circle(_) => todo!(),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
-            Shape::Point(_) => todo!(),
-            Shape::Polygon(_) => todo!(),
-            Shape::Rect(s) => cap_intersect_rt(self, s),
+            Shape::Point(s) => cap_contains_pt(self, s),
+            Shape::Polygon(s) => cap_intersects_poly(self, s),
+            Shape::Rect(s) => cap_intersects_rt(self, s),
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),
         }
@@ -94,7 +95,7 @@ impl ShapeOps for Capsule {
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
-            Shape::Point(_) => todo!(),
+            Shape::Point(s) => cap_contains_pt(self, s),
             Shape::Polygon(_) => todo!(),
             Shape::Rect(_) => todo!(),
             Shape::Segment(_) => todo!(),

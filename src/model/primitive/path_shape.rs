@@ -2,7 +2,9 @@ use std::ops::Index;
 
 use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::convex::remove_collinear;
-use crate::model::geom::intersects::{path_intersects_path, path_intersects_rt};
+use crate::model::geom::intersects::{
+    circ_intersects_path, path_intersects_path, path_intersects_poly, path_intersects_rt,
+};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -30,6 +32,10 @@ impl Path {
         self.pts.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn pts(&self) -> &[Pt] {
         &self.pts
     }
@@ -55,12 +61,12 @@ impl ShapeOps for Path {
     fn intersects_shape(&self, s: &Shape) -> bool {
         match s {
             Shape::Capsule(_) => todo!(),
-            Shape::Circle(_) => todo!(),
+            Shape::Circle(s) => circ_intersects_path(s, self),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => path_intersects_path(self, s),
             Shape::Point(_) => todo!(),
-            Shape::Polygon(_) => todo!(),
+            Shape::Polygon(s) => path_intersects_poly(self, s),
             Shape::Rect(s) => path_intersects_rt(self, s),
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),
