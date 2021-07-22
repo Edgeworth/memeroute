@@ -275,7 +275,6 @@ impl Pcb {
     // Tests if the given rect is within the boundaries of the PCB.
     pub fn boundary_contains_rt(&self, r: &Rt) -> bool {
         let r = r.shape();
-        // TODO: implement contains
-        self.boundaries_qt.intersects_shape(&r)
+        self.boundaries_qt.contains_shape(&r)
     }
 }

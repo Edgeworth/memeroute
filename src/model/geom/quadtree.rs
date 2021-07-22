@@ -98,10 +98,10 @@ impl QuadTree {
     }
 
     pub fn contains(&mut self, s: &Shape) -> bool {
-        todo!()
+        self.contain(s, 1, self.bounds())
     }
 
-    pub fn dist(&mut self, s: &Shape) -> f64 {
+    pub fn dist(&mut self, _s: &Shape) -> f64 {
         todo!()
     }
 
@@ -117,7 +117,7 @@ impl QuadTree {
             return true;
         }
 
-        // TODO: Could check if |s| intersects the bounds here and return true if
+        // TODO: Could check if |s| contains the bounds here and return true if
         // intersect is non-empty.
 
         // Check children, if they exist. Do this first as we expect traversing
@@ -148,6 +148,48 @@ impl QuadTree {
         self.maybe_push_down(idx, r);
 
         had_intersection
+    }
+
+    fn contain(&mut self, s: &Shape, idx: NodeIdx, r: Rt) -> bool {
+        // No containment of |s| if the bounds don't even contain |s|.
+        if !r.contains_shape(s) {
+            return false;
+        }
+
+        // If bounds contains |s| and there is something that contains the
+        // bounds, then that contains |s|.
+        if !self.nodes[idx].contain.is_empty() {
+            return true;
+        }
+
+        // Check children, if they exist. Do this first as we expect traversing
+        // the tree to be faster. Only actually do intersection tests if we have
+        // to.
+        if self.nodes[idx].bl != NO_NODE && self.contain(s, self.nodes[idx].bl, r.bl_quadrant()) {
+            return true;
+        }
+        if self.nodes[idx].br != NO_NODE && self.contain(s, self.nodes[idx].br, r.br_quadrant()) {
+            return true;
+        }
+        if self.nodes[idx].tr != NO_NODE && self.contain(s, self.nodes[idx].tr, r.tr_quadrant()) {
+            return true;
+        }
+        if self.nodes[idx].tl != NO_NODE && self.contain(s, self.nodes[idx].tl, r.tl_quadrant()) {
+            return true;
+        }
+
+        // Check shapes that intersect this node:
+        let mut had_containment = false;
+        for inter in self.nodes[idx].intersect.iter_mut() {
+            inter.tests += 1;
+            if self.shapes[inter.shape].contains_shape(s) {
+                had_containment = true;
+                break;
+            }
+        }
+        self.maybe_push_down(idx, r);
+
+        had_containment
     }
 
     // Move any shapes to child nodes, if necessary.

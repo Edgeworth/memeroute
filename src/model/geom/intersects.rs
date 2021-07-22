@@ -1,7 +1,5 @@
 use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist};
-use crate::model::geom::math::{
-    le, lt, ne, orientation, pts_same_side, pts_strictly_right_of, pts_strictly_same_side,
-};
+use crate::model::geom::math::{le, lt, ne, orientation, pts_strictly_right_of};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
