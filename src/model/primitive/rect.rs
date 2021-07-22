@@ -112,7 +112,7 @@ impl Rt {
     }
 
     // Insetting a rectangle more than its size will produce a rectangle
-    // containing the single center point .
+    // containing the single center point.
     pub fn inset(&self, dx: f64, dy: f64) -> Rt {
         let wsub = self.w().min(2.0 * dx) / 2.0;
         let hsub = self.h().min(2.0 * dy) / 2.0;

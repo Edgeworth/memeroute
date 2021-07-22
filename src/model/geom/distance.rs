@@ -1,3 +1,4 @@
+use crate::model::geom::intersects::seg_intersects_seg;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::point::Pt;
@@ -36,7 +37,11 @@ pub fn rt_seg_dist(a: &Rt, b: &Segment) -> f64 {
 }
 
 pub fn seg_seg_dist(a: &Segment, b: &Segment) -> f64 {
-    // Closest distance must be between an endpoint and a segment.
+    // Closest distance must be between an endpoint and a segment, unless
+    // the segments cross, in which case it is zero.
+    if seg_intersects_seg(a, b) {
+        return 0.0;
+    }
     let mut best = pt_seg_dist(&a.st(), b);
     best = best.min(pt_seg_dist(&a.en(), b));
     best = best.min(pt_seg_dist(&b.st(), a));

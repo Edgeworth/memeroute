@@ -10,6 +10,7 @@ use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{cap, line};
 
+// TODO: This is broken?
 pub fn cap_intersect_rt(a: &Capsule, b: &Rt) -> bool {
     if b.contains(a.st()) || b.contains(a.en()) {
         true
@@ -223,6 +224,21 @@ mod tests {
             for b in permute_tri(t) {
                 assert_eq!(rt_intersects_tri(a, &b), *res, "{} {} intersect? {}", a, b, res);
             }
+        }
+    }
+
+    #[test]
+    fn test_cap_rt() {
+        let tests = &[
+            (cap(pt(1.0, 1.0), pt(7.0, 1.0), 1.0), rt(1.0, 1.0, 2.0, 2.0), true),
+            (cap(pt(1.0, 1.0), pt(7.0, 1.0), 1.0), rt(3.0, 1.0, 3.0, 2.0), true),
+            (cap(pt(122.8, -44.4), pt(109.2, -44.4), 0.32), rt(113.6, -44.8, 114.4, -44.0), true),
+            (cap(pt(1.0, 1.0), pt(7.0, 1.0), 1.0), rt(3.0, 0.0, 3.0, 1.0), true),
+            (cap(pt(1.0, 1.0), pt(7.0, 1.0), 1.0), rt(2.0, 3.0, 3.0, 4.0), false),
+        ];
+
+        for (a, b, res) in tests {
+            assert_eq!(cap_intersect_rt(a, b), *res, "{} {} intersect? {}", a, b, res);
         }
     }
 }
