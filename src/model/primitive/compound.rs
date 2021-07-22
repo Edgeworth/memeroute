@@ -16,6 +16,14 @@ impl Compound {
     pub fn new(shapes: Vec<Shape>) -> Self {
         Self { qt: RefCell::new(QuadTree::new(shapes)) }
     }
+
+    pub fn empty() -> Self {
+        Self { qt: RefCell::new(QuadTree::empty()) }
+    }
+
+    pub fn add_shape(&self, s: Shape) {
+        self.qt.borrow_mut().add_shape(s);
+    }
 }
 
 impl ShapeOps for Compound {

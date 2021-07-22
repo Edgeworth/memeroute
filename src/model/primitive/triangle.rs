@@ -1,3 +1,5 @@
+use derive_more::Display;
+
 use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::intersects::rt_intersects_tri;
 use crate::model::primitive::point::Pt;
@@ -5,7 +7,8 @@ use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Display, Copy, Clone)]
+#[display(fmt = "Tri[{}, {}, {}]", "self.pts[0]", "self.pts[1]", "self.pts[2]")]
 pub struct Tri {
     pts: [Pt; 3],
 }

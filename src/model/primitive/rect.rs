@@ -1,6 +1,7 @@
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 
+use crate::model::geom::contains::rt_contains_poly;
 use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist};
 use crate::model::geom::intersects::{
     cap_intersect_rt, circ_intersect_rt, path_intersects_rt, poly_intersects_rt, rt_intersects_rt,
@@ -200,7 +201,7 @@ impl ShapeOps for Rt {
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(s) => self.contains(*s),
-            Shape::Polygon(_) => todo!(),
+            Shape::Polygon(s) => rt_contains_poly(self, s),
             Shape::Rect(_) => todo!(),
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),

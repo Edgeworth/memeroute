@@ -15,6 +15,7 @@ use crate::model::primitive::{tri, ShapeOps};
 
 // Represents a simple non-convex polygon.
 // Stored in CCW order.
+// TODO: make polygons use quadtree?
 #[derive(Debug, Clone)]
 pub struct Polygon {
     pts: Vec<Pt>,
@@ -136,11 +137,13 @@ impl<'a> Iterator for EdgeIterator<'a> {
     type Item = [&'a Pt; 2];
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.pts.len().cmp(&(self.idx + 1)) {
+        let edge = match self.pts.len().cmp(&(self.idx + 1)) {
             Ordering::Less => None,
             Ordering::Equal => Some([&self.pts[self.idx], &self.pts[0]]),
             Ordering::Greater => Some([&self.pts[self.idx], &self.pts[self.idx + 1]]),
-        }
+        };
+        self.idx += 1;
+        edge
     }
 }
 

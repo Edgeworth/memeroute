@@ -6,7 +6,7 @@ use priority_queue::PriorityQueue;
 
 use crate::model::pcb::{Id, LayerShape, Pcb, Via, Wire};
 use crate::model::primitive::point::PtI;
-use crate::model::primitive::{path, pti, ShapeOps};
+use crate::model::primitive::{circ, path, pti, ShapeOps};
 use crate::route::grid_model::GridModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
@@ -250,17 +250,17 @@ impl RouteStrategy for GridRouter {
             self.model.mark_net(&mut self.blk, 1, &net)?; // Add pins back.
         }
 
-        // let bounds = self.model.grid_rt(&self.model.pcb.bounds());
-        // for l in bounds.l()..bounds.r() {
-        //     for b in bounds.b()..bounds.t() {
-        //         let p = pti(l, b);
-        //         if self.model.is_state_blocked(&self.blk, &State { p, layer: "F.Cu".to_owned() }) {
-        //             continue;
-        //         }
-        //         let shape = circ(self.model.world_pt_mid(p), self.model.resolution / 2.0).shape();
-        //         res.wires.push(Wire { shape: LayerShape { layer: "F.Cu".to_owned(), shape } })
-        //     }
-        // }
+        let bounds = self.model.grid_rt(&self.model.pcb.bounds());
+        for l in bounds.l()..bounds.r() {
+            for b in bounds.b()..bounds.t() {
+                let p = pti(l, b);
+                if self.model.is_state_blocked(&self.blk, &State { p, layer: "F.Cu".to_owned() }) {
+                    continue;
+                }
+                let shape = circ(self.model.world_pt_mid(p), self.model.resolution / 2.0).shape();
+                res.wires.push(Wire { shape: LayerShape { layer: "F.Cu".to_owned(), shape } })
+            }
+        }
         Ok(res)
     }
 }

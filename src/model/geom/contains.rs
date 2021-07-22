@@ -70,3 +70,13 @@ pub fn poly_contains_seg(a: &Polygon, b: &Segment) -> bool {
     }
     true
 }
+
+pub fn rt_contains_poly(a: &Rt, b: &Polygon) -> bool {
+    // Just check all points in |b| are in |a|.
+    for p in b.pts() {
+        if !a.contains(*p) {
+            return false;
+        }
+    }
+    true
+}
