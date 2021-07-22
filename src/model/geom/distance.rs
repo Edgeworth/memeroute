@@ -1,16 +1,17 @@
 use crate::model::geom::intersects::seg_intersects_seg;
+use crate::model::geom::math::f64_cmp;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::point::Pt;
+use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::seg;
 use crate::model::primitive::segment::Segment;
 
-// Currently these don't return signed distance. They kind of assume
-// the shapes don't intersect.
+// Currently these don't return signed distance.
 
 // Returns the distance from the circle to the boundary of the
-// rectangle.
+// rectangle. Doesn't work if the point is inside the rectangle.
 pub fn circ_rt_dist(a: &Circle, b: &Rt) -> f64 {
     // Project circle centre onto the rectangle:
     let p = a.p().clamp(b);
@@ -19,6 +20,11 @@ pub fn circ_rt_dist(a: &Circle, b: &Rt) -> f64 {
 
 pub fn line_pt_dist(a: &Line, b: &Pt) -> f64 {
     b.dist(a.project(*b))
+}
+
+// Works inside of the polygon too. Distance to the boundary.
+pub fn pt_poly_dist(a: &Pt, b: &Poly) -> f64 {
+    b.edges().map(|[&p0, &p1]| pt_seg_dist(a, &seg(p0, p1))).min_by(f64_cmp).unwrap()
 }
 
 pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
@@ -33,7 +39,7 @@ pub fn rt_seg_dist(a: &Rt, b: &Segment) -> f64 {
     // Check for closest distance from the segment to the edges of the rectangle.
     let pts = a.pts();
     let segs = [seg(pts[0], pts[1]), seg(pts[1], pts[2]), seg(pts[2], pts[3]), seg(pts[3], pts[0])];
-    segs.iter().map(|seg| seg_seg_dist(seg, b)).min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+    segs.iter().map(|seg| seg_seg_dist(seg, b)).min_by(f64_cmp).unwrap()
 }
 
 pub fn seg_seg_dist(a: &Segment, b: &Segment) -> f64 {

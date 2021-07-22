@@ -42,6 +42,7 @@ impl Pt {
         self.x * p.y - self.y * p.x
     }
 
+    // Gets the normal facing outwards (to the right).
     pub fn perp(&self) -> Pt {
         pt(-self.y, self.x).norm()
     }

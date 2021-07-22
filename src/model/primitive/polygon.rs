@@ -5,7 +5,8 @@ use earcutr::earcut;
 
 use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::contains::{
-    poly_contains_cap, poly_contains_path, poly_contains_pt, poly_contains_rt, poly_contains_seg,
+    poly_contains_cap, poly_contains_circ, poly_contains_path, poly_contains_pt, poly_contains_rt,
+    poly_contains_seg,
 };
 use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
 use crate::model::geom::intersects::poly_intersects_rt;
@@ -88,7 +89,7 @@ impl ShapeOps for Poly {
     fn contains_shape(&self, s: &Shape) -> bool {
         match s {
             Shape::Capsule(s) => poly_contains_cap(self, s),
-            Shape::Circle(_) => todo!(),
+            Shape::Circle(s) => poly_contains_circ(self, s),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => poly_contains_path(self, s),
