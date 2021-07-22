@@ -10,7 +10,7 @@ use crate::model::geom::contains::{
 };
 use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
 use crate::model::geom::intersects::{
-    cap_intersects_poly, path_intersects_poly, poly_intersects_rt,
+    cap_intersects_poly, circ_intersects_poly, path_intersects_poly, poly_intersects_rt,
 };
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -76,7 +76,7 @@ impl ShapeOps for Poly {
     fn intersects_shape(&self, s: &Shape) -> bool {
         match s {
             Shape::Capsule(s) => cap_intersects_poly(s, self),
-            Shape::Circle(_) => todo!(),
+            Shape::Circle(s) => circ_intersects_poly(s, self),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => path_intersects_poly(s, self),

@@ -116,11 +116,39 @@ pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
 }
 
 pub fn rt_contains_cap(a: &Rt, b: &Capsule) -> bool {
-    todo!()
+    // First check both end caps are in the rect.
+    if !rt_contains_circ(a, &b.st_cap()) {
+        return false;
+    }
+    if !rt_contains_circ(a, &b.en_cap()) {
+        return false;
+    }
+    // Check left and right walls of the segment are in the rect.
+    if !rt_contains_seg(a, &b.left_seg()) {
+        return false;
+    }
+    if !rt_contains_seg(a, &b.right_seg()) {
+        return false;
+    }
+    true
 }
 
 pub fn rt_contains_circ(a: &Rt, b: &Circle) -> bool {
-    todo!()
+    // Check the centre is in the rectangle:
+    if !a.contains(b.p()) {
+        return false;
+    }
+    // Check the shortest distance to the wall is less than or equal to the
+    // radius.
+    let x_dist = (b.p().x - a.l()).min(a.r() - b.p().x);
+    if lt(x_dist, b.r()) {
+        return false;
+    }
+    let y_dist = (b.p().y - a.b()).min(a.t() - b.p().y);
+    if lt(y_dist, b.r()) {
+        return false;
+    }
+    true
 }
 
 pub fn rt_contains_path(a: &Rt, b: &Path) -> bool {
@@ -141,6 +169,11 @@ pub fn rt_contains_poly(a: &Rt, b: &Poly) -> bool {
         }
     }
     true
+}
+
+pub fn rt_contains_seg(a: &Rt, b: &Segment) -> bool {
+    // Just need to check containment of both endpoints.
+    a.contains(b.st()) && a.contains(b.en())
 }
 
 pub fn rt_contains_tri(a: &Rt, b: &Tri) -> bool {

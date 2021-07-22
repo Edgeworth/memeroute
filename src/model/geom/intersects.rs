@@ -53,6 +53,10 @@ pub fn cap_intersects_tri(a: &Capsule, b: &Tri) -> bool {
     false
 }
 
+pub fn circ_intersects_circ(a: &Circle, b: &Circle) -> bool {
+    le(a.p().dist(b.p()), a.r() + b.r())
+}
+
 pub fn circ_intersects_path(a: &Circle, b: &Path) -> bool {
     // Test all capsules in path against circle.
     for cap in b.caps() {
@@ -63,10 +67,23 @@ pub fn circ_intersects_path(a: &Circle, b: &Path) -> bool {
     false
 }
 
+pub fn circ_intersects_poly(a: &Circle, b: &Poly) -> bool {
+    for tri in b.tri() {
+        if circ_intersects_tri(a, tri) {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn circ_intersects_rt(a: &Circle, b: &Rt) -> bool {
     // Check if the circle centre is contained in the rect or
     // the distance from the boundary of the rect to the circle is less than 0.
     b.contains(a.p()) || lt(circ_rt_dist(a, b), 0.0)
+}
+
+pub fn circ_intersects_tri(a: &Circle, b: &Tri) -> bool {
+    todo!()
 }
 
 pub fn line_intersects_line(a: &Line, b: &Line) -> bool {
