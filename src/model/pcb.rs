@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use eyre::{eyre, Result};
 
 use crate::model::geom::bounds::rt_cloud_bounds;
-use crate::model::primitive::compound::Compound;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -170,9 +169,6 @@ pub struct Pcb {
     wires: Vec<Wire>,
     vias: Vec<Via>,
     nets: HashMap<Id, Net>,
-
-    // TODO: Separate compound shapes for each layer.
-    boundaries_qt: Compound,
 }
 
 impl Pcb {
@@ -193,7 +189,6 @@ impl Pcb {
     }
 
     pub fn add_boundary(&mut self, s: LayerShape) {
-        self.boundaries_qt.add_shape(s.shape.clone());
         self.boundaries.push(s);
     }
 
@@ -270,11 +265,5 @@ impl Pcb {
     pub fn bounds(&self) -> Rt {
         // Assumes boundaries are valid.
         rt_cloud_bounds(self.boundaries().iter().map(|v| v.shape.bounds()))
-    }
-
-    // Tests if the given rect is within the boundaries of the PCB.
-    pub fn boundary_contains_rt(&self, r: &Rt) -> bool {
-        let r = r.shape();
-        self.boundaries_qt.contains_shape(&r)
     }
 }

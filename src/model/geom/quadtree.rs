@@ -6,7 +6,7 @@ use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
 
 type NodeIdx = usize;
-type ShapeIdx = usize;
+pub type ShapeIdx = usize;
 
 // How many tests to do before splitting a node.
 const TEST_THRESHOLD: usize = 4;
@@ -14,7 +14,7 @@ const NO_NODE: NodeIdx = 0;
 
 #[derive(Debug, Copy, Clone)]
 struct IntersectData {
-    shape: ShapeIdx,
+    shape_idx: ShapeIdx,
     tests: usize, // How many times we had to test against shapes directly.
 }
 
@@ -46,6 +46,7 @@ impl Default for Node {
 #[derive(Debug, Default, Clone)]
 pub struct QuadTree {
     shapes: Vec<Shape>,
+    free_shapes: Vec<ShapeIdx>, // List of indices of shapes that have been deleted.
     nodes: Vec<Node>,
     bounds: Rt,
     // TODO: Add cache?
@@ -58,35 +59,63 @@ impl QuadTree {
             Node::default(),
             Node {
                 intersect: (0..shapes.len())
-                    .map(|shape| IntersectData { shape, tests: 0 })
+                    .map(|shape_idx| IntersectData { shape_idx, tests: 0 })
                     .collect(),
                 ..Default::default()
             },
         ];
-        Self { shapes, nodes, bounds }
+        Self { shapes, free_shapes: Vec::new(), nodes, bounds }
+    }
+
+    pub fn with_bounds(r: &Rt) -> Self {
+        Self {
+            shapes: Vec::new(),
+            free_shapes: Vec::new(),
+            nodes: vec![Node::default(), Node::default()],
+            bounds: *r,
+        }
     }
 
     pub fn empty() -> Self {
         Self {
             shapes: Vec::new(),
+            free_shapes: Vec::new(),
             nodes: vec![Node::default(), Node::default()],
             bounds: Rt::empty(),
         }
     }
 
-    pub fn add_shape(&mut self, s: Shape) {
+    pub fn add_shape(&mut self, s: Shape) -> ShapeIdx {
         let bounds = self.bounds().united(&s.bounds());
         // If this shape expands the bounds, rebuild the tree.
         // TODO: Don't rebuild the tree?
         if bounds != self.bounds() {
+            let shape_idx = self.shapes.len();
             let mut shapes = Vec::new();
             swap(&mut shapes, &mut self.shapes);
             shapes.push(s);
             *self = Self::new(shapes);
+            shape_idx
         } else {
-            self.nodes[1].intersect.push(IntersectData { shape: self.shapes.len(), tests: 0 });
-            self.shapes.push(s);
+            let shape_idx = if let Some(shape_idx) = self.free_shapes.pop() {
+                self.shapes[shape_idx] = s;
+                shape_idx
+            } else {
+                self.shapes.push(s);
+                self.shapes.len() - 1
+            };
+            self.nodes[1].intersect.push(IntersectData { shape_idx, tests: 0 });
+            shape_idx
         }
+    }
+
+    pub fn remove_shape(&mut self, s: ShapeIdx) {
+        // Remove everything referencing this shape.
+        for node in self.nodes.iter_mut() {
+            node.intersect.retain(|v| v.shape_idx != s);
+            node.contain.retain(|&v| v != s);
+        }
+        self.free_shapes.push(s);
     }
 
     pub fn bounds(&self) -> Rt {
@@ -140,7 +169,7 @@ impl QuadTree {
         let mut had_intersection = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            if self.shapes[inter.shape].intersects_shape(s) {
+            if self.shapes[inter.shape_idx].intersects_shape(s) {
                 had_intersection = true;
                 break;
             }
@@ -182,7 +211,7 @@ impl QuadTree {
         let mut had_containment = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            if self.shapes[inter.shape].contains_shape(s) {
+            if self.shapes[inter.shape_idx].contains_shape(s) {
                 had_containment = true;
                 break;
             }
@@ -201,7 +230,7 @@ impl QuadTree {
 
             for inter in push_down {
                 let Node { bl, br, tr, tl, .. } = self.nodes[idx];
-                let shape = &self.shapes[inter.shape];
+                let shape = &self.shapes[inter.shape_idx];
 
                 // Put it into all children it intersects.
                 for (quad, quad_idx) in [
@@ -213,10 +242,10 @@ impl QuadTree {
                     if shape.intersects_shape(&quad) {
                         self.nodes[quad_idx]
                             .intersect
-                            .push(IntersectData { shape: inter.shape, tests: 0 });
+                            .push(IntersectData { shape_idx: inter.shape_idx, tests: 0 });
 
                         if quad.contains_shape(shape) {
-                            self.nodes[quad_idx].contain.push(inter.shape);
+                            self.nodes[quad_idx].contain.push(inter.shape_idx);
                         }
                     }
                 }
