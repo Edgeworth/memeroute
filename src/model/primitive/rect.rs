@@ -123,6 +123,10 @@ impl Rt {
         ge(p.x, self.l()) && ge(p.y, self.b()) && le(p.x, self.r()) && le(p.y, self.t())
     }
 
+    pub fn contains_rt(&self, r: &Rt) -> bool {
+        ge(r.l(), self.l()) && le(r.r(), self.r()) && ge(r.b(), self.b()) && le(r.t(), self.t())
+    }
+
     pub fn intersects(&self, r: &Rt) -> bool {
         le(self.l(), r.r()) && ge(self.r(), r.l()) && gt(self.t(), r.b()) && le(self.b(), r.t())
     }
@@ -202,7 +206,7 @@ impl ShapeOps for Rt {
             Shape::Path(_) => todo!(),
             Shape::Point(s) => self.contains(*s),
             Shape::Polygon(s) => rt_contains_poly(self, s),
-            Shape::Rect(_) => todo!(),
+            Shape::Rect(s) => self.contains_rt(s),
             Shape::Segment(_) => todo!(),
             Shape::Tri(s) => rt_contains_tri(self, s),
         }
