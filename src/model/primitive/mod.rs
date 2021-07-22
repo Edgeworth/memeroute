@@ -11,6 +11,7 @@ use crate::model::primitive::triangle::Tri;
 
 pub mod capsule;
 pub mod circle;
+pub mod compound;
 pub mod line_shape;
 pub mod path_shape;
 pub mod point;
@@ -19,7 +20,6 @@ pub mod rect;
 pub mod segment;
 pub mod shape;
 pub mod triangle;
-pub mod compound;
 
 pub trait ShapeOps {
     fn bounds(&self) -> Rt;
@@ -68,6 +68,6 @@ pub const fn seg(st: Pt, en: Pt) -> Segment {
     Segment::new(st, en)
 }
 
-pub const fn tri(a: Pt, b: Pt, c: Pt) -> Tri {
+pub fn tri(a: Pt, b: Pt, c: Pt) -> Tri {
     Tri::new([a, b, c])
 }

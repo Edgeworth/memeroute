@@ -59,6 +59,10 @@ pub fn is_left_of(l: &Line, p: Pt) -> bool {
     ge(cross_at(l.st(), l.en(), p), 0.0)
 }
 
+pub fn is_strictly_right_of(l: &Line, p: Pt) -> bool {
+    lt(cross_at(l.st(), l.en(), p), 0.0)
+}
+
 pub fn is_right_of(l: &Line, p: Pt) -> bool {
     le(cross_at(l.st(), l.en(), p), 0.0)
 }
@@ -67,14 +71,40 @@ pub fn is_collinear(a: Pt, b: Pt, c: Pt) -> bool {
     eq(cross_at(a, b, c), 0.0)
 }
 
+pub fn pts_strictly_right_of(l: &Line, pts: &[Pt]) -> bool {
+    for p in pts {
+        if !is_strictly_right_of(l, *p) {
+            return false;
+        }
+    }
+    true
+}
+
 // Returns true iff all points |p| are on the same side of |l|.
 pub fn pts_same_side(l: &Line, pts: &[Pt]) -> bool {
+    let mut had_one = false;
+    let mut had_neg_one = false;
+    for p in pts {
+        match orientation(l, *p) {
+            1 => had_one = true,
+            -1 => had_neg_one = true,
+            _ => {}
+        }
+    }
+    !(had_one && had_neg_one)
+}
+
+// Returns true iff all points |p| are on the same side of |l| and not collinear.
+pub fn pts_strictly_same_side(l: &Line, pts: &[Pt]) -> bool {
     if pts.is_empty() {
         return true;
     }
-    let is_left = is_left_of(l, pts[0]);
+    let o = orientation(l, pts[0]);
+    if o == 0 {
+        return false;
+    }
     for p in pts {
-        if is_left != is_left_of(l, *p) {
+        if o != orientation(l, *p) {
             return false;
         }
     }

@@ -3,6 +3,7 @@ use crate::model::primitive::point::Pt;
 use crate::model::primitive::polygon::{edges, Polygon};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
+use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{line, seg};
 
 pub fn poly_contains_rt(a: &Polygon, b: &Rt) -> bool {
@@ -79,4 +80,21 @@ pub fn rt_contains_poly(a: &Rt, b: &Polygon) -> bool {
         }
     }
     true
+}
+
+pub fn rt_contains_tri(a: &Rt, b: &Tri) -> bool {
+    // Just check all points in |b| are in |a|.
+    for p in b.pts() {
+        if !a.contains(*p) {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn tri_contains_pt(a: &Tri, b: &Pt) -> bool {
+    let orientation0 = orientation(&line(a[0], a[1]), *b);
+    let orientation1 = orientation(&line(a[1], a[2]), *b);
+    let orientation2 = orientation(&line(a[2], a[0]), *b);
+    orientation0 == orientation1 && orientation1 == orientation2
 }

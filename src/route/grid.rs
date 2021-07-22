@@ -231,24 +231,24 @@ impl GridRouter {
 impl RouteStrategy for GridRouter {
     fn route(&mut self) -> Result<RouteResult> {
         let mut res = RouteResult::default();
-        for net_id in self.net_order.clone().into_iter() {
-            let net =
-                self.model.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
-            let states =
-                net.pins.iter().map(|p| self.model.pin_ref_state(p)).collect::<Result<_>>()?;
+        // for net_id in self.net_order.clone().into_iter() {
+        //     let net =
+        //         self.model.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
+        //     let states =
+        //         net.pins.iter().map(|p| self.model.pin_ref_state(p)).collect::<Result<_>>()?;
 
-            self.model.mark_net(&mut self.blk, -1, &net)?; // Temporarily remove pins as blocking.
-            let sub_result = self.connect(states)?;
-            // Mark wires and vias.
-            for wire in sub_result.wires.iter() {
-                self.model.mark_wire(&mut self.blk, 1, wire);
-            }
-            for via in sub_result.vias.iter() {
-                self.model.mark_via(&mut self.blk, 1, via);
-            }
-            res.merge(sub_result);
-            self.model.mark_net(&mut self.blk, 1, &net)?; // Add pins back.
-        }
+        //     self.model.mark_net(&mut self.blk, -1, &net)?; // Temporarily remove pins as blocking.
+        //     let sub_result = self.connect(states)?;
+        //     // Mark wires and vias.
+        //     for wire in sub_result.wires.iter() {
+        //         self.model.mark_wire(&mut self.blk, 1, wire);
+        //     }
+        //     for via in sub_result.vias.iter() {
+        //         self.model.mark_via(&mut self.blk, 1, via);
+        //     }
+        //     res.merge(sub_result);
+        //     self.model.mark_net(&mut self.blk, 1, &net)?; // Add pins back.
+        // }
 
         let bounds = self.model.grid_rt(&self.model.pcb.bounds());
         for l in bounds.l()..bounds.r() {
