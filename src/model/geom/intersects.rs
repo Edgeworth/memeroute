@@ -83,7 +83,18 @@ pub fn circ_intersects_rt(a: &Circle, b: &Rt) -> bool {
 }
 
 pub fn circ_intersects_tri(a: &Circle, b: &Tri) -> bool {
-    todo!()
+    // Take the minkowski sum of the circle and triangle. Just need to test
+    // if the triangle contains the centre of the circle or any of its
+    // capsules contain the point.
+    if tri_contains_pt(b, &a.p()) {
+        return true;
+    }
+    for seg in b.segs() {
+        if cap_contains_pt(&cap(seg.st(), seg.en(), a.r()), &a.p()) {
+            return true;
+        }
+    }
+    false
 }
 
 pub fn line_intersects_line(a: &Line, b: &Line) -> bool {
