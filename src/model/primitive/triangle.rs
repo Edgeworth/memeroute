@@ -5,11 +5,12 @@ use derive_more::Display;
 use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::contains::tri_contains_pt;
 use crate::model::geom::convex::ensure_ccw;
-use crate::model::geom::intersects::rt_intersects_tri;
+use crate::model::geom::intersects::{cap_intersects_tri, rt_intersects_tri};
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
+use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
-use crate::model::primitive::ShapeOps;
+use crate::model::primitive::{seg, ShapeOps};
 
 // Is in CCW order.
 #[derive(Debug, Display, Copy, Clone)]
@@ -27,6 +28,14 @@ impl Tri {
     pub fn pts(&self) -> &[Pt; 3] {
         &self.pts
     }
+
+    pub fn segs(&self) -> [Segment; 3] {
+        [
+            seg(self.pts[0], self.pts[1]),
+            seg(self.pts[1], self.pts[2]),
+            seg(self.pts[2], self.pts[0]),
+        ]
+    }
 }
 
 impl ShapeOps for Tri {
@@ -40,7 +49,7 @@ impl ShapeOps for Tri {
 
     fn intersects_shape(&self, s: &Shape) -> bool {
         match s {
-            Shape::Capsule(_) => todo!(),
+            Shape::Capsule(s) => cap_intersects_tri(s, self),
             Shape::Circle(_) => todo!(),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),

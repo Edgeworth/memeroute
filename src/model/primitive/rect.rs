@@ -1,11 +1,13 @@
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use derive_more::Display;
 
-use crate::model::geom::contains::{rt_contains_poly, rt_contains_tri};
+use crate::model::geom::contains::{
+    rt_contains_cap, rt_contains_circ, rt_contains_path, rt_contains_poly, rt_contains_tri,
+};
 use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist};
 use crate::model::geom::intersects::{
-    cap_intersects_rt, circ_intersects_rt, path_intersects_rt, poly_intersects_rt, rt_intersects_rt,
-    rt_intersects_seg, rt_intersects_tri,
+    cap_intersects_rt, circ_intersects_rt, path_intersects_rt, poly_intersects_rt,
+    rt_intersects_rt, rt_intersects_seg, rt_intersects_tri,
 };
 use crate::model::geom::math::{eq, ge, gt, le, lt};
 use crate::model::primitive::point::{Pt, PtI};
@@ -199,11 +201,11 @@ impl ShapeOps for Rt {
 
     fn contains_shape(&self, s: &Shape) -> bool {
         match s {
-            Shape::Capsule(_) => todo!(),
-            Shape::Circle(_) => todo!(),
+            Shape::Capsule(s) => rt_contains_cap(self, s),
+            Shape::Circle(s) => rt_contains_circ(self, s),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
-            Shape::Path(_) => todo!(),
+            Shape::Path(s) => rt_contains_path(self, s),
             Shape::Point(s) => self.contains(*s),
             Shape::Polygon(s) => rt_contains_poly(self, s),
             Shape::Rect(s) => self.contains_rt(s),
