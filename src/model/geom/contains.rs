@@ -115,6 +115,24 @@ pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
     true
 }
 
+pub fn rt_contains_cap(a: &Rt, b: &Capsule) -> bool {
+    todo!()
+}
+
+pub fn rt_contains_circ(a: &Rt, b: &Circle) -> bool {
+    todo!()
+}
+
+pub fn rt_contains_path(a: &Rt, b: &Path) -> bool {
+    // Just check all points in |b| are in |a|.
+    for cap in b.caps() {
+        if !rt_contains_cap(a, &cap) {
+            return false;
+        }
+    }
+    true
+}
+
 pub fn rt_contains_poly(a: &Rt, b: &Poly) -> bool {
     // Just check all points in |b| are in |a|.
     for p in b.pts() {

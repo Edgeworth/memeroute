@@ -1,4 +1,4 @@
-use crate::model::geom::contains::cap_contains_pt;
+use crate::model::geom::contains::{cap_contains_pt, tri_contains_pt};
 use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist, seg_seg_dist};
 use crate::model::geom::math::{le, lt, ne, orientation, pts_strictly_right_of};
 use crate::model::primitive::capsule::Capsule;
@@ -22,7 +22,12 @@ pub fn cap_intersects_circ(a: &Capsule, b: &Circle) -> bool {
 }
 
 pub fn cap_intersects_poly(a: &Capsule, b: &Poly) -> bool {
-    todo!()
+    for tri in b.tri() {
+        if cap_intersects_tri(a, tri) {
+            return true;
+        }
+    }
+    false
 }
 
 pub fn cap_intersects_rt(a: &Capsule, b: &Rt) -> bool {
@@ -31,6 +36,21 @@ pub fn cap_intersects_rt(a: &Capsule, b: &Rt) -> bool {
     } else {
         le(rt_seg_dist(b, &a.seg()), a.r())
     }
+}
+
+pub fn cap_intersects_tri(a: &Capsule, b: &Tri) -> bool {
+    // Check if the capsule is contained within the triangle:
+    if tri_contains_pt(b, &a.st()) || tri_contains_pt(b, &a.en()) {
+        return true;
+    }
+    // Otherwise to intersect, the triangle boundary needs to be intersecting
+    // the capsule.
+    for seg in b.segs() {
+        if le(seg_seg_dist(&a.seg(), &seg), a.r()) {
+            return true;
+        }
+    }
+    false
 }
 
 pub fn circ_intersects_path(a: &Circle, b: &Path) -> bool {
