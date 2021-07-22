@@ -1,3 +1,5 @@
+use std::mem::swap;
+
 use crate::model::geom::bounds::rt_cloud_bounds;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -64,6 +66,29 @@ impl QuadTree {
         Self { shapes, nodes, bounds }
     }
 
+    pub fn empty() -> Self {
+        Self {
+            shapes: Vec::new(),
+            nodes: vec![Node::default(), Node::default()],
+            bounds: Rt::empty(),
+        }
+    }
+
+    pub fn add_shape(&mut self, s: Shape) {
+        let bounds = self.bounds().united(&s.bounds());
+        // If this shape expands the bounds, rebuild the tree.
+        // TODO: Don't rebuild the tree?
+        if bounds != self.bounds() {
+            let mut shapes = Vec::new();
+            swap(&mut shapes, &mut self.shapes);
+            shapes.push(s);
+            *self = Self::new(shapes);
+        } else {
+            self.nodes[1].intersect.push(IntersectData { shape: self.shapes.len(), tests: 0 });
+            self.shapes.push(s);
+        }
+    }
+
     pub fn bounds(&self) -> Rt {
         self.bounds
     }
@@ -112,15 +137,17 @@ impl QuadTree {
         }
 
         // Check shapes that intersect this node:
+        let mut had_intersection = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
-            let shape = &self.shapes[inter.shape];
-            if shape.intersects_shape(s) {
-                return true;
+            inter.tests += 1;
+            if self.shapes[inter.shape].intersects_shape(s) {
+                had_intersection = true;
+                break;
             }
         }
         self.maybe_push_down(idx, r);
 
-        false
+        had_intersection
     }
 
     // Move any shapes to child nodes, if necessary.
@@ -131,7 +158,6 @@ impl QuadTree {
             self.ensure_children(idx);
 
             for inter in push_down {
-                println!("push down");
                 let Node { bl, br, tr, tl, .. } = self.nodes[idx];
                 let shape = &self.shapes[inter.shape];
 

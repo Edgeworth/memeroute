@@ -172,7 +172,7 @@ pub struct Pcb {
     nets: HashMap<Id, Net>,
 
     // TODO: Separate compound shapes for each layer.
-    boundaries_qt: HashMap<Id, Compound>,
+    boundaries_qt: Compound,
 }
 
 impl Pcb {
@@ -193,6 +193,7 @@ impl Pcb {
     }
 
     pub fn add_boundary(&mut self, s: LayerShape) {
+        self.boundaries_qt.add_shape(s.shape.clone());
         self.boundaries.push(s);
     }
 
@@ -274,11 +275,7 @@ impl Pcb {
     // Tests if the given rect is within the boundaries of the PCB.
     pub fn boundary_contains_rt(&self, r: &Rt) -> bool {
         let r = r.shape();
-        for boundary in self.boundaries() {
-            if boundary.shape.contains_shape(&r) {
-                return true;
-            }
-        }
-        false
+        // TODO: implement contains
+        self.boundaries_qt.intersects_shape(&r)
     }
 }

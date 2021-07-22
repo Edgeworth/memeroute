@@ -60,29 +60,29 @@ pub fn rt_intersects_tri(a: &Rt, b: &Tri) -> bool {
     let rt = &a.pts();
     let tri = b.pts();
     // Test tri axes:
-    if pts_same_side(&line(tri[0], tri[1]), rt) {
-        return false;
+    if !pts_same_side(&line(tri[0], tri[1]), rt) {
+        return true;
     }
-    if pts_same_side(&line(tri[1], tri[2]), rt) {
-        return false;
+    if !pts_same_side(&line(tri[1], tri[2]), rt) {
+        return true;
     }
-    if pts_same_side(&line(tri[2], tri[0]), rt) {
-        return false;
+    if !pts_same_side(&line(tri[2], tri[0]), rt) {
+        return true;
     }
     // Test rect axes:
-    if pts_same_side(&line(rt[0], rt[1]), tri) {
-        return false;
+    if !pts_same_side(&line(rt[0], rt[1]), tri) {
+        return true;
     }
-    if pts_same_side(&line(rt[1], rt[2]), tri) {
-        return false;
+    if !pts_same_side(&line(rt[1], rt[2]), tri) {
+        return true;
     }
-    if pts_same_side(&line(rt[2], rt[3]), tri) {
-        return false;
+    if !pts_same_side(&line(rt[2], rt[3]), tri) {
+        return true;
     }
-    if pts_same_side(&line(rt[3], rt[0]), tri) {
-        return false;
+    if !pts_same_side(&line(rt[3], rt[0]), tri) {
+        return true;
     }
-    true
+    false
 }
 
 pub fn rt_intersects_seg(_a: &Rt, _b: &Segment) -> bool {
@@ -120,8 +120,10 @@ pub fn seg_intersects_seg(a: &Segment, b: &Segment) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use super::*;
-    use crate::model::primitive::{pt, seg};
+    use crate::model::primitive::{pt, rt, seg, tri};
     use crate::model::tf::Tf;
 
     const SEG_SEG_TESTS: &[(Segment, Segment, bool)] = &[
@@ -195,6 +197,27 @@ mod tests {
             let a = &tf.seg(a);
             let b = &tf.seg(b);
             test_seg_seg_permutations(a, b, *res);
+        }
+    }
+
+    const RT_TRI_TESTS: &[(Rt, Tri, bool)] = &[
+        // Regular intersection
+        (rt(1.0, 2.0, 3.0, 3.0), tri(pt(2.0, 2.5), pt(2.0, 1.0), pt(3.0, 1.0)), true),
+        // Just touching the rect.
+        (rt(1.0, 2.0, 3.0, 3.0), tri(pt(3.0, 3.0), pt(4.0, 3.0), pt(4.0, 5.0)), true),
+        (rt(1.0, 2.0, 3.0, 3.0), tri(pt(1.0, 4.0), pt(3.0, 4.0), pt(2.0, 5.0)), false),
+    ];
+
+    fn permute_tri(t: &Tri) -> Vec<Tri> {
+        t.pts().iter().permutations(3).map(|v| tri(*v[0], *v[1], *v[2])).collect()
+    }
+
+    #[test]
+    fn test_rt_tri() {
+        for (a, t, res) in RT_TRI_TESTS {
+            for b in permute_tri(t) {
+                assert_eq!(rt_intersects_tri(a, &b), *res, "{} {} intersect? {}", a, b, res);
+            }
         }
     }
 }
