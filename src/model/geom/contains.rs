@@ -2,19 +2,29 @@ use crate::model::geom::distance::{pt_poly_dist, pt_seg_dist};
 use crate::model::geom::math::{ge, is_left_of, is_right_of, le, lt, orientation};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
-use crate::model::primitive::line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
+use crate::model::primitive::{line, ShapeOps};
 
 pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
+    // Bounding box check.
+    if !a.bounds().contains(*b) {
+        return false;
+    }
+
     le(pt_seg_dist(b, &a.seg()), a.r())
 }
 
 pub fn cap_contains_rt(a: &Capsule, b: &Rt) -> bool {
+    // Bounding box check.
+    if !a.bounds().intersects(b) {
+        return false;
+    }
+
     for p in b.pts() {
         if !cap_contains_pt(a, &p) {
             return false;
@@ -36,6 +46,11 @@ pub fn circ_contains_pt(a: &Circle, b: &Pt) -> bool {
 }
 
 pub fn path_contains_rt(a: &Path, b: &Rt) -> bool {
+    // Bounding box check.
+    if !a.bounds().intersects(b) {
+        return false;
+    }
+
     // This function is too complicated to have an exact solution.
     // An approach is to split |a| into quads and circles, then compute the
     // intersection of the quads and |b|. Then, do voronoi with the circles
@@ -56,6 +71,11 @@ pub fn path_contains_seg(_a: &Path, _b: &Segment) -> bool {
 }
 
 pub fn poly_contains_cap(a: &Poly, b: &Capsule) -> bool {
+    // Bounding box check.
+    if !a.bounds().intersects(&b.bounds()) {
+        return false;
+    }
+
     // First check both end caps are in the polygon.
     if !poly_contains_circ(a, &b.st_cap()) {
         return false;
@@ -82,6 +102,11 @@ pub fn poly_contains_circ(a: &Poly, b: &Circle) -> bool {
 }
 
 pub fn poly_contains_path(a: &Poly, b: &Path) -> bool {
+    // Bounding box check.
+    if !a.bounds().intersects(&b.bounds()) {
+        return false;
+    }
+
     for cap in b.caps() {
         if !poly_contains_cap(a, &cap) {
             return false;
@@ -91,6 +116,11 @@ pub fn poly_contains_path(a: &Poly, b: &Path) -> bool {
 }
 
 pub fn poly_contains_pt(a: &Poly, b: &Pt) -> bool {
+    // Bounding box check.
+    if !a.bounds().contains(*b) {
+        return false;
+    }
+
     // Winding number test. Look at horizontal line at b.y and count crossings
     // of edges from |a|. Treats points on the boundary of the polygon as
     // contained.
@@ -113,6 +143,11 @@ pub fn poly_contains_pt(a: &Poly, b: &Pt) -> bool {
 }
 
 pub fn poly_contains_rt(a: &Poly, b: &Rt) -> bool {
+    // Bounding box check.
+    if !a.bounds().intersects(b) {
+        return false;
+    }
+
     // Check point containment of |b| in |a|.
     for p in b.pts() {
         if !poly_contains_pt(a, &p) {
@@ -131,6 +166,11 @@ pub fn poly_contains_rt(a: &Poly, b: &Rt) -> bool {
 }
 
 pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
+    // Bounding box check.
+    if !a.bounds().intersects(&b.bounds()) {
+        return false;
+    }
+
     // Check that both endpoints of |b| are in a.
     if !poly_contains_pt(a, &b.st()) || !poly_contains_pt(a, &b.en()) {
         return false;
@@ -156,6 +196,11 @@ pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
 }
 
 pub fn rt_contains_cap(a: &Rt, b: &Capsule) -> bool {
+    // Bounding box check.
+    if !a.intersects(&b.bounds()) {
+        return false;
+    }
+
     // First check both end caps are in the rect.
     if !rt_contains_circ(a, &b.st_cap()) {
         return false;
@@ -192,6 +237,11 @@ pub fn rt_contains_circ(a: &Rt, b: &Circle) -> bool {
 }
 
 pub fn rt_contains_path(a: &Rt, b: &Path) -> bool {
+    // Bounding box check.
+    if !a.intersects(&b.bounds()) {
+        return false;
+    }
+
     // Just check all points in |b| are in |a|.
     for cap in b.caps() {
         if !rt_contains_cap(a, &cap) {
@@ -202,6 +252,11 @@ pub fn rt_contains_path(a: &Rt, b: &Path) -> bool {
 }
 
 pub fn rt_contains_poly(a: &Rt, b: &Poly) -> bool {
+    // Bounding box check.
+    if !a.intersects(&b.bounds()) {
+        return false;
+    }
+
     // Just check all points in |b| are in |a|.
     for p in b.pts() {
         if !a.contains(*p) {

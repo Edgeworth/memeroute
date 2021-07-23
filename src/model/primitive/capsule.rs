@@ -2,15 +2,15 @@ use derive_more::Display;
 
 use crate::model::geom::contains::{cap_contains_pt, cap_contains_rt};
 use crate::model::geom::intersects::{
-    cap_intersects_cap, cap_intersects_path, cap_intersects_poly, cap_intersects_rt,
-    cap_intersects_tri,
+    cap_intersects_cap, cap_intersects_circ, cap_intersects_path, cap_intersects_poly,
+    cap_intersects_rt, cap_intersects_tri,
 };
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
-use crate::model::primitive::{circ, line, seg, ShapeOps};
+use crate::model::primitive::{circ, seg, ShapeOps};
 
 #[derive(Debug, Display, Copy, Clone)]
 #[display(fmt = "Cap[{}, {}; {}]", st, en, r)]
@@ -79,7 +79,7 @@ impl ShapeOps for Capsule {
     fn intersects_shape(&self, s: &Shape) -> bool {
         match s {
             Shape::Capsule(s) => cap_intersects_cap(self, s),
-            Shape::Circle(_) => todo!(),
+            Shape::Circle(s) => cap_intersects_circ(self, s),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => cap_intersects_path(self, s),

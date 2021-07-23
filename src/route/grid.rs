@@ -6,9 +6,7 @@ use priority_queue::PriorityQueue;
 
 use crate::model::pcb::{Id, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
-use crate::model::primitive::rect::{Rt, RtI};
-use crate::model::primitive::{circ, path, pt, pti, ShapeOps};
-use crate::model::tf::Tf;
+use crate::model::primitive::{path, pt, pti, ShapeOps};
 use crate::route::place_model::PlaceModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
