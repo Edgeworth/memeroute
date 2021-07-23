@@ -57,7 +57,7 @@ impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
         let mut place = PlaceModel::new();
         place.add_pcb(&pcb);
-        Self { pcb, resolution: 0.2, place, net_order }
+        Self { pcb, resolution: 0.4, place, net_order }
     }
 
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.
@@ -272,14 +272,14 @@ impl RouteStrategy for GridRouter {
         }
 
         // let bounds = self.pcb.bounds();
-        // // let bounds = rt(82.0495, -45.1745, 84.099, -25.75);
+        // // let bounds = rt(77.0495, -125.1745, 79.099, -120.75);
         // let bounds =
         //     RtI::enclosing(self.grid_pt(bounds.bl()), self.grid_pt(bounds.tr()) + pti(1, 1));
         // for l in bounds.l()..bounds.r() {
         //     for b in bounds.b()..bounds.t() {
         //         let p = pti(l, b);
         //         let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
-        //         let shape = LayerShape { layer: "B.Cu".to_owned(), shape };
+        //         let shape = LayerShape { layer: "F.Cu".to_owned(), shape };
         //         if self.place.is_shape_blocked(&Tf::identity(), &shape) {
         //             continue;
         //         }
@@ -292,7 +292,7 @@ impl RouteStrategy for GridRouter {
         //     Rt::enclosing(self.world_pt(bounds.bl()), self.world_pt(bounds.tr()))
         //         .inset(-10.0, -10.0),
         // );
-        res.debug_rts.extend(self.place.debug_rts());
+        // res.debug_rts.extend(self.place.debug_rts());
         Ok(res)
     }
 }

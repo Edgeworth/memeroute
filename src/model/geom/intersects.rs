@@ -22,7 +22,7 @@ pub fn cap_intersects_cap(a: &Capsule, b: &Capsule) -> bool {
 
 pub fn cap_intersects_circ(a: &Capsule, b: &Circle) -> bool {
     // Compute minkowski sum of |a| and |b| and check containment.
-    let sum = cap(a.st(), a.en(), b.r());
+    let sum = cap(a.st(), a.en(), a.r() + b.r());
     cap_contains_pt(&sum, &b.p())
 }
 
