@@ -204,7 +204,7 @@ impl PcbView {
             for rt in self.pcb.debug_rts() {
                 let mut pts = rt.pts().to_vec();
                 pts.push(rt.pts()[0]);
-                let shape = path(&pts, 0.1).shape();
+                let shape = path(&pts, 0.05).shape();
                 let shapes =
                     self.draw_shape(&tf, &LayerShape { shape, layer: "pcb".to_owned() }, *DEBUG);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);

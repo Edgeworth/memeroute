@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::mem::swap;
 
 use crate::model::geom::bounds::rt_cloud_bounds;
@@ -10,6 +11,7 @@ pub type ShapeIdx = usize;
 
 // How many tests to do before splitting a node.
 const TEST_THRESHOLD: usize = 4;
+const MAX_DEPTH: usize = 6;
 const NO_NODE: NodeIdx = 0;
 
 #[derive(Debug, Copy, Clone)]
@@ -49,7 +51,8 @@ pub struct QuadTree {
     free_shapes: Vec<ShapeIdx>, // List of indices of shapes that have been deleted.
     nodes: Vec<Node>,
     bounds: Rt,
-    // TODO: Add cache?
+    intersect_cache: HashMap<ShapeIdx, bool>, // Caches intersection tests.
+    contain_cache: HashMap<ShapeIdx, bool>,   // Caches containment tests.
 }
 
 impl QuadTree {
@@ -64,24 +67,18 @@ impl QuadTree {
                 ..Default::default()
             },
         ];
-        Self { shapes, free_shapes: Vec::new(), nodes, bounds }
+        Self { shapes, nodes, bounds, ..Default::default() }
     }
 
     pub fn with_bounds(r: &Rt) -> Self {
-        Self {
-            shapes: Vec::new(),
-            free_shapes: Vec::new(),
-            nodes: vec![Node::default(), Node::default()],
-            bounds: *r,
-        }
+        Self { nodes: vec![Node::default(), Node::default()], bounds: *r, ..Default::default() }
     }
 
     pub fn empty() -> Self {
         Self {
-            shapes: Vec::new(),
-            free_shapes: Vec::new(),
             nodes: vec![Node::default(), Node::default()],
             bounds: Rt::empty(),
+            ..Default::default()
         }
     }
 
@@ -140,19 +137,56 @@ impl QuadTree {
         self.bounds
     }
 
+    fn reset_cache(&mut self) {
+        self.intersect_cache.clear();
+        self.contain_cache.clear();
+    }
+
     pub fn intersects(&mut self, s: &Shape) -> bool {
-        self.inter(s, 1, self.bounds())
+        self.reset_cache();
+        self.inter(s, 1, self.bounds(), 0)
     }
 
     pub fn contains(&mut self, s: &Shape) -> bool {
-        self.contain(s, 1, self.bounds())
+        self.reset_cache();
+        self.contain(s, 1, self.bounds(), 0)
     }
 
     pub fn dist(&mut self, _s: &Shape) -> f64 {
         todo!()
     }
 
-    fn inter(&mut self, s: &Shape, idx: NodeIdx, r: Rt) -> bool {
+    fn cached_intersects(
+        shapes: &[Shape],
+        cache: &mut HashMap<ShapeIdx, bool>,
+        idx: ShapeIdx,
+        s: &Shape,
+    ) -> bool {
+        if let Some(res) = cache.get(&idx) {
+            *res
+        } else {
+            let res = shapes[idx].intersects_shape(s);
+            cache.insert(idx, res);
+            res
+        }
+    }
+
+    fn cached_contains(
+        shapes: &[Shape],
+        cache: &mut HashMap<ShapeIdx, bool>,
+        idx: ShapeIdx,
+        s: &Shape,
+    ) -> bool {
+        if let Some(res) = cache.get(&idx) {
+            *res
+        } else {
+            let res = shapes[idx].contains_shape(s);
+            cache.insert(idx, res);
+            res
+        }
+    }
+
+    fn inter(&mut self, s: &Shape, idx: NodeIdx, r: Rt, depth: usize) -> bool {
         // No intersection in this node if we don't intersect the bounds.
         if !s.intersects_shape(&r.shape()) {
             return false;
@@ -170,16 +204,24 @@ impl QuadTree {
         // Check children, if they exist. Do this first as we expect traversing
         // the tree to be faster. Only actually do intersection tests if we have
         // to.
-        if self.nodes[idx].bl != NO_NODE && self.inter(s, self.nodes[idx].bl, r.bl_quadrant()) {
+        if self.nodes[idx].bl != NO_NODE
+            && self.inter(s, self.nodes[idx].bl, r.bl_quadrant(), depth + 1)
+        {
             return true;
         }
-        if self.nodes[idx].br != NO_NODE && self.inter(s, self.nodes[idx].br, r.br_quadrant()) {
+        if self.nodes[idx].br != NO_NODE
+            && self.inter(s, self.nodes[idx].br, r.br_quadrant(), depth + 1)
+        {
             return true;
         }
-        if self.nodes[idx].tr != NO_NODE && self.inter(s, self.nodes[idx].tr, r.tr_quadrant()) {
+        if self.nodes[idx].tr != NO_NODE
+            && self.inter(s, self.nodes[idx].tr, r.tr_quadrant(), depth + 1)
+        {
             return true;
         }
-        if self.nodes[idx].tl != NO_NODE && self.inter(s, self.nodes[idx].tl, r.tl_quadrant()) {
+        if self.nodes[idx].tl != NO_NODE
+            && self.inter(s, self.nodes[idx].tl, r.tl_quadrant(), depth + 1)
+        {
             return true;
         }
 
@@ -187,17 +229,18 @@ impl QuadTree {
         let mut had_intersection = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            if self.shapes[inter.shape_idx].intersects_shape(s) {
+            if Self::cached_intersects(&self.shapes, &mut self.intersect_cache, inter.shape_idx, s)
+            {
                 had_intersection = true;
                 break;
             }
         }
-        self.maybe_push_down(idx, r);
+        self.maybe_push_down(idx, r, depth);
 
         had_intersection
     }
 
-    fn contain(&mut self, s: &Shape, idx: NodeIdx, r: Rt) -> bool {
+    fn contain(&mut self, s: &Shape, idx: NodeIdx, r: Rt, depth: usize) -> bool {
         // No containment of |s| if the bounds don't intersect |s|.
         if !r.intersects_shape(s) {
             return false;
@@ -212,16 +255,24 @@ impl QuadTree {
         // Check children, if they exist. Do this first as we expect traversing
         // the tree to be faster. Only actually do intersection tests if we have
         // to.
-        if self.nodes[idx].bl != NO_NODE && self.contain(s, self.nodes[idx].bl, r.bl_quadrant()) {
+        if self.nodes[idx].bl != NO_NODE
+            && self.contain(s, self.nodes[idx].bl, r.bl_quadrant(), depth + 1)
+        {
             return true;
         }
-        if self.nodes[idx].br != NO_NODE && self.contain(s, self.nodes[idx].br, r.br_quadrant()) {
+        if self.nodes[idx].br != NO_NODE
+            && self.contain(s, self.nodes[idx].br, r.br_quadrant(), depth + 1)
+        {
             return true;
         }
-        if self.nodes[idx].tr != NO_NODE && self.contain(s, self.nodes[idx].tr, r.tr_quadrant()) {
+        if self.nodes[idx].tr != NO_NODE
+            && self.contain(s, self.nodes[idx].tr, r.tr_quadrant(), depth + 1)
+        {
             return true;
         }
-        if self.nodes[idx].tl != NO_NODE && self.contain(s, self.nodes[idx].tl, r.tl_quadrant()) {
+        if self.nodes[idx].tl != NO_NODE
+            && self.contain(s, self.nodes[idx].tl, r.tl_quadrant(), depth + 1)
+        {
             return true;
         }
 
@@ -229,18 +280,21 @@ impl QuadTree {
         let mut had_containment = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            if self.shapes[inter.shape_idx].contains_shape(s) {
+            if Self::cached_contains(&self.shapes, &mut self.contain_cache, inter.shape_idx, s) {
                 had_containment = true;
                 break;
             }
         }
-        self.maybe_push_down(idx, r);
+        self.maybe_push_down(idx, r, depth);
 
         had_containment
     }
 
     // Move any shapes to child nodes, if necessary.
-    fn maybe_push_down(&mut self, idx: NodeIdx, r: Rt) {
+    fn maybe_push_down(&mut self, idx: NodeIdx, r: Rt, depth: usize) {
+        if depth > MAX_DEPTH {
+            return;
+        }
         let push_down: Vec<_> =
             self.nodes[idx].intersect.drain_filter(|v| v.tests >= TEST_THRESHOLD).collect();
         if !push_down.is_empty() {
