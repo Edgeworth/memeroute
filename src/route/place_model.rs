@@ -66,13 +66,18 @@ impl PlaceModel {
         }
     }
 
-    fn add_shape(bounds: Rt, map: &mut HashMap<Id, Compound>, tf: &Tf, ls: &LayerShape) -> PlaceId {
+    fn add_shape(
+        bounds: Rt,
+        map: &mut HashMap<Id, Compound>,
+        tf: &Tf,
+        ls: &LayerShape,
+    ) -> Vec<PlaceId> {
         let s = tf.shape(&ls.shape);
-        let idx = map
+        let idxs = map
             .entry(ls.layer.clone())
             .or_insert_with(|| Compound::with_bounds(&bounds))
             .add_shape(s);
-        (ls.layer.clone(), idx)
+        idxs.iter().map(|&v| (ls.layer.clone(), v)).collect()
     }
 
     pub fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack) -> Vec<PlaceId> {
@@ -80,10 +85,11 @@ impl PlaceModel {
             .shapes
             .iter()
             .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape))
+            .flatten()
             .collect()
     }
 
-    pub fn add_wire(&mut self, wire: &Wire) -> PlaceId {
+    pub fn add_wire(&mut self, wire: &Wire) -> Vec<PlaceId> {
         Self::add_shape(self.bounds, &mut self.blocked, &Tf::identity(), &wire.shape)
     }
 
