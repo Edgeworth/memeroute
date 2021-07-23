@@ -21,7 +21,7 @@ pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
 
 pub fn cap_contains_rt(a: &Capsule, b: &Rt) -> bool {
     // Bounding box check.
-    if !a.bounds().intersects(b) {
+    if !a.bounds().contains_rt(b) {
         return false;
     }
 
@@ -47,7 +47,7 @@ pub fn circ_contains_pt(a: &Circle, b: &Pt) -> bool {
 
 pub fn path_contains_rt(a: &Path, b: &Rt) -> bool {
     // Bounding box check.
-    if !a.bounds().intersects(b) {
+    if !a.bounds().contains_rt(b) {
         return false;
     }
 
@@ -72,7 +72,7 @@ pub fn path_contains_seg(_a: &Path, _b: &Segment) -> bool {
 
 pub fn poly_contains_cap(a: &Poly, b: &Capsule) -> bool {
     // Bounding box check.
-    if !a.bounds().intersects(&b.bounds()) {
+    if !a.bounds().contains_rt(&b.bounds()) {
         return false;
     }
 
@@ -103,7 +103,7 @@ pub fn poly_contains_circ(a: &Poly, b: &Circle) -> bool {
 
 pub fn poly_contains_path(a: &Poly, b: &Path) -> bool {
     // Bounding box check.
-    if !a.bounds().intersects(&b.bounds()) {
+    if !a.bounds().contains_rt(&b.bounds()) {
         return false;
     }
 
@@ -144,7 +144,7 @@ pub fn poly_contains_pt(a: &Poly, b: &Pt) -> bool {
 
 pub fn poly_contains_rt(a: &Poly, b: &Rt) -> bool {
     // Bounding box check.
-    if !a.bounds().intersects(b) {
+    if !a.bounds().contains_rt(b) {
         return false;
     }
 
@@ -167,7 +167,7 @@ pub fn poly_contains_rt(a: &Poly, b: &Rt) -> bool {
 
 pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
     // Bounding box check.
-    if !a.bounds().intersects(&b.bounds()) {
+    if !a.bounds().contains_rt(&b.bounds()) {
         return false;
     }
 
@@ -197,7 +197,7 @@ pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
 
 pub fn rt_contains_cap(a: &Rt, b: &Capsule) -> bool {
     // Bounding box check.
-    if !a.intersects(&b.bounds()) {
+    if !a.contains_rt(&b.bounds()) {
         return false;
     }
 
@@ -238,7 +238,7 @@ pub fn rt_contains_circ(a: &Rt, b: &Circle) -> bool {
 
 pub fn rt_contains_path(a: &Rt, b: &Path) -> bool {
     // Bounding box check.
-    if !a.intersects(&b.bounds()) {
+    if !a.contains_rt(&b.bounds()) {
         return false;
     }
 
@@ -253,7 +253,7 @@ pub fn rt_contains_path(a: &Rt, b: &Path) -> bool {
 
 pub fn rt_contains_poly(a: &Rt, b: &Poly) -> bool {
     // Bounding box check.
-    if !a.intersects(&b.bounds()) {
+    if !a.contains_rt(&b.bounds()) {
         return false;
     }
 

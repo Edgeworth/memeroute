@@ -57,7 +57,7 @@ impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
         let mut place = PlaceModel::new();
         place.add_pcb(&pcb);
-        Self { pcb, resolution: 0.4, place, net_order }
+        Self { pcb, resolution: 0.2, place, net_order }
     }
 
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.
@@ -253,7 +253,7 @@ impl GridRouter {
 impl RouteStrategy for GridRouter {
     fn route(&mut self) -> Result<RouteResult> {
         let mut res = RouteResult::default();
-        for net_id in self.net_order.clone().into_iter().take(20) {
+        for net_id in self.net_order.clone().into_iter() {
             let net = self.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
