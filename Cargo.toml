@@ -17,6 +17,7 @@ itertools = "*"
 nalgebra = "*"
 ordered-float = "*"
 priority-queue = "*"
+rand = {version = "*", features = ["small_rng"]}
 regex = "*"
 serde = {version = "*", features = ["derive"]}
 strum = {version = "*", features = ["derive"]}

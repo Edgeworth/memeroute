@@ -4,7 +4,7 @@ use derive_more::Display;
 use nalgebra::{vector, Vector2};
 use serde::{Deserialize, Serialize};
 
-use crate::model::geom::contains::{cap_contains_pt, poly_contains_pt};
+use crate::model::geom::contains::{cap_contains_pt, circ_contains_pt, poly_contains_pt};
 use crate::model::geom::distance::{line_pt_dist, pt_seg_dist};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -115,7 +115,7 @@ impl ShapeOps for Pt {
     fn intersects_shape(&self, s: &Shape) -> bool {
         match s {
             Shape::Capsule(s) => cap_contains_pt(s, self),
-            Shape::Circle(_) => todo!(),
+            Shape::Circle(s) => circ_contains_pt(s, self),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),

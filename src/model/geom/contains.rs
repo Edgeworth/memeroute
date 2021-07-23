@@ -4,14 +4,55 @@ use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::{edges, Poly};
+use crate::model::primitive::polygon::{Poly};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
-use crate::model::primitive::{line, seg};
+use crate::model::primitive::{line};
 
 pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
     le(pt_seg_dist(b, &a.seg()), a.r())
+}
+
+pub fn cap_contains_rt(a: &Capsule, b: &Rt) -> bool {
+    for p in b.pts() {
+        if !cap_contains_pt(a, &p) {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn circ_contains_rt(a: &Circle, b: &Rt) -> bool {
+    // Sufficient to check all rectangle points are within the circle.
+    circ_contains_pt(a, &b.bl())
+        && circ_contains_pt(a, &b.br())
+        && circ_contains_pt(a, &b.tr())
+        && circ_contains_pt(a, &b.tl())
+}
+
+pub fn circ_contains_pt(a: &Circle, b: &Pt) -> bool {
+    le(a.p().dist(*b), a.r())
+}
+
+pub fn path_contains_rt(a: &Path, b: &Rt) -> bool {
+    // This function is too complicated to have an exact solution.
+    // An approach is to split |a| into quads and circles, then compute the
+    // intersection of the quads and |b|. Then, do voronoi with the circles
+    // and ensure the non-intersected parts of |b| are covered.
+    // This function is only used in the quadtree and it doesn't have to
+    // be exact so instead just check each capsule. It will miss cases
+    // where the rectangle goes over multiple capsules.
+    for cap in a.caps() {
+        if cap_contains_rt(&cap, b) {
+            return true;
+        }
+    }
+    false
+}
+
+pub fn path_contains_seg(_a: &Path, _b: &Segment) -> bool {
+    todo!()
 }
 
 pub fn poly_contains_cap(a: &Poly, b: &Capsule) -> bool {
@@ -73,16 +114,15 @@ pub fn poly_contains_pt(a: &Poly, b: &Pt) -> bool {
 
 pub fn poly_contains_rt(a: &Poly, b: &Rt) -> bool {
     // Check point containment of |b| in |a|.
-    let pts = b.pts();
-    for p in pts {
+    for p in b.pts() {
         if !poly_contains_pt(a, &p) {
             return false;
         }
     }
     // Check segment containment of |b| in |a| if |a| is non-convex.
     if !a.is_convex() {
-        for [&p0, &p1] in edges(&pts) {
-            if !poly_contains_seg(a, &seg(p0, p1)) {
+        for seg in b.segs() {
+            if !poly_contains_seg(a, &seg) {
                 return false;
             }
         }

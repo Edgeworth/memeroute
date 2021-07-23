@@ -6,7 +6,9 @@ use priority_queue::PriorityQueue;
 
 use crate::model::pcb::{Id, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
-use crate::model::primitive::{path, pt, pti, ShapeOps};
+use crate::model::primitive::rect::RtI;
+use crate::model::primitive::{circ, path, pt, pti, ShapeOps};
+use crate::model::tf::Tf;
 use crate::route::place_model::PlaceModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
@@ -256,7 +258,7 @@ impl RouteStrategy for GridRouter {
             let net = self.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
-            //self.place.add_net(&self.pcb, &net)?; // Temporarily remove pins as blocking.
+            //self.place.remove_shape(&net)?; // Add pins back.
             let sub_result = self.connect(states)?;
             // Mark wires and vias.
             for wire in sub_result.wires.iter() {
@@ -266,20 +268,24 @@ impl RouteStrategy for GridRouter {
                 self.place.add_via(via);
             }
             res.merge(sub_result);
-            //self.place.remove_shape(&net)?; // Add pins back.
+            //self.place.add_net(&self.pcb, &net)?; // Temporarily remove pins as blocking.
         }
 
-        // let bounds = self.grid_rt(&self.pcb.bounds());
-        // for l in bounds.l()..bounds.r() {
-        //     for b in bounds.b()..bounds.t() {
-        //         let p = pti(l, b);
-        //         if self.is_state_blocked(&State { p, layer: "F.Cu".to_owned() }) {
-        //             continue;
-        //         }
-        //         let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
-        //         res.wires.push(Wire { shape: LayerShape { layer: "F.Cu".to_owned(), shape } })
-        //     }
-        // }
+        let bounds = self.pcb.bounds();
+        // let bounds = rt(82.0495, -45.1745, 84.099, -25.75);
+        let bounds =
+            RtI::enclosing(self.grid_pt(bounds.bl()), self.grid_pt(bounds.tr()) + pti(1, 1));
+        for l in bounds.l()..bounds.r() {
+            for b in bounds.b()..bounds.t() {
+                let p = pti(l, b);
+                let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
+                let shape = LayerShape { layer: "F.Cu".to_owned(), shape };
+                if self.place.is_shape_blocked(&Tf::identity(), &shape) {
+                    continue;
+                }
+                res.wires.push(Wire { shape });
+            }
+        }
         Ok(res)
     }
 }

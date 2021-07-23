@@ -37,9 +37,7 @@ pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
 
 pub fn rt_seg_dist(a: &Rt, b: &Segment) -> f64 {
     // Check for closest distance from the segment to the edges of the rectangle.
-    let pts = a.pts();
-    let segs = [seg(pts[0], pts[1]), seg(pts[1], pts[2]), seg(pts[2], pts[3]), seg(pts[3], pts[0])];
-    segs.iter().map(|seg| seg_seg_dist(seg, b)).min_by(f64_cmp).unwrap()
+    a.segs().iter().map(|seg| seg_seg_dist(seg, b)).min_by(f64_cmp).unwrap()
 }
 
 pub fn seg_seg_dist(a: &Segment, b: &Segment) -> f64 {
