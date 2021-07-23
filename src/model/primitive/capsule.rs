@@ -67,7 +67,7 @@ impl Capsule {
 
 impl ShapeOps for Capsule {
     fn bounds(&self) -> Rt {
-        let r = line(self.st(), self.en()).bounds();
+        let r = seg(self.st(), self.en()).bounds();
         r.inset(-self.r(), -self.r())
     }
 

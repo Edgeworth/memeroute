@@ -1,7 +1,6 @@
 use crate::model::geom::contains::{cap_contains_pt, tri_contains_pt};
 use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist, seg_seg_dist};
 use crate::model::geom::math::{le, lt, ne, orientation, pts_strictly_right_of};
-use crate::model::primitive::cap;
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
@@ -10,6 +9,7 @@ use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
+use crate::model::primitive::{cap, ShapeOps};
 
 pub fn cap_intersects_cap(a: &Capsule, b: &Capsule) -> bool {
     le(seg_seg_dist(&a.seg(), &b.seg()), a.r() + b.r())
@@ -31,11 +31,16 @@ pub fn cap_intersects_poly(a: &Capsule, b: &Poly) -> bool {
 }
 
 pub fn cap_intersects_rt(a: &Capsule, b: &Rt) -> bool {
-    if b.contains(a.st()) || b.contains(a.en()) {
-        true
-    } else {
-        le(rt_seg_dist(b, &a.seg()), a.r())
+    // Check bounding boxes.
+    if !a.bounds().intersects(b) {
+        return false;
     }
+
+    if b.contains(a.st()) || b.contains(a.en()) {
+        return true;
+    }
+
+    le(rt_seg_dist(b, &a.seg()), a.r())
 }
 
 pub fn cap_intersects_tri(a: &Capsule, b: &Tri) -> bool {

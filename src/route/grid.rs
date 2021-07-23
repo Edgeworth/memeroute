@@ -59,7 +59,7 @@ impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
         let mut place = PlaceModel::new();
         place.add_pcb(&pcb);
-        Self { pcb, resolution: 0.8, place, net_order }
+        Self { pcb, resolution: 0.4, place, net_order }
     }
 
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.
@@ -80,7 +80,7 @@ impl GridRouter {
         Wire {
             shape: LayerShape {
                 layer: states[0].layer.clone(),
-                shape: path(&pts, self.resolution * 0.4).shape(),
+                shape: path(&pts, self.resolution * 0.8).shape(),
             },
         }
     }
@@ -176,6 +176,7 @@ impl GridRouter {
                     // TODO: Don't check if wire with thickness is blocked
                     // because wires already mark a 2x2 area around them (at
                     // least).
+                    // println!("try: {:?}", next);
                     let wire = self.wire_from_states(&[cur.clone(), next.clone()]);
                     if !is_via && self.place.is_wire_blocked(&wire) {
                         continue;
@@ -254,7 +255,7 @@ impl GridRouter {
 impl RouteStrategy for GridRouter {
     fn route(&mut self) -> Result<RouteResult> {
         let mut res = RouteResult::default();
-        for net_id in self.net_order.clone().into_iter() {
+        for net_id in self.net_order.clone().into_iter().take(20) {
             let net = self.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
@@ -269,29 +270,31 @@ impl RouteStrategy for GridRouter {
             }
             res.merge(sub_result);
             self.place.add_net(&self.pcb, &net)?; // Add pins back.
+            println!("done");
         }
 
-        let bounds = self.pcb.bounds();
-        // let bounds = rt(82.0495, -45.1745, 84.099, -25.75);
-        let bounds =
-            RtI::enclosing(self.grid_pt(bounds.bl()), self.grid_pt(bounds.tr()) + pti(1, 1));
-        for l in bounds.l()..bounds.r() {
-            for b in bounds.b()..bounds.t() {
-                let p = pti(l, b);
-                let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
-                let shape = LayerShape { layer: "B.Cu".to_owned(), shape };
-                if self.place.is_shape_blocked(&Tf::identity(), &shape) {
-                    continue;
-                }
-                res.wires.push(Wire { shape });
-            }
-        }
+        // let bounds = self.pcb.bounds();
+        // // let bounds = rt(82.0495, -45.1745, 84.099, -25.75);
+        // let bounds =
+        //     RtI::enclosing(self.grid_pt(bounds.bl()), self.grid_pt(bounds.tr()) + pti(1, 1));
+        // for l in bounds.l()..bounds.r() {
+        //     for b in bounds.b()..bounds.t() {
+        //         let p = pti(l, b);
+        //         let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
+        //         let shape = LayerShape { layer: "B.Cu".to_owned(), shape };
+        //         if self.place.is_shape_blocked(&Tf::identity(), &shape) {
+        //             continue;
+        //         }
+        //         res.wires.push(Wire { shape });
+        //     }
+        // }
 
-        let bounds = RtI::new(157, -116, 1, 1);
-        res.debug_rts.push(
-            Rt::enclosing(self.world_pt(bounds.bl()), self.world_pt(bounds.tr()))
-                .inset(-10.0, -10.0),
-        );
+        // let bounds = RtI::new(157, -116, 1, 1);
+        // res.debug_rts.push(
+        //     Rt::enclosing(self.world_pt(bounds.bl()), self.world_pt(bounds.tr()))
+        //         .inset(-10.0, -10.0),
+        // );
+        res.debug_rts.extend(self.place.debug_rts());
         Ok(res)
     }
 }
