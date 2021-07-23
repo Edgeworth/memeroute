@@ -1,6 +1,7 @@
 use crate::model::geom::contains::{cap_contains_pt, tri_contains_pt};
 use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist, seg_seg_dist};
 use crate::model::geom::math::{le, lt, ne, orientation, pts_strictly_right_of};
+use crate::model::primitive::cap;
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
@@ -9,7 +10,6 @@ use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
-use crate::model::primitive::{cap};
 
 pub fn cap_intersects_cap(a: &Capsule, b: &Capsule) -> bool {
     le(seg_seg_dist(&a.seg(), &b.seg()), a.r() + b.r())

@@ -2,13 +2,13 @@ use crate::model::geom::distance::{pt_poly_dist, pt_seg_dist};
 use crate::model::geom::math::{ge, is_left_of, is_right_of, le, lt, orientation};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
+use crate::model::primitive::line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::{Poly};
+use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
-use crate::model::primitive::{line};
 
 pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
     le(pt_seg_dist(b, &a.seg()), a.r())

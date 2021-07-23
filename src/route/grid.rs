@@ -62,6 +62,11 @@ impl GridRouter {
         Self { pcb, resolution: 0.8, place, net_order }
     }
 
+    // TODO: for debug, remove
+    pub fn place(&self) -> &PlaceModel {
+        &self.place
+    }
+
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
         let (component, pin) = self.pcb.pin_ref(pin_ref)?;
@@ -258,7 +263,7 @@ impl RouteStrategy for GridRouter {
             let net = self.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
-            //self.place.remove_shape(&net)?; // Add pins back.
+            self.place.remove_net(&net); // Temporarily remove pins as blocking.
             let sub_result = self.connect(states)?;
             // Mark wires and vias.
             for wire in sub_result.wires.iter() {
@@ -268,7 +273,7 @@ impl RouteStrategy for GridRouter {
                 self.place.add_via(via);
             }
             res.merge(sub_result);
-            //self.place.add_net(&self.pcb, &net)?; // Temporarily remove pins as blocking.
+            self.place.add_net(&self.pcb, &net)?; // Add pins back.
         }
 
         let bounds = self.pcb.bounds();

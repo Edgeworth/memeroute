@@ -1,6 +1,7 @@
 use eyre::Result;
 
 use crate::model::pcb::{Pcb, Via, Wire};
+use crate::model::primitive::rect::Rt;
 use crate::route::grid::GridRouter;
 
 pub trait RouteStrategy {
@@ -11,6 +12,7 @@ pub trait RouteStrategy {
 pub struct RouteResult {
     pub wires: Vec<Wire>,
     pub vias: Vec<Via>,
+    pub debug_rts: Vec<Rt>,
     pub failed: bool,
 }
 
