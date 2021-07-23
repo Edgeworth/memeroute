@@ -121,7 +121,7 @@ impl Layer {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
 pub struct PinRef {
     pub component: Id,
     pub pin: Id,

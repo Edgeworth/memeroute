@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use eyre::Result;
 
 use crate::model::geom::quadtree::ShapeIdx;
-use crate::model::pcb::{Id, LayerShape, Net, Padstack, Pcb, Pin, Via, Wire, ANY_LAYER};
+use crate::model::pcb::{Id, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Via, Wire, ANY_LAYER};
 use crate::model::primitive::compound::Compound;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::ShapeOps;
@@ -17,12 +17,18 @@ pub type PlaceId = (String, ShapeIdx);
 pub struct PlaceModel {
     boundary: HashMap<Id, Compound>,
     blocked: HashMap<Id, Compound>,
+    pins: HashMap<PinRef, Vec<PlaceId>>, // Record which pins correspond to which place ids.
     bounds: Rt,
 }
 
 impl PlaceModel {
     pub fn new() -> Self {
-        Self { boundary: HashMap::new(), blocked: HashMap::new(), bounds: Rt::empty() }
+        Self {
+            boundary: HashMap::new(),
+            blocked: HashMap::new(),
+            pins: HashMap::new(),
+            bounds: Rt::empty(),
+        }
     }
 
     pub fn add_pcb(&mut self, pcb: &Pcb) {
@@ -85,14 +91,32 @@ impl PlaceModel {
         self.add_padstack(&(tf * pin.tf()), &pin.padstack)
     }
 
-    // Marks all pins in the given net.
-    pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<Vec<PlaceId>> {
-        let mut ids = Vec::new();
+    pub fn remove_pin(&mut self, p: &PinRef) {
+        if let Some(ids) = self.pins.remove(p) {
+            for id in ids {
+                self.remove_shape(id);
+            }
+        }
+    }
+
+    // Adds all pins in the given net.
+    pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
         for p in net.pins.iter() {
             let (component, pin) = pcb.pin_ref(p)?;
-            ids.extend(self.add_pin(&component.tf(), pin));
+            let ids = self.add_pin(&component.tf(), pin);
+            let e = self.pins.entry(p.clone()).or_insert_with(Vec::new);
+            for id in ids {
+                e.push(id);
+            }
         }
-        Ok(ids)
+        Ok(())
+    }
+
+    // Removes all pins in the given net.
+    pub fn remove_net(&mut self, net: &Net) {
+        for p in net.pins.iter() {
+            self.remove_pin(p);
+        }
     }
 
     pub fn remove_shape(&mut self, id: PlaceId) {

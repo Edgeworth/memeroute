@@ -85,6 +85,24 @@ impl QuadTree {
         }
     }
 
+    // Gets the current rectangles of the quad tree.
+    pub fn rts(&self) -> Vec<Rt> {
+        let mut rts = Vec::new();
+        self.rts_internal(1, self.bounds(), &mut rts);
+        rts
+    }
+
+    fn rts_internal(&self, idx: NodeIdx, r: Rt, rts: &mut Vec<Rt>) {
+        if idx == NO_NODE {
+            return;
+        }
+        rts.push(r);
+        self.rts_internal(self.nodes[idx].bl, r.bl_quadrant(), rts);
+        self.rts_internal(self.nodes[idx].br, r.br_quadrant(), rts);
+        self.rts_internal(self.nodes[idx].tr, r.tr_quadrant(), rts);
+        self.rts_internal(self.nodes[idx].tl, r.tl_quadrant(), rts);
+    }
+
     pub fn add_shape(&mut self, s: Shape) -> ShapeIdx {
         let bounds = self.bounds().united(&s.bounds());
         // If this shape expands the bounds, rebuild the tree.

@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 
 use crate::model::geom::quadtree::{QuadTree, ShapeIdx};
 use crate::model::primitive::rect::Rt;
@@ -31,6 +31,10 @@ impl Compound {
 
     pub fn remove_shape(&mut self, s: ShapeIdx) {
         self.qt.borrow_mut().remove_shape(s)
+    }
+
+    pub fn quadtree(&self) -> Ref<'_, QuadTree> {
+        self.qt.borrow()
     }
 }
 
