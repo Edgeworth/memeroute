@@ -5,7 +5,7 @@ use memeroute::model::pcb::{Component, Keepout, LayerShape, Padstack, Pcb, Pin, 
 use memeroute::model::primitive::point::Pt;
 use memeroute::model::primitive::rect::Rt;
 use memeroute::model::primitive::shape::Shape;
-use memeroute::model::primitive::{pt, ShapeOps};
+use memeroute::model::primitive::{path, pt, ShapeOps};
 use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rt, stroke_path};
@@ -33,6 +33,8 @@ lazy_static! {
     ];
 
     static ref VIA: Color32 = Color32::from_rgba_unmultiplied(100, 100, 100, 180);
+
+    static ref DEBUG: Color32 = Color32::from_rgba_unmultiplied(123, 0, 255, 180);
 }
 
 #[derive(Debug, Clone)]
@@ -197,6 +199,14 @@ impl PcbView {
             }
             for via in self.pcb.vias() {
                 let shapes = self.draw_padstack(&via.tf(), &via.padstack, *VIA);
+                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
+            }
+            for rt in self.pcb.debug_rts() {
+                let mut pts = rt.pts().to_vec();
+                pts.push(rt.pts()[0]);
+                let shape = path(&pts, 0.1).shape();
+                let shapes =
+                    self.draw_shape(&tf, &LayerShape { shape, layer: "pcb".to_owned() }, *DEBUG);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             self.mesh = mesh;

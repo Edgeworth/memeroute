@@ -20,6 +20,7 @@ impl RouteResult {
     pub fn merge(&mut self, r: RouteResult) {
         self.wires.extend(r.wires);
         self.vias.extend(r.vias);
+        self.debug_rts.extend(r.debug_rts);
         self.failed |= r.failed;
     }
 }
@@ -35,7 +36,8 @@ impl Router {
     }
 
     pub fn route(&mut self) -> Result<RouteResult> {
-        let net_order = self.pcb.nets().map(|v| v.id.clone()).collect();
+        let mut net_order: Vec<_> = self.pcb.nets().map(|v| v.id.clone()).collect();
+        net_order.sort(); // TODO remove
         let mut grid = GridRouter::new(self.pcb.clone(), net_order);
         grid.route()
     }

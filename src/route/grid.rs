@@ -6,7 +6,7 @@ use priority_queue::PriorityQueue;
 
 use crate::model::pcb::{Id, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
-use crate::model::primitive::rect::RtI;
+use crate::model::primitive::rect::{Rt, RtI};
 use crate::model::primitive::{circ, path, pt, pti, ShapeOps};
 use crate::model::tf::Tf;
 use crate::route::place_model::PlaceModel;
@@ -60,11 +60,6 @@ impl GridRouter {
         let mut place = PlaceModel::new();
         place.add_pcb(&pcb);
         Self { pcb, resolution: 0.8, place, net_order }
-    }
-
-    // TODO: for debug, remove
-    pub fn place(&self) -> &PlaceModel {
-        &self.place
     }
 
     // TODO: Assumes connect to the center of the pin. Look at padstack instead.
@@ -284,13 +279,19 @@ impl RouteStrategy for GridRouter {
             for b in bounds.b()..bounds.t() {
                 let p = pti(l, b);
                 let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
-                let shape = LayerShape { layer: "F.Cu".to_owned(), shape };
+                let shape = LayerShape { layer: "B.Cu".to_owned(), shape };
                 if self.place.is_shape_blocked(&Tf::identity(), &shape) {
                     continue;
                 }
                 res.wires.push(Wire { shape });
             }
         }
+
+        let bounds = RtI::new(157, -116, 1, 1);
+        res.debug_rts.push(
+            Rt::enclosing(self.world_pt(bounds.bl()), self.world_pt(bounds.tr()))
+                .inset(-10.0, -10.0),
+        );
         Ok(res)
     }
 }

@@ -31,6 +31,10 @@ impl PlaceModel {
         }
     }
 
+    pub fn debug_rts(&self) -> Vec<Rt> {
+        self.blocked.get("B.Cu").unwrap().quadtree().rts()
+    }
+
     pub fn add_pcb(&mut self, pcb: &Pcb) {
         let tf = Tf::identity();
 
@@ -53,7 +57,7 @@ impl PlaceModel {
         for c in pcb.components() {
             let tf = tf * c.tf();
             for pin in c.pins() {
-                self.add_pin(&tf, pin);
+                self.add_pin(&tf, PinRef::new(c, pin), pin);
             }
             for keepout in c.keepouts.iter() {
                 // TODO: Handle only via vs only wire keepout.
@@ -87,8 +91,13 @@ impl PlaceModel {
         self.add_padstack(&via.tf(), &via.padstack)
     }
 
-    pub fn add_pin(&mut self, tf: &Tf, pin: &Pin) -> Vec<PlaceId> {
-        self.add_padstack(&(tf * pin.tf()), &pin.padstack)
+    pub fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin) -> Vec<PlaceId> {
+        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack);
+        let e = self.pins.entry(pinref).or_insert_with(Vec::new);
+        for id in ids.iter() {
+            e.push(id.clone());
+        }
+        ids
     }
 
     pub fn remove_pin(&mut self, p: &PinRef) {
@@ -103,11 +112,7 @@ impl PlaceModel {
     pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
         for p in net.pins.iter() {
             let (component, pin) = pcb.pin_ref(p)?;
-            let ids = self.add_pin(&component.tf(), pin);
-            let e = self.pins.entry(p.clone()).or_insert_with(Vec::new);
-            for id in ids {
-                e.push(id);
-            }
+            self.add_pin(&component.tf(), p.clone(), pin);
         }
         Ok(())
     }
