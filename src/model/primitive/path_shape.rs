@@ -1,6 +1,7 @@
 use std::ops::Index;
 
 use crate::model::geom::bounds::pt_cloud_bounds;
+use crate::model::geom::contains::{path_contains_rt, path_contains_seg};
 use crate::model::geom::convex::remove_collinear;
 use crate::model::geom::intersects::{
     circ_intersects_path, path_intersects_path, path_intersects_poly, path_intersects_rt,
@@ -82,8 +83,8 @@ impl ShapeOps for Path {
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
             Shape::Polygon(_) => todo!(),
-            Shape::Rect(_) => todo!(),
-            Shape::Segment(_) => todo!(),
+            Shape::Rect(s) => path_contains_rt(self, s),
+            Shape::Segment(s) => path_contains_seg(self, s),
             Shape::Tri(_) => todo!(),
         }
     }

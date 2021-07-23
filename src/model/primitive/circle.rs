@@ -1,3 +1,4 @@
+use crate::model::geom::contains::{circ_contains_pt, circ_contains_rt};
 use crate::model::geom::distance::circ_rt_dist;
 use crate::model::geom::intersects::{
     circ_intersects_circ, circ_intersects_path, circ_intersects_poly, circ_intersects_rt,
@@ -44,7 +45,7 @@ impl ShapeOps for Circle {
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => circ_intersects_path(self, s),
-            Shape::Point(_) => todo!(),
+            Shape::Point(s) => circ_contains_pt(self, s),
             Shape::Polygon(s) => circ_intersects_poly(self, s),
             Shape::Rect(s) => circ_intersects_rt(self, s),
             Shape::Segment(_) => todo!(),
@@ -59,9 +60,9 @@ impl ShapeOps for Circle {
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
-            Shape::Point(_) => todo!(),
+            Shape::Point(s) => circ_contains_pt(self, s),
             Shape::Polygon(_) => todo!(),
-            Shape::Rect(_) => todo!(),
+            Shape::Rect(s) => circ_contains_rt(self, s),
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),
         }

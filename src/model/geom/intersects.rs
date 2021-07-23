@@ -9,7 +9,7 @@ use crate::model::primitive::polygon::Poly;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
-use crate::model::primitive::{cap, line};
+use crate::model::primitive::{cap};
 
 pub fn cap_intersects_cap(a: &Capsule, b: &Capsule) -> bool {
     le(seg_seg_dist(&a.seg(), &b.seg()), a.r() + b.r())
@@ -157,27 +157,16 @@ pub fn rt_intersects_tri(a: &Rt, b: &Tri) -> bool {
     let rt = &a.pts();
     let tri = b.pts();
     // Test tri axes:
-    if pts_strictly_right_of(&line(tri[0], tri[1]), rt) {
-        return false;
-    }
-    if pts_strictly_right_of(&line(tri[1], tri[2]), rt) {
-        return false;
-    }
-    if pts_strictly_right_of(&line(tri[2], tri[0]), rt) {
-        return false;
+    for seg in b.segs() {
+        if pts_strictly_right_of(&seg.line(), rt) {
+            return false;
+        }
     }
     // Test rect axes:
-    if pts_strictly_right_of(&line(rt[0], rt[1]), tri) {
-        return false;
-    }
-    if pts_strictly_right_of(&line(rt[1], rt[2]), tri) {
-        return false;
-    }
-    if pts_strictly_right_of(&line(rt[2], rt[3]), tri) {
-        return false;
-    }
-    if pts_strictly_right_of(&line(rt[3], rt[0]), tri) {
-        return false;
+    for seg in a.segs() {
+        if pts_strictly_right_of(&seg.line(), tri) {
+            return false;
+        }
     }
     true
 }

@@ -12,8 +12,9 @@ use crate::model::geom::intersects::{
 };
 use crate::model::geom::math::{eq, ge, gt, le, lt};
 use crate::model::primitive::point::{Pt, PtI};
+use crate::model::primitive::segment::Segment;
 use crate::model::primitive::shape::Shape;
-use crate::model::primitive::{pt, pti, rt, ShapeOps};
+use crate::model::primitive::{pt, pti, rt, seg, ShapeOps};
 
 #[derive(Debug, Copy, Clone, Display)]
 #[display(fmt = "({}, {}, {}, {})", l, b, r, t)]
@@ -104,6 +105,11 @@ impl Rt {
 
     pub const fn pts(&self) -> [Pt; 4] {
         [self.bl(), self.br(), self.tr(), self.tl()]
+    }
+
+    pub fn segs(&self) -> [Segment; 4] {
+        let pts = self.pts();
+        [seg(pts[0], pts[1]), seg(pts[1], pts[2]), seg(pts[2], pts[3]), seg(pts[3], pts[0])]
     }
 
     pub fn center(&self) -> Pt {

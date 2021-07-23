@@ -244,7 +244,7 @@ impl QuadTree {
                             .intersect
                             .push(IntersectData { shape_idx: inter.shape_idx, tests: 0 });
 
-                        if quad.contains_shape(shape) {
+                        if shape.contains_shape(&quad.shape()) {
                             self.nodes[quad_idx].contain.push(inter.shape_idx);
                         }
                     }
@@ -269,8 +269,11 @@ impl QuadTree {
 
 #[cfg(test)]
 mod tests {
+    use rand::prelude::SmallRng;
+    use rand::{Rng, SeedableRng};
+
     use super::*;
-    use crate::model::primitive::{poly, pt, rt, tri};
+    use crate::model::primitive::{circ, poly, pt, rt, tri};
 
     #[test]
     fn test_quadtree_tri() {
@@ -292,5 +295,28 @@ mod tests {
 
         assert!(qt.intersects(&pt(3.0, 3.0).shape()));
         assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape()));
+    }
+
+    #[test]
+    fn test_quadtree_poly2() {
+        let poly = poly(&[
+            pt(136.606, -131.891),
+            pt(139.152, -134.437),
+            pt(141.344, -132.245),
+            pt(138.798, -129.699),
+        ])
+        .shape();
+        let mut qt = QuadTree::new(vec![poly.clone()]);
+
+        let mut r = SmallRng::seed_from_u64(0);
+        for _ in 0..100 {
+            let p0 = pt(r.gen_range(-50.0..150.0), r.gen_range(-150.0..-100.0));
+            let p1 = pt(r.gen_range(-50.0..150.0), r.gen_range(-150.0..-100.0));
+            assert_eq!(poly.contains_shape(&p0.shape()), qt.contains(&p0.shape()));
+            let rt = Rt::enclosing(p0, p1);
+            assert_eq!(poly.contains_shape(&rt.shape()), qt.contains(&rt.shape()));
+            let c = circ(p0, r.gen_range(0.01..100.0));
+            assert_eq!(poly.contains_shape(&c.shape()), qt.contains(&c.shape()));
+        }
     }
 }
