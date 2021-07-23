@@ -83,6 +83,10 @@ impl epi::App for MemerouteGui {
                     self.pcb.add_via(via);
                 }
 
+                for rt in resp.debug_rts.into_iter() {
+                    self.pcb.add_debug_rt(rt);
+                }
+
                 // Update pcb view.
                 self.pcb_view.set_pcb(self.pcb.clone());
             }

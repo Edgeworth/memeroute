@@ -127,6 +127,12 @@ pub struct PinRef {
     pub pin: Id,
 }
 
+impl PinRef {
+    pub fn new(component: &Component, pin: &Pin) -> Self {
+        Self { component: component.id.clone(), pin: pin.id.clone() }
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Net {
     pub id: Id,
@@ -169,6 +175,9 @@ pub struct Pcb {
     wires: Vec<Wire>,
     vias: Vec<Via>,
     nets: HashMap<Id, Net>,
+
+    // Debug:
+    debug_rts: Vec<Rt>,
 }
 
 impl Pcb {
@@ -250,6 +259,14 @@ impl Pcb {
 
     pub fn net(&self, id: &str) -> Option<&Net> {
         self.nets.get(id)
+    }
+
+    pub fn add_debug_rt(&mut self, r: Rt) {
+        self.debug_rts.push(r);
+    }
+
+    pub fn debug_rts(&self) -> &[Rt] {
+        &self.debug_rts
     }
 
     pub fn pin_ref(&self, p: &PinRef) -> Result<(&Component, &Pin)> {
