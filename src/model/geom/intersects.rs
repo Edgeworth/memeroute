@@ -12,6 +12,11 @@ use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{cap, ShapeOps};
 
 pub fn cap_intersects_cap(a: &Capsule, b: &Capsule) -> bool {
+    // Check bounding boxes.
+    if !a.bounds().intersects(&b.bounds()) {
+        return false;
+    }
+
     le(seg_seg_dist(&a.seg(), &b.seg()), a.r() + b.r())
 }
 
@@ -19,6 +24,16 @@ pub fn cap_intersects_circ(a: &Capsule, b: &Circle) -> bool {
     // Compute minkowski sum of |a| and |b| and check containment.
     let sum = cap(a.st(), a.en(), b.r());
     cap_contains_pt(&sum, &b.p())
+}
+
+pub fn cap_intersects_path(a: &Capsule, b: &Path) -> bool {
+    // Check if any cap in the path intersects this cap.
+    for cap in b.caps() {
+        if cap_intersects_cap(a, &cap) {
+            return true;
+        }
+    }
+    false
 }
 
 pub fn cap_intersects_poly(a: &Capsule, b: &Poly) -> bool {
@@ -73,6 +88,11 @@ pub fn circ_intersects_path(a: &Circle, b: &Path) -> bool {
 }
 
 pub fn circ_intersects_poly(a: &Circle, b: &Poly) -> bool {
+    // Check bounding boxes.
+    if !a.bounds().intersects(&b.bounds()) {
+        return false;
+    }
+
     for tri in b.tri() {
         if circ_intersects_tri(a, tri) {
             return true;
@@ -82,12 +102,22 @@ pub fn circ_intersects_poly(a: &Circle, b: &Poly) -> bool {
 }
 
 pub fn circ_intersects_rt(a: &Circle, b: &Rt) -> bool {
+    // Check bounding boxes.
+    if !a.bounds().intersects(b) {
+        return false;
+    }
+
     // Check if the circle centre is contained in the rect or
     // the distance from the boundary of the rect to the circle is less than 0.
     b.contains(a.p()) || lt(circ_rt_dist(a, b), 0.0)
 }
 
 pub fn circ_intersects_tri(a: &Circle, b: &Tri) -> bool {
+    // Check bounding boxes.
+    if !a.bounds().intersects(&b.bounds()) {
+        return false;
+    }
+
     // Take the minkowski sum of the circle and triangle. Just need to test
     // if the triangle contains the centre of the circle or any of its
     // capsules contain the point.

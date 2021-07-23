@@ -25,7 +25,7 @@ impl Compound {
         Self { qt: RefCell::new(QuadTree::with_bounds(r)) }
     }
 
-    pub fn add_shape(&self, s: Shape) -> ShapeIdx {
+    pub fn add_shape(&self, s: Shape) -> Vec<ShapeIdx> {
         self.qt.borrow_mut().add_shape(s)
     }
 

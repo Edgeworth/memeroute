@@ -11,7 +11,7 @@ pub type ShapeIdx = usize;
 
 // How many tests to do before splitting a node.
 const TEST_THRESHOLD: usize = 4;
-const MAX_DEPTH: usize = 6;
+const MAX_DEPTH: usize = 8;
 const NO_NODE: NodeIdx = 0;
 
 #[derive(Debug, Copy, Clone)]
@@ -89,6 +89,10 @@ impl QuadTree {
         rts
     }
 
+    pub fn shapes(&self) -> &[Shape] {
+        &self.shapes
+    }
+
     fn rts_internal(&self, idx: NodeIdx, r: Rt, rts: &mut Vec<Rt>) {
         if idx == NO_NODE {
             return;
@@ -100,28 +104,46 @@ impl QuadTree {
         self.rts_internal(self.nodes[idx].tl, r.tl_quadrant(), rts);
     }
 
-    pub fn add_shape(&mut self, s: Shape) -> ShapeIdx {
+    // Split paths up so they are spread out more.
+    // Split compound shapes up.
+    fn decompose_shape(s: Shape) -> Vec<Shape> {
+        if let Shape::Compound(s) = s {
+            s.quadtree().shapes().to_vec()
+        } else if let Shape::Path(s) = s {
+            s.caps().map(|v| v.shape()).collect()
+        } else {
+            vec![s]
+        }
+    }
+
+    pub fn add_shape(&mut self, s: Shape) -> Vec<ShapeIdx> {
         let bounds = self.bounds().united(&s.bounds());
         // If this shape expands the bounds, rebuild the tree.
         // TODO: Don't rebuild the tree?
+        let s = Self::decompose_shape(s);
+        let mut shape_idxs = Vec::new();
         if bounds != self.bounds() {
-            let shape_idx = self.shapes.len();
             let mut shapes = Vec::new();
             swap(&mut shapes, &mut self.shapes);
-            shapes.push(s);
+            for shape in s {
+                shape_idxs.push(shapes.len());
+                shapes.push(shape);
+            }
             *self = Self::new(shapes);
-            shape_idx
         } else {
-            let shape_idx = if let Some(shape_idx) = self.free_shapes.pop() {
-                self.shapes[shape_idx] = s;
-                shape_idx
-            } else {
-                self.shapes.push(s);
-                self.shapes.len() - 1
-            };
-            self.nodes[1].intersect.push(IntersectData { shape_idx, tests: 0 });
-            shape_idx
+            for shape in s {
+                let shape_idx = if let Some(shape_idx) = self.free_shapes.pop() {
+                    self.shapes[shape_idx] = shape;
+                    shape_idx
+                } else {
+                    self.shapes.push(shape);
+                    self.shapes.len() - 1
+                };
+                shape_idxs.push(shape_idx);
+                self.nodes[1].intersect.push(IntersectData { shape_idx, tests: 0 });
+            }
         }
+        shape_idxs
     }
 
     pub fn remove_shape(&mut self, s: ShapeIdx) {

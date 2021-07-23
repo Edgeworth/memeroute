@@ -2,7 +2,8 @@ use derive_more::Display;
 
 use crate::model::geom::contains::{cap_contains_pt, cap_contains_rt};
 use crate::model::geom::intersects::{
-    cap_intersects_cap, cap_intersects_poly, cap_intersects_rt, cap_intersects_tri,
+    cap_intersects_cap, cap_intersects_path, cap_intersects_poly, cap_intersects_rt,
+    cap_intersects_tri,
 };
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::point::Pt;
@@ -81,7 +82,7 @@ impl ShapeOps for Capsule {
             Shape::Circle(_) => todo!(),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
-            Shape::Path(_) => todo!(),
+            Shape::Path(s) => cap_intersects_path(self, s),
             Shape::Point(s) => cap_contains_pt(self, s),
             Shape::Polygon(s) => cap_intersects_poly(self, s),
             Shape::Rect(s) => cap_intersects_rt(self, s),

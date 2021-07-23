@@ -4,7 +4,8 @@ use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::contains::{path_contains_rt, path_contains_seg};
 use crate::model::geom::convex::remove_collinear;
 use crate::model::geom::intersects::{
-    circ_intersects_path, path_intersects_path, path_intersects_poly, path_intersects_rt,
+    cap_intersects_path, circ_intersects_path, path_intersects_path, path_intersects_poly,
+    path_intersects_rt,
 };
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::point::Pt;
@@ -61,7 +62,7 @@ impl ShapeOps for Path {
 
     fn intersects_shape(&self, s: &Shape) -> bool {
         match s {
-            Shape::Capsule(_) => todo!(),
+            Shape::Capsule(s) => cap_intersects_path(s, self),
             Shape::Circle(s) => circ_intersects_path(s, self),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
