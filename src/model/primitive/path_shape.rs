@@ -17,6 +17,7 @@ use crate::model::primitive::{cap, ShapeOps};
 pub struct Path {
     pts: Vec<Pt>,
     r: f64,
+    bounds: Rt,
 }
 
 impl std::fmt::Debug for Path {
@@ -27,7 +28,9 @@ impl std::fmt::Debug for Path {
 
 impl Path {
     pub fn new(pts: &[Pt], r: f64) -> Self {
-        Self { pts: remove_collinear(pts), r }
+        let pts = remove_collinear(pts);
+        let bounds = pt_cloud_bounds(&pts).inset(-r / 2.0, -r / 2.0);
+        Self { pts, r, bounds }
     }
 
     pub fn len(&self) -> usize {
@@ -53,7 +56,7 @@ impl Path {
 
 impl ShapeOps for Path {
     fn bounds(&self) -> Rt {
-        pt_cloud_bounds(&self.pts).inset(-self.r / 2.0, -self.r / 2.0)
+        self.bounds
     }
 
     fn shape(self) -> Shape {

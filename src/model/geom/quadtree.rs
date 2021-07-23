@@ -11,7 +11,7 @@ pub type ShapeIdx = usize;
 
 // How many tests to do before splitting a node.
 const TEST_THRESHOLD: usize = 4;
-const MAX_DEPTH: usize = 8;
+const MAX_DEPTH: usize = 6;
 const NO_NODE: NodeIdx = 0;
 
 #[derive(Debug, Copy, Clone)]
