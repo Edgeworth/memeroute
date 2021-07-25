@@ -17,6 +17,14 @@ use crate::model::tf::Tf;
 // Layer representing any layer.
 pub const ANY_LAYER: &str = "signal";
 
+// Layer types:
+// pcb (means all - used for boundary), signal, power, mixed, jumper
+
+// Layer Id between 0 and 63. LayerSet is combination of those.
+// Layer types are layersets.
+
+
+
 pub type Id = String;
 
 #[derive(Debug, Clone)]
