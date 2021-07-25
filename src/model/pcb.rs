@@ -77,6 +77,12 @@ impl FromIterator<LayerId> for LayerSet {
     }
 }
 
+impl FromIterator<LayerSet> for LayerSet {
+    fn from_iter<T: IntoIterator<Item = LayerSet>>(iter: T) -> Self {
+        iter.into_iter().fold(LayerSet::empty(), |a, b| a | b)
+    }
+}
+
 pub struct BitSetIterator {
     l: DenseBitSet,
 }
@@ -91,7 +97,13 @@ impl Iterator for BitSetIterator {
     type Item = LayerId;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        if self.l.any() {
+            let id = self.l.first_set();
+            self.l.set_bit(id as usize, false);
+            Some(id as LayerId)
+        } else {
+            None
+        }
     }
 }
 
@@ -99,7 +111,7 @@ pub type Id = String;
 
 #[derive(Debug, Clone)]
 pub struct LayerShape {
-    pub layer: LayerId,
+    pub layers: LayerSet,
     pub shape: Shape,
 }
 
@@ -189,7 +201,7 @@ pub struct Padstack {
 
 impl Padstack {
     pub fn layers(&self) -> LayerSet {
-        self.shapes.iter().map(|s| s.layer).collect()
+        self.shapes.iter().map(|s| s.layers).collect()
     }
 }
 
@@ -275,6 +287,10 @@ impl Pcb {
 
     pub fn layers(&self) -> &[Layer] {
         &self.layers
+    }
+
+    pub fn layers_by_kind(&self, kind: LayerKind) -> LayerSet {
+        self.layers().iter().filter(|l| l.kind == kind).map(|v| v.id).collect()
     }
 
     pub fn add_boundary(&mut self, s: LayerShape) {

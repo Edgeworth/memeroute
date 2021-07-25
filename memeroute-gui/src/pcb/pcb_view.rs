@@ -1,7 +1,9 @@
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
-use memeroute::model::pcb::{Component, Keepout, LayerId, LayerShape, Padstack, Pcb, Pin, Side};
+use memeroute::model::pcb::{
+    Component, Keepout, LayerId, LayerSet, LayerShape, Padstack, Pcb, Pin, Side,
+};
 use memeroute::model::primitive::point::Pt;
 use memeroute::model::primitive::rect::Rt;
 use memeroute::model::primitive::shape::Shape;
@@ -190,7 +192,8 @@ impl PcbView {
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for wire in self.pcb.wires() {
-                let col = WIRE[self.layer_id_to_color_idx(wire.shape.layer)];
+                // TODO!!: Fix up layerset to color mapping.
+                let col = WIRE[self.layer_id_to_color_idx(wire.shape.layers.id().unwrap())];
                 let shapes = self.draw_shape(&tf, &wire.shape, col);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
@@ -202,7 +205,8 @@ impl PcbView {
                 let mut pts = rt.pts().to_vec();
                 pts.push(rt.pts()[0]);
                 let shape = path(&pts, 0.05).shape();
-                let shapes = self.draw_shape(&tf, &LayerShape { shape, layer: 0 }, *DEBUG);
+                let shapes =
+                    self.draw_shape(&tf, &LayerShape { shape, layers: LayerSet::empty() }, *DEBUG);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             self.mesh = mesh;
