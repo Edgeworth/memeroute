@@ -1,7 +1,10 @@
 use std::collections::hash_map::Values;
 use std::collections::HashMap;
+use std::iter::FromIterator;
 
+use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use eyre::{eyre, Result};
+use rust_dense_bitset::{BitSet, DenseBitSet};
 
 use crate::model::geom::bounds::rt_cloud_bounds;
 use crate::model::primitive::point::Pt;
@@ -14,22 +17,89 @@ use crate::model::tf::Tf;
 // Units are in millimetres.
 // All rotations are in degrees, counterclockwise from the positive x axis.
 
-// Layer representing any layer.
-pub const ANY_LAYER: &str = "signal";
+pub type LayerId = u8;
 
-// Layer types:
-// pcb (means all - used for boundary), signal, power, mixed, jumper
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum LayerKind {
+    All,
+    Signal,
+    Power,
+    Mixed,
+    Jumper,
+}
 
-// Layer Id between 0 and 63. LayerSet is combination of those.
-// Layer types are layersets.
+// Support up to 64 layers.
+#[derive(Debug, Default, Hash, PartialEq, Eq, Copy, Clone)]
+pub struct LayerSet {
+    l: DenseBitSet,
+}
 
+impl_op_ex!(| |a: &LayerSet, b: &LayerSet| -> LayerSet {LayerSet {l: a.l | b.l}});
+impl_op_ex_commutative!(| |a: &LayerSet, b: &LayerId| -> LayerSet {let mut copy = *a; copy |= b; copy});
+impl_op_ex!(|= |a: &mut LayerSet, b: &LayerSet| {a.l |= b.l;});
+impl_op_ex!(|= |a: &mut LayerSet, b: &LayerId| {a.l.set_bit(*b as usize, true);});
+impl_op_ex!(&|a: &LayerSet, b: &LayerSet| -> LayerSet { LayerSet { l: a.l & b.l } });
+impl_op_ex!(&= |a: &mut LayerSet, b: &LayerSet| {a.l &= b.l;});
 
+impl LayerSet {
+    pub fn empty() -> Self {
+        Self { l: DenseBitSet::new() }
+    }
+
+    pub fn one(id: LayerId) -> Self {
+        Self { l: DenseBitSet::from_integer(1 << (id as u64)) }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn len(&self) -> usize {
+        self.l.get_weight() as usize
+    }
+
+    pub fn id(&self) -> Option<LayerId> {
+        if self.len() == 1 { Some(self.l.first_set() as LayerId) } else { None }
+    }
+
+    pub fn iter(&self) -> BitSetIterator {
+        BitSetIterator::new(self.l)
+    }
+
+    pub fn remove(&mut self, layer: LayerId) {
+        self.l.set_bit(layer as usize, false);
+    }
+}
+
+impl FromIterator<LayerId> for LayerSet {
+    fn from_iter<T: IntoIterator<Item = LayerId>>(iter: T) -> Self {
+        iter.into_iter().fold(LayerSet::empty(), |a, b| a | b)
+    }
+}
+
+pub struct BitSetIterator {
+    l: DenseBitSet,
+}
+
+impl BitSetIterator {
+    pub fn new(l: DenseBitSet) -> Self {
+        Self { l }
+    }
+}
+
+impl Iterator for BitSetIterator {
+    type Item = LayerId;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}
 
 pub type Id = String;
 
 #[derive(Debug, Clone)]
 pub struct LayerShape {
-    pub layer: Id,
+    pub layer: LayerId,
     pub shape: Shape,
 }
 
@@ -117,16 +187,18 @@ pub struct Padstack {
     pub attach: bool,
 }
 
-// Describes a layer in a PCB.
-#[derive(Debug, Default, Clone)]
-pub struct Layer {
-    pub id: Id,
+impl Padstack {
+    pub fn layers(&self) -> LayerSet {
+        self.shapes.iter().map(|s| s.layer).collect()
+    }
 }
 
-impl Layer {
-    pub fn new(id: &str) -> Self {
-        Self { id: id.to_owned() }
-    }
+// Describes a layer in a PCB.
+#[derive(Debug, Clone)]
+pub struct Layer {
+    pub name: Id,
+    pub id: LayerId,
+    pub kind: LayerKind,
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
