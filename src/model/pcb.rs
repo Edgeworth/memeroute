@@ -62,6 +62,14 @@ impl LayerSet {
         if self.len() == 1 { Some(self.l.first_set() as LayerId) } else { None }
     }
 
+    pub fn contains(&self, layer: LayerId) -> bool {
+        self.l.get_bit(layer as usize)
+    }
+
+    pub fn contains_set(&self, layers: LayerSet) -> bool {
+        (self.l | layers.l) == self.l
+    }
+
     pub fn iter(&self) -> BitSetIterator {
         BitSetIterator::new(self.l)
     }
@@ -290,7 +298,11 @@ impl Pcb {
     }
 
     pub fn layers_by_kind(&self, kind: LayerKind) -> LayerSet {
-        self.layers().iter().filter(|l| l.kind == kind).map(|v| v.id).collect()
+        if kind == LayerKind::All {
+            self.layers().iter().map(|v| v.id).collect()
+        } else {
+            self.layers().iter().filter(|l| l.kind == kind).map(|v| v.id).collect()
+        }
     }
 
     pub fn add_boundary(&mut self, s: LayerShape) {
