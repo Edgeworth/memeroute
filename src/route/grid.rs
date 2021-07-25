@@ -60,16 +60,11 @@ impl GridRouter {
         Self { pcb, resolution: 0.4, place, net_order }
     }
 
-    // TODO: Assumes connect to the center of the pin. Look at padstack instead.
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
         let (component, pin) = self.pcb.pin_ref(pin_ref)?;
         let p = self.grid_pt((component.tf() * pin.tf()).pt(Pt::zero()));
-
-        // TODO: return all layers in padstack somehow.
-        let mut layers = LayerSet::empty();
-        for shape in pin.padstack.shapes.iter() {
-            layers |= shape.layer;
-        }
+        // TODO: Assumes connect to the center of the pin. Look at padstack instead.
+        let layers = pin.padstack.shapes.iter().map(|v| v.layers).collect();
         Ok(State { p, layers })
     }
 
@@ -77,7 +72,7 @@ impl GridRouter {
         let pts: Vec<_> = states.iter().map(|s| self.world_pt_mid(s.p)).collect();
         Wire {
             shape: LayerShape {
-                layer: states[0].layers.id().unwrap(),
+                layers: LayerSet::one(states[0].layers.id().unwrap()),
                 shape: path(&pts, self.resolution * 0.8).shape(),
             },
         }

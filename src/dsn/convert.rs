@@ -8,8 +8,8 @@ use crate::dsn::types::{
 };
 use crate::model::geom::math::{eq, pt_eq};
 use crate::model::pcb::{
-    Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerShape, Net, Padstack, Pcb,
-    Pin, PinRef, Side,
+    Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet, LayerShape, Net,
+    Padstack, Pcb, Pin, PinRef, Side,
 };
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -66,17 +66,24 @@ impl Converter {
         r
     }
 
-    fn layer(&self, id: &str) -> Result<LayerId> {
-        Ok(*self.layers.get(id).ok_or_else(|| eyre!("unknown layer {}", id))?)
+    fn layers(&self, id: &str) -> Result<LayerSet> {
+        Ok(match id {
+            "signal" => self.pcb.layers_by_kind(LayerKind::Signal),
+            "jumper" => self.pcb.layers_by_kind(LayerKind::Jumper),
+            "mixed" => self.pcb.layers_by_kind(LayerKind::Mixed),
+            "power" => self.pcb.layers_by_kind(LayerKind::Power),
+            "pcb" => self.pcb.layers_by_kind(LayerKind::All), // Pcb used for boundary. Put on all layers.
+            _ => LayerSet::one(*self.layers.get(id).ok_or_else(|| eyre!("unknown layer {}", id))?),
+        })
     }
 
     fn shape(&self, v: &DsnShape) -> Result<LayerShape> {
         Ok(match v {
             DsnShape::Rect(v) => {
-                LayerShape { layer: self.layer(&v.layer_id)?, shape: self.rect(v).shape() }
+                LayerShape { layers: self.layers(&v.layer_id)?, shape: self.rect(v).shape() }
             }
             DsnShape::Circle(v) => LayerShape {
-                layer: self.layer(&v.layer_id)?,
+                layers: self.layers(&v.layer_id)?,
                 shape: circ(self.pt(v.p), self.coord(v.diameter / 2.0)).shape(),
             },
             DsnShape::Polygon(v) => {
@@ -86,10 +93,10 @@ impl Converter {
                     pts.pop();
                 }
                 assert!(eq(v.aperture_width, 0.0), "aperture width for polygons is unsupported");
-                LayerShape { layer: self.layer(&v.layer_id)?, shape: poly(&pts).shape() }
+                LayerShape { layers: self.layers(&v.layer_id)?, shape: poly(&pts).shape() }
             }
             DsnShape::Path(v) => LayerShape {
-                layer: self.layer(&v.layer_id)?,
+                layers: self.layers(&v.layer_id)?,
                 shape: path(
                     &v.pts.iter().map(|&v| self.pt(v)).collect::<Vec<_>>(),
                     self.coord(v.aperture_width) / 2.0,
@@ -224,8 +231,8 @@ impl Converter {
         // Physical structure:
         for v in self.dsn.structure.boundaries.iter() {
             // Convert boundaries to closed shapes.
-            let LayerShape { layer, shape } = self.shape(v)?;
-            self.pcb.add_boundary(LayerShape { layer, shape: shape.filled() });
+            let LayerShape { layers, shape } = self.shape(v)?;
+            self.pcb.add_boundary(LayerShape { layers, shape: shape.filled() });
         }
         for v in self.dsn.structure.keepouts.iter() {
             self.pcb.add_keepout(self.keepout(v)?);

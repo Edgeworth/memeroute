@@ -74,9 +74,19 @@ impl PlaceModel {
         ls: &LayerShape,
     ) -> Vec<PlaceId> {
         let s = tf.shape(&ls.shape);
-        let idxs =
-            map.entry(ls.layer).or_insert_with(|| Compound::with_bounds(&bounds)).add_shape(s);
-        idxs.iter().map(|&v| (ls.layer, v)).collect()
+        let mut idxs = Vec::new();
+
+        for layer in ls.layers.iter() {
+            idxs.extend(
+                map.entry(layer)
+                    .or_insert_with(|| Compound::with_bounds(&bounds))
+                    .add_shape(s.clone())
+                    .iter()
+                    .map(|&v| (layer, v)),
+            );
+        }
+
+        idxs
     }
 
     pub fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack) -> Vec<PlaceId> {
@@ -136,8 +146,7 @@ impl PlaceModel {
     pub fn is_shape_blocked(&self, tf: &Tf, ls: &LayerShape) -> bool {
         let s = tf.shape(&ls.shape);
 
-        // TODO!! this?
-        for layer in [ls.layer] {
+        for layer in ls.layers.iter() {
             if let Some(boundary) = self.boundary.get(&layer) {
                 if !boundary.contains_shape(&s) {
                     return true;
@@ -145,8 +154,7 @@ impl PlaceModel {
             }
         }
 
-        // TODO!! this?
-        for layer in [ls.layer] {
+        for layer in ls.layers.iter() {
             if let Some(blocked) = self.blocked.get(&layer) {
                 if blocked.intersects_shape(&s) {
                     return true;
