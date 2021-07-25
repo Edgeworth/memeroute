@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use eyre::{eyre, Result};
 
 use crate::dsn::types::{
-    DsnComponent, DsnDimensionUnit, DsnId, DsnImage, DsnKeepout, DsnKeepoutType, DsnNet,
-    DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
+    DsnComponent, DsnDimensionUnit, DsnId, DsnImage, DsnKeepout, DsnKeepoutType, DsnLayerId,
+    DsnLayerType, DsnNet, DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
 };
 use crate::model::geom::math::{eq, pt_eq};
 use crate::model::pcb::{
-    Component, Keepout, KeepoutType, Layer, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Side,
+    Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerShape, Net, Padstack, Pcb,
+    Pin, PinRef, Side,
 };
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -20,11 +21,18 @@ pub struct Converter {
     pcb: Pcb,
     padstacks: HashMap<DsnId, Padstack>,
     images: HashMap<DsnId, Component>,
+    layers: HashMap<DsnLayerId, LayerId>,
 }
 
 impl Converter {
     pub fn new(dsn: DsnPcb) -> Self {
-        Self { dsn, pcb: Default::default(), padstacks: HashMap::new(), images: HashMap::new() }
+        Self {
+            dsn,
+            pcb: Default::default(),
+            padstacks: HashMap::new(),
+            images: HashMap::new(),
+            layers: HashMap::new(),
+        }
     }
 
     fn mm(&self) -> f64 {
@@ -58,13 +66,17 @@ impl Converter {
         r
     }
 
-    fn shape(&self, v: &DsnShape) -> LayerShape {
-        match v {
+    fn layer(&self, id: &str) -> Result<LayerId> {
+        Ok(*self.layers.get(id).ok_or_else(|| eyre!("unknown layer {}", id))?)
+    }
+
+    fn shape(&self, v: &DsnShape) -> Result<LayerShape> {
+        Ok(match v {
             DsnShape::Rect(v) => {
-                LayerShape { layer: v.layer_id.clone(), shape: self.rect(v).shape() }
+                LayerShape { layer: self.layer(&v.layer_id)?, shape: self.rect(v).shape() }
             }
             DsnShape::Circle(v) => LayerShape {
-                layer: v.layer_id.clone(),
+                layer: self.layer(&v.layer_id)?,
                 shape: circ(self.pt(v.p), self.coord(v.diameter / 2.0)).shape(),
             },
             DsnShape::Polygon(v) => {
@@ -74,10 +86,10 @@ impl Converter {
                     pts.pop();
                 }
                 assert!(eq(v.aperture_width, 0.0), "aperture width for polygons is unsupported");
-                LayerShape { layer: v.layer_id.clone(), shape: poly(&pts).shape() }
+                LayerShape { layer: self.layer(&v.layer_id)?, shape: poly(&pts).shape() }
             }
             DsnShape::Path(v) => LayerShape {
-                layer: v.layer_id.clone(),
+                layer: self.layer(&v.layer_id)?,
                 shape: path(
                     &v.pts.iter().map(|&v| self.pt(v)).collect::<Vec<_>>(),
                     self.coord(v.aperture_width) / 2.0,
@@ -85,26 +97,26 @@ impl Converter {
                 .shape(),
             },
             DsnShape::QArc(_v) => todo!(),
-        }
+        })
     }
 
-    fn keepout(&self, v: &DsnKeepout) -> Keepout {
-        Keepout {
+    fn keepout(&self, v: &DsnKeepout) -> Result<Keepout> {
+        Ok(Keepout {
             kind: match v.keepout_type {
                 DsnKeepoutType::Keepout => KeepoutType::Keepout,
                 DsnKeepoutType::ViaKeepout => KeepoutType::ViaKeepout,
                 DsnKeepoutType::WireKeepout => KeepoutType::WireKeepout,
             },
-            shape: self.shape(&v.shape),
-        }
+            shape: self.shape(&v.shape)?,
+        })
     }
 
-    fn padstack(&self, v: &DsnPadstack) -> Padstack {
-        Padstack {
+    fn padstack(&self, v: &DsnPadstack) -> Result<Padstack> {
+        Ok(Padstack {
             id: v.padstack_id.clone(),
-            shapes: v.shapes.iter().map(|s| self.shape(&s.shape)).collect(),
+            shapes: v.shapes.iter().map(|s| self.shape(&s.shape)).collect::<Result<_>>()?,
             attach: v.attach,
-        }
+        })
     }
 
     fn pin(&self, v: &DsnPin) -> Result<Pin> {
@@ -123,8 +135,8 @@ impl Converter {
 
     fn image(&self, v: &DsnImage) -> Result<Component> {
         let mut c = Component::default();
-        c.outlines = v.outlines.iter().map(|p| self.shape(p)).collect();
-        c.keepouts = v.keepouts.iter().map(|p| self.keepout(p)).collect();
+        c.outlines = v.outlines.iter().map(|p| self.shape(p)).collect::<Result<_>>()?;
+        c.keepouts = v.keepouts.iter().map(|p| self.keepout(p)).collect::<Result<_>>()?;
         for pin in v.pins.iter() {
             c.add_pin(self.pin(pin)?);
         }
@@ -165,7 +177,7 @@ impl Converter {
 
     fn convert_padstacks(&mut self) -> Result<()> {
         for v in self.dsn.library.padstacks.iter() {
-            if self.padstacks.insert(v.padstack_id.clone(), self.padstack(v)).is_some() {
+            if self.padstacks.insert(v.padstack_id.clone(), self.padstack(v)?).is_some() {
                 return Err(eyre!("duplicate padstack with id {}", v.padstack_id));
             }
         }
@@ -190,20 +202,33 @@ impl Converter {
                 self.dsn.resolution.dimension
             ));
         }
+
+        // Layers needed for padstacks and images.
+        for (id, v) in self.dsn.structure.layers.iter().enumerate() {
+            let id = id as LayerId;
+            if self.layers.insert(v.layer_name.clone(), id).is_some() {
+                return Err(eyre!("duplicate layer with id {}", v.layer_name));
+            }
+            let kind = match v.layer_type {
+                DsnLayerType::Signal => LayerKind::Signal,
+                DsnLayerType::Power => LayerKind::Power,
+                DsnLayerType::Mixed => LayerKind::Mixed,
+                DsnLayerType::Jumper => LayerKind::Jumper,
+            };
+            self.pcb.add_layer(Layer { name: v.layer_name.clone(), id, kind });
+        }
+
         self.convert_padstacks()?; // Padstacks are used in images.
         self.convert_images()?;
 
         // Physical structure:
-        for v in self.dsn.structure.layers.iter() {
-            self.pcb.add_layer(Layer::new(&v.layer_name));
-        }
         for v in self.dsn.structure.boundaries.iter() {
             // Convert boundaries to closed shapes.
-            let LayerShape { layer, shape } = self.shape(v);
+            let LayerShape { layer, shape } = self.shape(v)?;
             self.pcb.add_boundary(LayerShape { layer, shape: shape.filled() });
         }
         for v in self.dsn.structure.keepouts.iter() {
-            self.pcb.add_keepout(self.keepout(v));
+            self.pcb.add_keepout(self.keepout(v)?);
         }
         for v in self.dsn.structure.vias.iter() {
             self.pcb.add_via_padstack(

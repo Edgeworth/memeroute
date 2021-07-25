@@ -3,20 +3,20 @@ use std::collections::HashMap;
 use eyre::Result;
 
 use crate::model::geom::quadtree::ShapeIdx;
-use crate::model::pcb::{Id, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Via, Wire, ANY_LAYER};
+use crate::model::pcb::{LayerId, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Via, Wire};
 use crate::model::primitive::compound::Compound;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::ShapeOps;
 use crate::model::tf::Tf;
 
-pub type PlaceId = (String, ShapeIdx);
+pub type PlaceId = (LayerId, ShapeIdx);
 
 // Need to handle:
 // but also keeping them for hole drils
 #[derive(Debug, Default, Clone)]
 pub struct PlaceModel {
-    boundary: HashMap<Id, Compound>,
-    blocked: HashMap<Id, Compound>,
+    boundary: HashMap<LayerId, Compound>,
+    blocked: HashMap<LayerId, Compound>,
     pins: HashMap<PinRef, Vec<PlaceId>>, // Record which pins correspond to which place ids.
     bounds: Rt,
 }
@@ -32,7 +32,8 @@ impl PlaceModel {
     }
 
     pub fn debug_rts(&self) -> Vec<Rt> {
-        self.blocked.get("B.Cu").unwrap().quadtree().rts()
+        // 0 = F.Cu, 1 = B.Cu
+        self.blocked.get(&1).unwrap().quadtree().rts()
     }
 
     pub fn add_pcb(&mut self, pcb: &Pcb) {
@@ -68,16 +69,14 @@ impl PlaceModel {
 
     fn add_shape(
         bounds: Rt,
-        map: &mut HashMap<Id, Compound>,
+        map: &mut HashMap<LayerId, Compound>,
         tf: &Tf,
         ls: &LayerShape,
     ) -> Vec<PlaceId> {
         let s = tf.shape(&ls.shape);
-        let idxs = map
-            .entry(ls.layer.clone())
-            .or_insert_with(|| Compound::with_bounds(&bounds))
-            .add_shape(s);
-        idxs.iter().map(|&v| (ls.layer.clone(), v)).collect()
+        let idxs =
+            map.entry(ls.layer).or_insert_with(|| Compound::with_bounds(&bounds)).add_shape(s);
+        idxs.iter().map(|&v| (ls.layer, v)).collect()
     }
 
     pub fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack) -> Vec<PlaceId> {
@@ -100,8 +99,8 @@ impl PlaceModel {
     pub fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin) -> Vec<PlaceId> {
         let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack);
         let e = self.pins.entry(pinref).or_insert_with(Vec::new);
-        for id in ids.iter() {
-            e.push(id.clone());
+        for &id in ids.iter() {
+            e.push(id);
         }
         ids
     }
@@ -137,16 +136,18 @@ impl PlaceModel {
     pub fn is_shape_blocked(&self, tf: &Tf, ls: &LayerShape) -> bool {
         let s = tf.shape(&ls.shape);
 
-        for layer in [&ls.layer, "pcb"] {
-            if let Some(boundary) = self.boundary.get(layer) {
+        // TODO!! this?
+        for layer in [ls.layer] {
+            if let Some(boundary) = self.boundary.get(&layer) {
                 if !boundary.contains_shape(&s) {
                     return true;
                 }
             }
         }
 
-        for layer in [&ls.layer, ANY_LAYER] {
-            if let Some(blocked) = self.blocked.get(layer) {
+        // TODO!! this?
+        for layer in [ls.layer] {
+            if let Some(blocked) = self.blocked.get(&layer) {
                 if blocked.intersects_shape(&s) {
                     return true;
                 }

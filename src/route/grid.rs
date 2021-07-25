@@ -4,7 +4,7 @@ use eyre::{eyre, Result};
 use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
-use crate::model::pcb::{Id, LayerShape, Pcb, PinRef, Via, Wire};
+use crate::model::pcb::{Id, LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::{path, pt, pti, ShapeOps};
 use crate::route::place_model::PlaceModel;
@@ -27,7 +27,7 @@ const DIR: [(PtI, f64); 9] = [
 #[derive(Debug, Default, Hash, Clone, PartialEq, Eq)]
 pub struct State {
     pub p: PtI,
-    pub layer: Id,
+    pub layers: LayerSet,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -66,18 +66,18 @@ impl GridRouter {
         let p = self.grid_pt((component.tf() * pin.tf()).pt(Pt::zero()));
 
         // TODO: return all layers in padstack somehow.
-        let mut layer = "F.Cu".to_owned();
+        let mut layers = LayerSet::empty();
         for shape in pin.padstack.shapes.iter() {
-            layer = shape.layer.clone();
+            layers |= shape.layer;
         }
-        Ok(State { p, layer })
+        Ok(State { p, layers })
     }
 
     fn wire_from_states(&self, states: &[State]) -> Wire {
         let pts: Vec<_> = states.iter().map(|s| self.world_pt_mid(s.p)).collect();
         Wire {
             shape: LayerShape {
-                layer: states[0].layer.clone(),
+                layer: states[0].layers.id().unwrap(),
                 shape: path(&pts, self.resolution * 0.8).shape(),
             },
         }
@@ -112,7 +112,7 @@ impl GridRouter {
         if cur.is_empty() {
             return;
         }
-        let is_via = l >= 2 && cur[l - 1].layer != cur[l - 2].layer;
+        let is_via = l >= 2 && cur[l - 1].layers != cur[l - 2].layers;
         // Add the via.
         if is_via {
             vias.push(self.via_from_state(&cur[l - 1]));
@@ -153,51 +153,55 @@ impl GridRouter {
         let mut dst = None;
         while let Some((cur, cur_cost)) = q.pop() {
             let cur_cost = -cur_cost.0;
-            for (dp, edge_cost) in DIR {
-                let is_via = dp.is_zero();
-                let layers = if is_via {
-                    let via_padstack = self.via_from_state(&cur).padstack;
-                    let layers = via_padstack.shapes.iter().map(|s| s.layer.clone());
-                    layers.filter(|v| v != &cur.layer).collect::<Vec<_>>()
-                } else {
-                    vec![cur.layer.clone()]
-                };
-                for layer in layers.into_iter() {
-                    let next = State { p: cur.p + dp, layer };
-                    let cost = cur_cost + edge_cost;
-                    let data = node_data.entry(next.clone()).or_insert_with(Default::default);
+            // Try going from each of the valid layers in this state.
+            for cur_layer in cur.layers.iter() {
+                let cur = State { layers: LayerSet::one(cur_layer), ..cur };
+                for (dp, edge_cost) in DIR {
+                    let is_via = dp.is_zero();
+                    let layers = if is_via {
+                        let mut layers = self.via_from_state(&cur).padstack.layers();
+                        // Try all layers from via except the current one.
+                        layers.remove(cur_layer);
+                        layers
+                    } else {
+                        LayerSet::one(cur_layer)
+                    };
+                    for layer in layers.iter() {
+                        let next = State { p: cur.p + dp, layers: LayerSet::one(layer) };
+                        let cost = cur_cost + edge_cost;
+                        let data = node_data.entry(next.clone()).or_insert_with(Default::default);
 
-                    if data.seen {
-                        continue;
-                    }
+                        if data.seen {
+                            continue;
+                        }
 
-                    // TODO: Don't check if wire with thickness is blocked
-                    // because wires already mark a 2x2 area around them (at
-                    // least).
-                    // println!("try: {:?}", next);
-                    let wire = self.wire_from_states(&[cur.clone(), next.clone()]);
-                    if !is_via && self.place.is_wire_blocked(&wire) {
-                        continue;
-                    }
-                    // Don't put vias through pins.
-                    let via = self.via_from_state(&next);
-                    if is_via
-                        && (self.place.is_via_blocked(&via) || self.place.is_via_blocked(&via))
-                    {
-                        continue;
-                    }
-                    if cost <= data.cost {
-                        data.cost = cost;
-                        data.prev = cur.clone();
-                        q.push(next, OrderedFloat(-cost));
+                        let wire = self.wire_from_states(&[cur.clone(), next.clone()]);
+                        if !is_via && self.place.is_wire_blocked(&wire) {
+                            continue;
+                        }
+                        // Don't put vias through pins.
+                        let via = self.via_from_state(&next);
+                        if is_via
+                            && (self.place.is_via_blocked(&via) || self.place.is_via_blocked(&via))
+                        {
+                            continue;
+                        }
+                        if cost <= data.cost {
+                            data.cost = cost;
+                            data.prev = cur.clone();
+                            q.push(next, OrderedFloat(-cost));
+                        }
                     }
                 }
-            }
 
-            let data = node_data.entry(cur.clone()).or_insert_with(Default::default);
-            data.seen = true;
-            if dsts.contains(&cur) {
-                dst = Some(cur);
+                let data = node_data.entry(cur.clone()).or_insert_with(Default::default);
+                data.seen = true;
+                if dsts.contains(&cur) {
+                    dst = Some(cur);
+                    break;
+                }
+            }
+            if dst.is_some() {
                 break;
             }
         }

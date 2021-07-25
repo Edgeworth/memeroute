@@ -1,7 +1,7 @@
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
-use memeroute::model::pcb::{Component, Keepout, LayerShape, Padstack, Pcb, Pin, Side};
+use memeroute::model::pcb::{Component, Keepout, LayerId, LayerShape, Padstack, Pcb, Pin, Side};
 use memeroute::model::primitive::point::Pt;
 use memeroute::model::primitive::rect::Rt;
 use memeroute::model::primitive::shape::Shape;
@@ -12,6 +12,7 @@ use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rt, stroke_path};
 use crate::pcb::{to_pos2, to_pt, to_rt};
 
 // Index 0 is front, index 1 is back.
+// TODO!! This
 lazy_static! {
     static ref KEEPOUT: Color32 = Color32::from_rgba_unmultiplied(155, 27, 0, 180);
 
@@ -99,13 +100,8 @@ impl PcbView {
         self.dirty = true;
     }
 
-    fn layer_id_to_color_idx(&self, id: &str) -> usize {
-        // TODO: Generalise this?
-        match id {
-            "F.Cu" => 0,
-            "B.Cu" => 1,
-            _ => 0,
-        }
+    fn layer_id_to_color_idx(&self, id: LayerId) -> usize {
+        id as usize
     }
 
     fn draw_shape(&self, tf: &Tf, v: &LayerShape, col: Color32) -> Vec<epaint::Shape> {
@@ -142,6 +138,7 @@ impl PcbView {
 
     fn draw_component(&self, tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
+        // TODO!! this
         let side_idx = match v.side {
             Side::Front => 0,
             Side::Back => 1,
@@ -193,7 +190,7 @@ impl PcbView {
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for wire in self.pcb.wires() {
-                let col = WIRE[self.layer_id_to_color_idx(&wire.shape.layer)];
+                let col = WIRE[self.layer_id_to_color_idx(wire.shape.layer)];
                 let shapes = self.draw_shape(&tf, &wire.shape, col);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
@@ -205,8 +202,7 @@ impl PcbView {
                 let mut pts = rt.pts().to_vec();
                 pts.push(rt.pts()[0]);
                 let shape = path(&pts, 0.05).shape();
-                let shapes =
-                    self.draw_shape(&tf, &LayerShape { shape, layer: "pcb".to_owned() }, *DEBUG);
+                let shapes = self.draw_shape(&tf, &LayerShape { shape, layer: 0 }, *DEBUG);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             self.mesh = mesh;
