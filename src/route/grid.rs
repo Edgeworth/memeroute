@@ -4,9 +4,12 @@ use eyre::{eyre, Result};
 use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
+use crate::model::geom::math::f64_cmp;
 use crate::model::pcb::{Id, LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
-use crate::model::primitive::{path, pt, pti, ShapeOps};
+use crate::model::primitive::rect::{Rt, RtI};
+use crate::model::primitive::{circ, path, pt, pti, ShapeOps};
+use crate::model::tf::Tf;
 use crate::route::place_model::PlaceModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
@@ -24,7 +27,7 @@ const DIR: [(PtI, f64); 9] = [
     (pti(0, 0), VIA_COST),
 ];
 
-#[derive(Debug, Default, Hash, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Hash, Copy, Clone, PartialEq, Eq)]
 pub struct State {
     pub p: PtI,
     pub layers: LayerSet,
@@ -32,9 +35,9 @@ pub struct State {
 
 #[derive(Debug, Clone, PartialEq)]
 struct NodeData {
-    seen: bool,
-    cost: f64,
     prev: State,
+    cost: f64,
+    seen: bool,
 }
 
 impl Default for NodeData {
@@ -131,7 +134,7 @@ impl GridRouter {
         let mut cur_states = Vec::new();
         for cur in path {
             self.push_path(&mut wires, &mut vias, &mut cur_states, false);
-            cur_states.push(cur.clone());
+            cur_states.push(*cur);
         }
         self.push_path(&mut wires, &mut vias, &mut cur_states, true);
         (wires, vias)
@@ -142,56 +145,66 @@ impl GridRouter {
         let mut node_data: HashMap<State, NodeData> = HashMap::new();
 
         for src in srcs {
-            q.push(src.clone(), OrderedFloat(0.0));
+            // Try going from each of the valid layers in this state.
+            for layer in src.layers.iter() {
+                let s = State { layers: LayerSet::one(layer), ..*src };
+                q.push(s, OrderedFloat(0.0));
+            }
         }
 
         let mut dst = None;
         while let Some((cur, cur_cost)) = q.pop() {
             let cur_cost = -cur_cost.0;
-            // Try going from each of the valid layers in this state.
-            for cur_layer in cur.layers.iter() {
-                let cur = State { layers: LayerSet::one(cur_layer), ..cur };
-                for (dp, edge_cost) in DIR {
-                    let is_via = dp.is_zero();
-                    let layers = if is_via {
-                        let mut layers = self.via_from_state(&cur).padstack.layers();
-                        // Try all layers from via except the current one.
-                        layers.remove(cur_layer);
-                        layers
-                    } else {
-                        LayerSet::one(cur_layer)
-                    };
-                    for layer in layers.iter() {
-                        let next = State { p: cur.p + dp, layers: LayerSet::one(layer) };
-                        let cost = cur_cost + edge_cost;
-                        let data = node_data.entry(next.clone()).or_insert_with(Default::default);
 
-                        if data.seen {
-                            continue;
-                        }
+            for (dp, edge_cost) in DIR {
+                let is_via = dp.is_zero();
+                let cur_layer = cur.layers.id().unwrap(); // Should only be one layer.
+                let layers = if is_via {
+                    let mut layers = self.via_from_state(&cur).padstack.layers();
+                    // Try all layers from via except the current one.
+                    layers.remove(cur_layer);
+                    layers
+                } else {
+                    LayerSet::one(cur_layer)
+                };
+                for layer in layers.iter() {
+                    let next = State { p: cur.p + dp, layers: LayerSet::one(layer) };
+                    let cost = cur_cost + edge_cost;
+                    let data = node_data.entry(next).or_insert_with(Default::default);
 
-                        let wire = self.wire_from_states(&[cur.clone(), next.clone()]);
-                        if !is_via && self.place.is_wire_blocked(&wire) {
-                            continue;
-                        }
-                        // Don't put vias through pins.
-                        let via = self.via_from_state(&next);
-                        if is_via
-                            && (self.place.is_via_blocked(&via) || self.place.is_via_blocked(&via))
-                        {
-                            continue;
-                        }
-                        if cost <= data.cost {
-                            data.cost = cost;
-                            data.prev = cur.clone();
-                            q.push(next, OrderedFloat(-cost));
-                        }
+                    if data.seen {
+                        continue;
+                    }
+
+                    let wire = self.wire_from_states(&[cur, next]);
+                    if !is_via && self.place.is_wire_blocked(&wire) {
+                        continue;
+                    }
+
+                    // Don't put vias through pins.
+                    let via = self.via_from_state(&next);
+                    if is_via
+                        && (self.place.is_via_blocked(&via) || self.place.is_via_blocked(&via))
+                    {
+                        continue;
+                    }
+
+                    // A* heuristic. Minimum distance to a destination.
+                    // let heuristic = dsts.iter().map(|v| v.p.dist(next.p)).min_by(f64_cmp);
+
+                    if cost <= data.cost {
+                        data.cost = cost;
+                        data.prev = cur;
+                        q.push(next, OrderedFloat(-cost));
                     }
                 }
+            }
 
-                let data = node_data.entry(cur.clone()).or_insert_with(Default::default);
-                data.seen = true;
-                if dsts.contains(&cur) {
+            let data = node_data.entry(cur).or_insert_with(Default::default);
+            data.seen = true;
+            // Check if we reached any destination.
+            for d in dsts {
+                if d.p == cur.p && d.layers.contains_set(cur.layers) {
                     dst = Some(cur);
                     break;
                 }
@@ -207,7 +220,7 @@ impl GridRouter {
             let mut cur = dst;
             while let Some(data) = node_data.get(&cur) {
                 path.push(cur);
-                cur = data.prev.clone();
+                cur = data.prev;
             }
             // Should reach the end of the path.
             assert_eq!(cur, Default::default());
@@ -241,11 +254,40 @@ impl GridRouter {
             res.wires.extend(wires);
             res.vias.extend(vias);
             // Assume the last state in the path is a destination.
-            let idx = dsts.iter().position(|v| v == path.last().unwrap()).unwrap();
+            let dst = path.last().unwrap();
+            let idx = dsts
+                .iter()
+                .position(|v| v.p == dst.p && v.layers.contains_set(dst.layers))
+                .unwrap();
             srcs.push(dsts.swap_remove(idx));
         }
 
         Ok(res)
+    }
+
+    fn draw_debug(&mut self, res: &mut RouteResult) {
+        let bounds = self.pcb.bounds();
+        // let bounds = rt(77.0495, -125.1745, 79.099, -120.75);
+        let bounds =
+            RtI::enclosing(self.grid_pt(bounds.bl()), self.grid_pt(bounds.tr()) + pti(1, 1));
+        for l in bounds.l()..bounds.r() {
+            for b in bounds.b()..bounds.t() {
+                let p = pti(l, b);
+                let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
+                let shape = LayerShape { layers: LayerSet::one(0), shape };
+                if self.place.is_shape_blocked(&Tf::identity(), &shape) {
+                    continue;
+                }
+                res.wires.push(Wire { shape });
+            }
+        }
+
+        let bounds = RtI::new(157, -116, 1, 1);
+        res.debug_rts.push(
+            Rt::enclosing(self.world_pt(bounds.bl()), self.world_pt(bounds.tr()))
+                .inset(-10.0, -10.0),
+        );
+        res.debug_rts.extend(self.place.debug_rts());
     }
 }
 
@@ -270,28 +312,7 @@ impl RouteStrategy for GridRouter {
             println!("done");
         }
 
-        // let bounds = self.pcb.bounds();
-        // // let bounds = rt(77.0495, -125.1745, 79.099, -120.75);
-        // let bounds =
-        //     RtI::enclosing(self.grid_pt(bounds.bl()), self.grid_pt(bounds.tr()) + pti(1, 1));
-        // for l in bounds.l()..bounds.r() {
-        //     for b in bounds.b()..bounds.t() {
-        //         let p = pti(l, b);
-        //         let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
-        //         let shape = LayerShape { layer: "F.Cu".to_owned(), shape };
-        //         if self.place.is_shape_blocked(&Tf::identity(), &shape) {
-        //             continue;
-        //         }
-        //         res.wires.push(Wire { shape });
-        //     }
-        // }
-
-        // let bounds = RtI::new(157, -116, 1, 1);
-        // res.debug_rts.push(
-        //     Rt::enclosing(self.world_pt(bounds.bl()), self.world_pt(bounds.tr()))
-        //         .inset(-10.0, -10.0),
-        // );
-        // res.debug_rts.extend(self.place.debug_rts());
+        // self.draw_debug(&mut res);
         Ok(res)
     }
 }

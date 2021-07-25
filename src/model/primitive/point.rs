@@ -187,6 +187,18 @@ impl PtI {
     pub fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
+
+    pub fn dist(&self, b: PtI) -> f64 {
+        (b - *self).mag()
+    }
+
+    pub fn mag(&self) -> f64 {
+        (self.mag2() as f64).sqrt()
+    }
+
+    pub fn mag2(&self) -> i64 {
+        self.x * self.x + self.y * self.y
+    }
 }
 
 impl_op_ex!(-|a: &PtI| -> PtI { pti(-a.x, -a.y) });
