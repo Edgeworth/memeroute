@@ -17,7 +17,8 @@ pub type PlaceId = (LayerId, ShapeIdx);
 pub struct PlaceModel {
     boundary: HashMap<LayerId, Compound>,
     blocked: HashMap<LayerId, Compound>,
-    pins: HashMap<PinRef, Vec<PlaceId>>, // Record which pins correspond to which place ids.
+    extra_blocked: HashMap<LayerId, Compound>, // Records areas blocked for drilling
+    pins: HashMap<PinRef, Vec<PlaceId>>, // Record which pins correspond to which place ids in |blocked|.
     bounds: Rt,
 }
 
@@ -26,6 +27,7 @@ impl PlaceModel {
         Self {
             boundary: HashMap::new(),
             blocked: HashMap::new(),
+            extra_blocked: HashMap::new(),
             pins: HashMap::new(),
             bounds: Rt::empty(),
         }
@@ -67,6 +69,14 @@ impl PlaceModel {
         }
     }
 
+    pub fn add_wire(&mut self, wire: &Wire) -> Vec<PlaceId> {
+        Self::add_shape(self.bounds, &mut self.blocked, &Tf::identity(), &wire.shape)
+    }
+
+    pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
+        self.add_padstack(&via.tf(), &via.padstack)
+    }
+
     fn add_shape(
         bounds: Rt,
         map: &mut HashMap<LayerId, Compound>,
@@ -89,7 +99,7 @@ impl PlaceModel {
         idxs
     }
 
-    pub fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack) -> Vec<PlaceId> {
+    fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack) -> Vec<PlaceId> {
         padstack
             .shapes
             .iter()
@@ -98,15 +108,7 @@ impl PlaceModel {
             .collect()
     }
 
-    pub fn add_wire(&mut self, wire: &Wire) -> Vec<PlaceId> {
-        Self::add_shape(self.bounds, &mut self.blocked, &Tf::identity(), &wire.shape)
-    }
-
-    pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
-        self.add_padstack(&via.tf(), &via.padstack)
-    }
-
-    pub fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin) -> Vec<PlaceId> {
+    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin) -> Vec<PlaceId> {
         let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack);
         let e = self.pins.entry(pinref).or_insert_with(Vec::new);
         for &id in ids.iter() {
@@ -115,13 +117,15 @@ impl PlaceModel {
         ids
     }
 
-    pub fn remove_pin(&mut self, p: &PinRef) {
+    fn remove_pin(&mut self, p: &PinRef) {
         if let Some(ids) = self.pins.remove(p) {
             for id in ids {
                 self.remove_shape(id);
             }
         }
     }
+
+    // fn add_net_internal()
 
     // Adds all pins in the given net.
     pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
@@ -139,7 +143,7 @@ impl PlaceModel {
         }
     }
 
-    pub fn remove_shape(&mut self, id: PlaceId) {
+    fn remove_shape(&mut self, id: PlaceId) {
         self.blocked.get_mut(&id.0).unwrap().remove_shape(id.1);
     }
 
@@ -165,15 +169,15 @@ impl PlaceModel {
         false
     }
 
-    pub fn is_padstack_blocked(&self, tf: &Tf, padstack: &Padstack) -> bool {
-        padstack.shapes.iter().any(|shape| self.is_shape_blocked(tf, shape))
-    }
-
     pub fn is_wire_blocked(&self, wire: &Wire) -> bool {
         self.is_shape_blocked(&Tf::identity(), &wire.shape)
     }
 
     pub fn is_via_blocked(&self, via: &Via) -> bool {
         self.is_padstack_blocked(&via.tf(), &via.padstack)
+    }
+
+    fn is_padstack_blocked(&self, tf: &Tf, padstack: &Padstack) -> bool {
+        padstack.shapes.iter().any(|shape| self.is_shape_blocked(tf, shape))
     }
 }

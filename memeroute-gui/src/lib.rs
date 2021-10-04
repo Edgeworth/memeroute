@@ -51,5 +51,6 @@ pub async fn run() -> Result<()> {
     let pcb = load_pcb(&args.data_path)?;
     let app = MemerouteGui::new(pcb);
     let native_options = eframe::NativeOptions::default();
-    eframe::run_native(Box::new(app), native_options)
+    eframe::run_native(Box::new(app), native_options);
+    Ok(())
 }
