@@ -149,12 +149,13 @@ impl GridRouter {
             for layer in src.layers.iter() {
                 let s = State { layers: LayerSet::one(layer), ..*src };
                 q.push(s, OrderedFloat(0.0));
+                node_data.insert(s, NodeData { prev: Default::default(), cost: 0.0, seen: true });
             }
         }
 
         let mut dst = None;
-        while let Some((cur, cur_cost)) = q.pop() {
-            let cur_cost = -cur_cost.0;
+        while let Some((cur, _)) = q.pop() {
+            let cur_cost = node_data.get(&cur).unwrap().cost;
 
             for (dp, edge_cost) in DIR {
                 let is_via = dp.is_zero();
@@ -189,18 +190,21 @@ impl GridRouter {
                         continue;
                     }
 
-                    // A* heuristic. Minimum distance to a destination.
-                    // let heuristic = dsts.iter().map(|v| v.p.dist(next.p)).min_by(f64_cmp);
-
                     if cost <= data.cost {
                         data.cost = cost;
                         data.prev = cur;
-                        q.push(next, OrderedFloat(-cost));
+
+                        // A* heuristic. Minimum distance to a destination.
+                        // TODO: heuristic should be done in world coordinates
+                        let dist_fn =
+                            |d: &State| self.world_pt_mid(d.p).dist(self.world_pt_mid(next.p));
+                        let heuristic = dsts.iter().map(dist_fn).min_by(f64_cmp).unwrap();
+                        q.push(next, OrderedFloat(-(cost + heuristic)));
                     }
                 }
             }
 
-            let data = node_data.entry(cur).or_insert_with(Default::default);
+            let data = node_data.get_mut(&cur).unwrap();
             data.seen = true;
             // Check if we reached any destination.
             for d in dsts {
