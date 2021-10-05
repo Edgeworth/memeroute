@@ -243,14 +243,15 @@ pub struct Net {
 #[derive(Debug, Clone)]
 pub struct Wire {
     pub shape: LayerShape,
-    // TODO: Net ID?
+    pub net_id: Id,
 }
 
 // Describes a via.
 #[derive(Debug, Clone)]
 pub struct Via {
-    pub padstack: Padstack,
     pub p: Pt,
+    pub padstack: Padstack,
+    pub net_id: Id,
 }
 
 impl Via {
@@ -275,6 +276,7 @@ pub struct Pcb {
     wires: Vec<Wire>,
     vias: Vec<Via>,
     nets: HashMap<Id, Net>,
+    pin_ref_net: HashMap<PinRef, Id>,
 
     // Debug:
     debug_rts: Vec<Rt>,
@@ -358,6 +360,9 @@ impl Pcb {
     }
 
     pub fn add_net(&mut self, n: Net) {
+        for p in n.pins {
+            self.pin_ref_net.insert(p.clone(), n.id.clone())
+        }
         self.nets.insert(n.id.clone(), n);
     }
 
@@ -385,6 +390,10 @@ impl Pcb {
             .pin(&p.pin)
             .ok_or_else(|| eyre!("unknown pin id {} on component {}", p.pin, p.component))?;
         Ok((component, pin))
+    }
+
+    pub fn pin_ref_net(&self, p: &PinRef) -> Option<Id> {
+        self.pin_ref_net.get(p)
     }
 
     pub fn bounds(&self) -> Rt {
