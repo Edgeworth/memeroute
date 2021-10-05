@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use eyre::Result;
 
-use crate::model::geom::quadtree::ShapeIdx;
+use crate::model::geom::quadtree::{ShapeIdx, Tag, EMPTY_TAG};
 use crate::model::pcb::{LayerId, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Via, Wire};
 use crate::model::primitive::compound::Compound;
 use crate::model::primitive::rect::Rt;
@@ -17,7 +17,6 @@ pub type PlaceId = (LayerId, ShapeIdx);
 pub struct PlaceModel {
     boundary: HashMap<LayerId, Compound>,
     blocked: HashMap<LayerId, Compound>,
-    extra_blocked: HashMap<LayerId, Compound>, // Records areas blocked for drilling
     pins: HashMap<PinRef, Vec<PlaceId>>, // Record which pins correspond to which place ids in |blocked|.
     bounds: Rt,
 }
@@ -27,7 +26,6 @@ impl PlaceModel {
         Self {
             boundary: HashMap::new(),
             blocked: HashMap::new(),
-            extra_blocked: HashMap::new(),
             pins: HashMap::new(),
             bounds: Rt::empty(),
         }
@@ -43,7 +41,7 @@ impl PlaceModel {
 
         self.bounds = self.bounds.united(&pcb.bounds());
         for boundary in pcb.boundaries() {
-            Self::add_shape(self.bounds, &mut self.boundary, &tf, boundary);
+            Self::add_shape(self.bounds, &mut self.boundary, &tf, boundary, EMPTY_TAG);
         }
 
         for wire in pcb.wires() {
@@ -60,7 +58,8 @@ impl PlaceModel {
         for c in pcb.components() {
             let tf = tf * c.tf();
             for pin in c.pins() {
-                self.add_pin(&tf, PinRef::new(c, pin), pin);
+                let tag = pcb.pin_ref_net(pin).unwrap_or_else(|| EMPTY_TAG);
+                self.add_pin(&tf, PinRef::new(c, pin), pin, &tag);
             }
             for keepout in c.keepouts.iter() {
                 // TODO: Handle only via vs only wire keepout.
@@ -70,11 +69,11 @@ impl PlaceModel {
     }
 
     pub fn add_wire(&mut self, wire: &Wire) -> Vec<PlaceId> {
-        Self::add_shape(self.bounds, &mut self.blocked, &Tf::identity(), &wire.shape)
+        Self::add_shape(self.bounds, &mut self.blocked, &Tf::identity(), &wire.shape, &wire.net_id)
     }
 
     pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
-        self.add_padstack(&via.tf(), &via.padstack)
+        self.add_padstack(&via.tf(), &via.padstack, &via.net_id)
     }
 
     fn add_shape(
@@ -82,6 +81,7 @@ impl PlaceModel {
         map: &mut HashMap<LayerId, Compound>,
         tf: &Tf,
         ls: &LayerShape,
+        tag: &Tag,
     ) -> Vec<PlaceId> {
         let s = tf.shape(&ls.shape);
         let mut idxs = Vec::new();
@@ -90,7 +90,7 @@ impl PlaceModel {
             idxs.extend(
                 map.entry(layer)
                     .or_insert_with(|| Compound::with_bounds(&bounds))
-                    .add_shape(s.clone())
+                    .add_shape(s.clone(), tag)
                     .iter()
                     .map(|&v| (layer, v)),
             );
@@ -99,17 +99,17 @@ impl PlaceModel {
         idxs
     }
 
-    fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack) -> Vec<PlaceId> {
+    fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack, tag: &Tag) -> Vec<PlaceId> {
         padstack
             .shapes
             .iter()
-            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape))
+            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape, tag))
             .flatten()
             .collect()
     }
 
-    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin) -> Vec<PlaceId> {
-        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack);
+    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, tag: &Tag) -> Vec<PlaceId> {
+        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, tag);
         let e = self.pins.entry(pinref).or_insert_with(Vec::new);
         for &id in ids.iter() {
             e.push(id);
@@ -125,13 +125,11 @@ impl PlaceModel {
         }
     }
 
-    // fn add_net_internal()
-
     // Adds all pins in the given net.
     pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
         for p in net.pins.iter() {
             let (component, pin) = pcb.pin_ref(p)?;
-            self.add_pin(&component.tf(), p.clone(), pin);
+            self.add_pin(&component.tf(), p.clone(), pin, &net.id);
         }
         Ok(())
     }
@@ -147,12 +145,12 @@ impl PlaceModel {
         self.blocked.get_mut(&id.0).unwrap().remove_shape(id.1);
     }
 
-    pub fn is_shape_blocked(&self, tf: &Tf, ls: &LayerShape) -> bool {
+    pub fn is_shape_blocked(&self, tf: &Tf, ls: &LayerShape, q: TagQuery) -> bool {
         let s = tf.shape(&ls.shape);
 
         for layer in ls.layers.iter() {
             if let Some(boundary) = self.boundary.get(&layer) {
-                if !boundary.contains_shape(&s) {
+                if !boundary.contains(&s, q) {
                     return true;
                 }
             }
@@ -160,7 +158,7 @@ impl PlaceModel {
 
         for layer in ls.layers.iter() {
             if let Some(blocked) = self.blocked.get(&layer) {
-                if blocked.intersects_shape(&s) {
+                if blocked.intersects(&s, q) {
                     return true;
                 }
             }
@@ -169,15 +167,15 @@ impl PlaceModel {
         false
     }
 
-    pub fn is_wire_blocked(&self, wire: &Wire) -> bool {
-        self.is_shape_blocked(&Tf::identity(), &wire.shape)
+    pub fn is_wire_blocked(&self, wire: &Wire, q: TagQuery) -> bool {
+        self.is_shape_blocked(&Tf::identity(), &wire.shape, q)
     }
 
-    pub fn is_via_blocked(&self, via: &Via) -> bool {
-        self.is_padstack_blocked(&via.tf(), &via.padstack)
+    pub fn is_via_blocked(&self, via: &Via, q: TagQuery) -> bool {
+        self.is_padstack_blocked(&via.tf(), &via.padstack, q)
     }
 
-    fn is_padstack_blocked(&self, tf: &Tf, padstack: &Padstack) -> bool {
-        padstack.shapes.iter().any(|shape| self.is_shape_blocked(tf, shape))
+    fn is_padstack_blocked(&self, tf: &Tf, padstack: &Padstack, q: TagQuery) -> bool {
+        padstack.shapes.iter().any(|shape| self.is_shape_blocked(tf, shape, q))
     }
 }

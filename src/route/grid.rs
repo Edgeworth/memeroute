@@ -5,6 +5,7 @@ use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
 use crate::model::geom::math::f64_cmp;
+use crate::model::geom::quadtree::Query;
 use crate::model::pcb::{Id, LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::rect::{Rt, RtI};
@@ -31,6 +32,7 @@ const DIR: [(PtI, f64); 9] = [
 pub struct State {
     pub p: PtI,
     pub layers: LayerSet,
+    pub net_id: Id,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -60,7 +62,7 @@ impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
         let mut place = PlaceModel::new();
         place.add_pcb(&pcb);
-        Self { pcb, resolution: 0.4, place, net_order }
+        Self { pcb, resolution: 0.1, place, net_order }
     }
 
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
@@ -68,7 +70,8 @@ impl GridRouter {
         let p = self.grid_pt((component.tf() * pin.tf()).pt(Pt::zero()));
         // TODO: Assumes connect to the center of the pin. Look at padstack instead.
         let layers = pin.padstack.shapes.iter().map(|v| v.layers).collect();
-        Ok(State { p, layers })
+        let net_id = pcb.pin_ref_net(pin_ref).ok_or_else(|| eyre!("missing net id"))?;
+        Ok(State { p, layers, net_id })
     }
 
     fn wire_from_states(&self, states: &[State]) -> Wire {
@@ -78,12 +81,17 @@ impl GridRouter {
                 layers: LayerSet::one(states[0].layers.id().unwrap()),
                 shape: path(&pts, self.resolution * 0.8).shape(),
             },
+            net_id: states[0].net_id.clone(),
         }
     }
 
     fn via_from_state(&self, state: &State) -> Via {
         // TODO: Uses only one type of via.
-        Via { padstack: self.pcb.via_padstacks()[0].clone(), p: self.world_pt_mid(state.p) }
+        Via {
+            padstack: self.pcb.via_padstacks()[0].clone(),
+            p: self.world_pt_mid(state.p),
+            net_id: state.net_id.clone(),
+        }
     }
 
     fn grid_pt(&self, p: Pt) -> PtI {
@@ -169,7 +177,11 @@ impl GridRouter {
                     LayerSet::one(cur_layer)
                 };
                 for layer in layers.iter() {
-                    let next = State { p: cur.p + dp, layers: LayerSet::one(layer) };
+                    let next = State {
+                        p: cur.p + dp,
+                        layers: LayerSet::one(layer),
+                        net_id: srcs[0].net_id.clone(),
+                    };
                     let cost = cur_cost + edge_cost;
                     let data = node_data.entry(next).or_insert_with(Default::default);
 
@@ -178,15 +190,16 @@ impl GridRouter {
                     }
 
                     let wire = self.wire_from_states(&[cur, next]);
-                    if !is_via && self.place.is_wire_blocked(&wire) {
+                    // Wire is blocked if anything other than its net is there.
+                    if !is_via
+                        && self.place.is_wire_blocked(&wire, Query::Except(next.net_id.clone()))
+                    {
                         continue;
                     }
 
-                    // Don't put vias through pins.
+                    // Vias are blocked by anything since they create a hole.
                     let via = self.via_from_state(&next);
-                    if is_via
-                        && (self.place.is_via_blocked(&via) || self.place.is_via_blocked(&via))
-                    {
+                    if is_via && (self.place.is_via_blocked(&via, Query::All)) {
                         continue;
                     }
 
@@ -195,7 +208,6 @@ impl GridRouter {
                         data.prev = cur;
 
                         // A* heuristic. Minimum distance to a destination.
-                        // TODO: heuristic should be done in world coordinates
                         let dist_fn =
                             |d: &State| self.world_pt_mid(d.p).dist(self.world_pt_mid(next.p));
                         let heuristic = dsts.iter().map(dist_fn).min_by(f64_cmp).unwrap();
@@ -279,10 +291,10 @@ impl GridRouter {
                 let p = pti(l, b);
                 let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
                 let shape = LayerShape { layers: LayerSet::one(0), shape };
-                if self.place.is_shape_blocked(&Tf::identity(), &shape) {
+                if self.place.is_shape_blocked(&Tf::identity(), &shape, Query::All) {
                     continue;
                 }
-                res.wires.push(Wire { shape });
+                res.wires.push(Wire { shape, net_id: String::new() });
             }
         }
 
@@ -302,8 +314,9 @@ impl RouteStrategy for GridRouter {
             let net = self.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
-            self.place.remove_net(&net); // Temporarily remove pins as blocking.
+            //self.place.remove_net(&net); // Temporarily remove pins as blocking.
             let sub_result = self.connect(states)?;
+            println!("done {}, failed {}", net_id, sub_result.failed);
             // Mark wires and vias.
             for wire in sub_result.wires.iter() {
                 self.place.add_wire(wire);
@@ -312,8 +325,8 @@ impl RouteStrategy for GridRouter {
                 self.place.add_via(via);
             }
             res.merge(sub_result);
-            self.place.add_net(&self.pcb, &net)?; // Add pins back.
-            println!("done");
+            //self.place.add_net(&self.pcb, &net)?; // Add pins back.
+            break; // TODO: undo, testing
         }
 
         // self.draw_debug(&mut res);
