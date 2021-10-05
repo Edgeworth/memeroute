@@ -6,11 +6,12 @@ use priority_queue::PriorityQueue;
 
 use crate::model::geom::math::f64_cmp;
 use crate::model::geom::quadtree::Query;
-use crate::model::pcb::{Id, LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
+use crate::model::pcb::{LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::rect::{Rt, RtI};
 use crate::model::primitive::{circ, path, pt, pti, ShapeOps};
 use crate::model::tf::Tf;
+use crate::name::{Id, NO_ID};
 use crate::route::place_model::PlaceModel;
 use crate::route::router::{RouteResult, RouteStrategy};
 
@@ -62,7 +63,7 @@ impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
         let mut place = PlaceModel::new();
         place.add_pcb(&pcb);
-        Self { pcb, resolution: 0.1, place, net_order }
+        Self { pcb, resolution: 0.2, place, net_order }
     }
 
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
@@ -70,7 +71,7 @@ impl GridRouter {
         let p = self.grid_pt((component.tf() * pin.tf()).pt(Pt::zero()));
         // TODO: Assumes connect to the center of the pin. Look at padstack instead.
         let layers = pin.padstack.shapes.iter().map(|v| v.layers).collect();
-        let net_id = pcb.pin_ref_net(pin_ref).ok_or_else(|| eyre!("missing net id"))?;
+        let net_id = self.pcb.pin_ref_net(pin_ref).ok_or_else(|| eyre!("missing net id"))?;
         Ok(State { p, layers, net_id })
     }
 
@@ -81,7 +82,7 @@ impl GridRouter {
                 layers: LayerSet::one(states[0].layers.id().unwrap()),
                 shape: path(&pts, self.resolution * 0.8).shape(),
             },
-            net_id: states[0].net_id.clone(),
+            net_id: states[0].net_id,
         }
     }
 
@@ -90,7 +91,7 @@ impl GridRouter {
         Via {
             padstack: self.pcb.via_padstacks()[0].clone(),
             p: self.world_pt_mid(state.p),
-            net_id: state.net_id.clone(),
+            net_id: state.net_id,
         }
     }
 
@@ -180,7 +181,7 @@ impl GridRouter {
                     let next = State {
                         p: cur.p + dp,
                         layers: LayerSet::one(layer),
-                        net_id: srcs[0].net_id.clone(),
+                        net_id: srcs[0].net_id,
                     };
                     let cost = cur_cost + edge_cost;
                     let data = node_data.entry(next).or_insert_with(Default::default);
@@ -191,9 +192,7 @@ impl GridRouter {
 
                     let wire = self.wire_from_states(&[cur, next]);
                     // Wire is blocked if anything other than its net is there.
-                    if !is_via
-                        && self.place.is_wire_blocked(&wire, Query::Except(next.net_id.clone()))
-                    {
+                    if !is_via && self.place.is_wire_blocked(&wire, Query::Except(next.net_id)) {
                         continue;
                     }
 
@@ -294,7 +293,7 @@ impl GridRouter {
                 if self.place.is_shape_blocked(&Tf::identity(), &shape, Query::All) {
                     continue;
                 }
-                res.wires.push(Wire { shape, net_id: String::new() });
+                res.wires.push(Wire { shape, net_id: NO_ID });
             }
         }
 
@@ -311,10 +310,9 @@ impl RouteStrategy for GridRouter {
     fn route(&mut self) -> Result<RouteResult> {
         let mut res = RouteResult::default();
         for net_id in self.net_order.clone().into_iter() {
-            let net = self.pcb.net(&net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
+            let net = self.pcb.net(net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
-            //self.place.remove_net(&net); // Temporarily remove pins as blocking.
             let sub_result = self.connect(states)?;
             println!("done {}, failed {}", net_id, sub_result.failed);
             // Mark wires and vias.
@@ -325,8 +323,6 @@ impl RouteStrategy for GridRouter {
                 self.place.add_via(via);
             }
             res.merge(sub_result);
-            //self.place.add_net(&self.pcb, &net)?; // Add pins back.
-            break; // TODO: undo, testing
         }
 
         // self.draw_debug(&mut res);

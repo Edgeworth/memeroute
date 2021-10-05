@@ -1,6 +1,6 @@
 use std::cell::{Ref, RefCell};
 
-use crate::model::geom::quadtree::{QuadTree, ShapeIdx, Tag};
+use crate::model::geom::quadtree::{QuadTree, Query, ShapeIdx, Tag};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
@@ -13,10 +13,6 @@ pub struct Compound {
 }
 
 impl Compound {
-    pub fn new(shapes: Vec<Shape>) -> Self {
-        Self { qt: RefCell::new(QuadTree::new(shapes)) }
-    }
-
     pub fn empty() -> Self {
         Self { qt: RefCell::new(QuadTree::empty()) }
     }
@@ -25,7 +21,7 @@ impl Compound {
         Self { qt: RefCell::new(QuadTree::with_bounds(r)) }
     }
 
-    pub fn add_shape(&self, s: Shape, tag: &Tag) -> Vec<ShapeIdx> {
+    pub fn add_shape(&self, s: Shape, tag: Tag) -> Vec<ShapeIdx> {
         self.qt.borrow_mut().add_shape(s, tag)
     }
 
@@ -33,17 +29,17 @@ impl Compound {
         self.qt.borrow_mut().remove_shape(s)
     }
 
-    pub fn intersects(&self, s: &Shape, q: TagQuery) -> bool {
+    pub fn intersects(&self, s: &Shape, q: Query) -> bool {
         self.qt.borrow_mut().intersects(s, q)
     }
 
     // N.B. this will check if any one shape in the compound contains |s|.
     // If |s| is covered using multiple shapes then that won't be detected.
-    pub fn contains(&self, s: &Shape, q: TagQuery) -> bool {
+    pub fn contains(&self, s: &Shape, q: Query) -> bool {
         self.qt.borrow_mut().contains(s, q)
     }
 
-    pub fn dist(&self, s: &Shape, q: TagQuery) -> f64 {
+    pub fn dist(&self, s: &Shape, q: Query) -> f64 {
         self.qt.borrow_mut().dist(s, q)
     }
 
@@ -62,16 +58,16 @@ impl ShapeOps for Compound {
     }
 
     fn intersects_shape(&self, s: &Shape) -> bool {
-        self.qt.borrow_mut().intersects(s, TagQuery::All)
+        self.qt.borrow_mut().intersects(s, Query::All)
     }
 
     // N.B. this will check if any one shape in the compound contains |s|.
     // If |s| is covered using multiple shapes then that won't be detected.
     fn contains_shape(&self, s: &Shape) -> bool {
-        self.qt.borrow_mut().contains(s, TagQuery::All)
+        self.qt.borrow_mut().contains(s, Query::All)
     }
 
     fn dist_to_shape(&self, s: &Shape) -> f64 {
-        self.qt.borrow_mut().dist(s, TagQuery::All)
+        self.qt.borrow_mut().dist(s, Query::All)
     }
 }

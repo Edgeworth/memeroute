@@ -8,11 +8,11 @@ use crate::model::primitive::ShapeOps;
 
 type NodeIdx = usize;
 pub type ShapeIdx = usize;
-pub type Tag = String;
+pub type Tag = usize;
 
-pub const EMPTY_TAG: &str = "";
+pub const NO_TAG: usize = usize::MAX;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Query {
     All,
     One(Tag),
@@ -38,7 +38,6 @@ struct Node {
     br: NodeIdx,
     tr: NodeIdx,
     tl: NodeIdx,
-    test_count: usize,
 }
 
 impl Default for Node {
@@ -50,7 +49,6 @@ impl Default for Node {
             br: NO_NODE,
             tr: NO_NODE,
             tl: NO_NODE,
-            test_count: 0,
         }
     }
 }
@@ -66,8 +64,8 @@ pub struct QuadTree {
 }
 
 impl QuadTree {
-    pub fn new(shapes: Vec<Shape>) -> Self {
-        let bounds = rt_cloud_bounds(shapes.iter().map(|s| s.bounds()));
+    pub fn new(shapes: Vec<(Shape, Tag)>) -> Self {
+        let bounds = rt_cloud_bounds(shapes.iter().map(|s| s.0.bounds()));
         let nodes = vec![
             Node::default(),
             Node {
@@ -99,7 +97,7 @@ impl QuadTree {
         rts
     }
 
-    pub fn shapes(&self) -> &[Shape] {
+    pub fn shapes(&self) -> &[(Shape, Tag)] {
         &self.shapes
     }
 
@@ -118,7 +116,7 @@ impl QuadTree {
     // Split compound shapes up.
     fn decompose_shape(s: Shape) -> Vec<Shape> {
         if let Shape::Compound(s) = s {
-            s.quadtree().shapes().to_vec()
+            s.quadtree().shapes().iter().map(|v| v.0.clone()).collect()
         } else if let Shape::Path(s) = s {
             s.caps().map(|v| v.shape()).collect()
         } else {
@@ -126,7 +124,7 @@ impl QuadTree {
         }
     }
 
-    pub fn add_shape(&mut self, s: Shape, tag: &Tag) -> Vec<ShapeIdx> {
+    pub fn add_shape(&mut self, s: Shape, tag: Tag) -> Vec<ShapeIdx> {
         let bounds = self.bounds().united(&s.bounds());
         // If this shape expands the bounds, rebuild the tree.
         // TODO: Don't rebuild the tree?
@@ -137,16 +135,16 @@ impl QuadTree {
             swap(&mut shapes, &mut self.shapes);
             for shape in s {
                 shape_idxs.push(shapes.len());
-                shapes.push(shape);
+                shapes.push((shape, tag));
             }
             *self = Self::new(shapes);
         } else {
             for shape in s {
                 let shape_idx = if let Some(shape_idx) = self.free_shapes.pop() {
-                    self.shapes[shape_idx] = shape;
+                    self.shapes[shape_idx] = (shape, tag);
                     shape_idx
                 } else {
-                    self.shapes.push(shape);
+                    self.shapes.push((shape, tag));
                     self.shapes.len() - 1
                 };
                 shape_idxs.push(shape_idx);
@@ -176,12 +174,12 @@ impl QuadTree {
 
     pub fn intersects(&mut self, s: &Shape, q: Query) -> bool {
         self.reset_cache();
-        self.inter(s, q, 1, self.bounds(), 0)
+        self.inter(s, &q, 1, self.bounds(), 0)
     }
 
     pub fn contains(&mut self, s: &Shape, q: Query) -> bool {
         self.reset_cache();
-        self.contain(s, q, 1, self.bounds(), 0)
+        self.contain(s, &q, 1, self.bounds(), 0)
     }
 
     pub fn dist(&mut self, _s: &Shape, _q: Query) -> f64 {
@@ -189,36 +187,48 @@ impl QuadTree {
     }
 
     fn cached_intersects(
-        shapes: &[Shape],
+        shapes: &[(Shape, Tag)],
         cache: &mut HashMap<ShapeIdx, bool>,
         idx: ShapeIdx,
         s: &Shape,
+        q: &Query,
     ) -> bool {
+        match q {
+            Query::One(tag) if tag != &shapes[idx].1 => return false,
+            Query::Except(tag) if tag == &shapes[idx].1 => return false,
+            _ => {}
+        }
         if let Some(res) = cache.get(&idx) {
             *res
         } else {
-            let res = shapes[idx].intersects_shape(s);
+            let res = shapes[idx].0.intersects_shape(s);
             cache.insert(idx, res);
             res
         }
     }
 
     fn cached_contains(
-        shapes: &[Shape],
+        shapes: &[(Shape, Tag)],
         cache: &mut HashMap<ShapeIdx, bool>,
         idx: ShapeIdx,
         s: &Shape,
+        q: &Query,
     ) -> bool {
+        match q {
+            Query::One(tag) if tag != &shapes[idx].1 => return false,
+            Query::Except(tag) if tag == &shapes[idx].1 => return false,
+            _ => {}
+        }
         if let Some(res) = cache.get(&idx) {
             *res
         } else {
-            let res = shapes[idx].contains_shape(s);
+            let res = shapes[idx].0.contains_shape(s);
             cache.insert(idx, res);
             res
         }
     }
 
-    fn inter(&mut self, s: &Shape, q: Query, idx: NodeIdx, r: Rt, depth: usize) -> bool {
+    fn inter(&mut self, s: &Shape, q: &Query, idx: NodeIdx, r: Rt, depth: usize) -> bool {
         // No intersection in this node if we don't intersect the bounds.
         if !s.intersects_shape(&r.shape()) {
             return false;
@@ -226,7 +236,7 @@ impl QuadTree {
 
         // If there are any shapes containing this node they must intersect with
         // |s| since it intersects |bounds|.
-        if q == Query::All && !self.nodes[idx].contain.is_empty() {
+        if *q == Query::All && !self.nodes[idx].contain.is_empty() {
             return true;
         }
 
@@ -261,9 +271,13 @@ impl QuadTree {
         let mut had_intersection = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            // todo and below
-            if Self::cached_intersects(&self.shapes, &mut self.intersect_cache, inter.shape_idx, s)
-            {
+            if Self::cached_intersects(
+                &self.shapes,
+                &mut self.intersect_cache,
+                inter.shape_idx,
+                s,
+                q,
+            ) {
                 had_intersection = true;
                 break;
             }
@@ -273,7 +287,7 @@ impl QuadTree {
         had_intersection
     }
 
-    fn contain(&mut self, s: &Shape, idx: NodeIdx, r: Rt, depth: usize) -> bool {
+    fn contain(&mut self, s: &Shape, q: &Query, idx: NodeIdx, r: Rt, depth: usize) -> bool {
         // No containment of |s| if the bounds don't intersect |s|.
         if !r.intersects_shape(s) {
             return false;
@@ -281,7 +295,7 @@ impl QuadTree {
 
         // If bounds contains |s| and there is something that contains the
         // bounds, then that contains |s|.
-        if !self.nodes[idx].contain.is_empty() && r.contains_shape(s) {
+        if *q == Query::All && !self.nodes[idx].contain.is_empty() && r.contains_shape(s) {
             return true;
         }
 
@@ -289,22 +303,22 @@ impl QuadTree {
         // the tree to be faster. Only actually do intersection tests if we have
         // to.
         if self.nodes[idx].bl != NO_NODE
-            && self.contain(s, self.nodes[idx].bl, r.bl_quadrant(), depth + 1)
+            && self.contain(s, q, self.nodes[idx].bl, r.bl_quadrant(), depth + 1)
         {
             return true;
         }
         if self.nodes[idx].br != NO_NODE
-            && self.contain(s, self.nodes[idx].br, r.br_quadrant(), depth + 1)
+            && self.contain(s, q, self.nodes[idx].br, r.br_quadrant(), depth + 1)
         {
             return true;
         }
         if self.nodes[idx].tr != NO_NODE
-            && self.contain(s, self.nodes[idx].tr, r.tr_quadrant(), depth + 1)
+            && self.contain(s, q, self.nodes[idx].tr, r.tr_quadrant(), depth + 1)
         {
             return true;
         }
         if self.nodes[idx].tl != NO_NODE
-            && self.contain(s, self.nodes[idx].tl, r.tl_quadrant(), depth + 1)
+            && self.contain(s, q, self.nodes[idx].tl, r.tl_quadrant(), depth + 1)
         {
             return true;
         }
@@ -313,7 +327,7 @@ impl QuadTree {
         let mut had_containment = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            if Self::cached_contains(&self.shapes, &mut self.contain_cache, inter.shape_idx, s) {
+            if Self::cached_contains(&self.shapes, &mut self.contain_cache, inter.shape_idx, s, q) {
                 had_containment = true;
                 break;
             }
@@ -335,7 +349,7 @@ impl QuadTree {
 
             for inter in push_down {
                 let Node { bl, br, tr, tl, .. } = self.nodes[idx];
-                let shape = &self.shapes[inter.shape_idx];
+                let shape = &self.shapes[inter.shape_idx].0;
 
                 // Put it into all children it intersects.
                 for (quad, quad_idx) in [
@@ -382,7 +396,8 @@ mod tests {
 
     #[test]
     fn test_quadtree_tri() {
-        let mut qt = QuadTree::new(vec![tri(pt(1.0, 2.0), pt(5.0, 2.0), pt(4.0, 5.0)).shape()]);
+        let mut qt =
+            QuadTree::new(vec![(tri(pt(1.0, 2.0), pt(5.0, 2.0), pt(4.0, 5.0)).shape(), NO_TAG)]);
         for _ in 0..TEST_THRESHOLD {
             assert!(qt.intersects(&pt(3.0, 3.0).shape(), Query::All));
         }
@@ -393,7 +408,10 @@ mod tests {
 
     #[test]
     fn test_quadtree_poly() {
-        let mut qt = QuadTree::new(vec![poly(&[pt(1.0, 2.0), pt(5.0, 2.0), pt(4.0, 5.0)]).shape()]);
+        let mut qt = QuadTree::new(vec![(
+            poly(&[pt(1.0, 2.0), pt(5.0, 2.0), pt(4.0, 5.0)]).shape(),
+            NO_TAG,
+        )]);
         for _ in 0..TEST_THRESHOLD {
             assert!(qt.intersects(&pt(3.0, 3.0).shape(), Query::All));
         }
@@ -411,7 +429,7 @@ mod tests {
             pt(138.798, -129.699),
         ])
         .shape();
-        let mut qt = QuadTree::new(vec![poly.clone()]);
+        let mut qt = QuadTree::new(vec![(poly.clone(), NO_TAG)]);
 
         let mut r = SmallRng::seed_from_u64(0);
         for _ in 0..100 {

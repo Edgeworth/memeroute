@@ -20,7 +20,7 @@ pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
 }
 
 pub fn cap_contains_rt(a: &Capsule, b: &Rt) -> bool {
-    // Bounding box check. 
+    // Bounding box check.
     if !a.bounds().contains_rt(b) {
         return false;
     }

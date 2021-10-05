@@ -10,10 +10,10 @@
     map_first_last,
     option_result_contains,
     stmt_expr_attributes,
-    const_panic,
     trait_alias
 )]
 
 pub mod dsn;
 pub mod model;
+pub mod name;
 pub mod route;

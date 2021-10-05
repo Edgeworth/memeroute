@@ -1,6 +1,7 @@
 use std::collections::hash_map::Values;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use std::sync::RwLock;
 
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use eyre::{eyre, Result};
@@ -12,6 +13,7 @@ use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::{pt, ShapeOps};
 use crate::model::tf::Tf;
+use crate::name::{Id, NameMap};
 
 // File-format independent representation of a PCB.
 // Units are in millimetres.
@@ -115,8 +117,6 @@ impl Iterator for BitSetIterator {
     }
 }
 
-pub type Id = String;
-
 #[derive(Debug, Clone)]
 pub struct LayerShape {
     pub layers: LayerSet,
@@ -181,15 +181,15 @@ pub struct Component {
 
 impl Component {
     pub fn add_pin(&mut self, p: Pin) {
-        self.pins.insert(p.id.clone(), p);
+        self.pins.insert(p.id, p);
     }
 
     pub fn pins(&self) -> Values<'_, Id, Pin> {
         self.pins.values()
     }
 
-    pub fn pin(&self, id: &str) -> Option<&Pin> {
-        self.pins.get(id)
+    pub fn pin(&self, id: Id) -> Option<&Pin> {
+        self.pins.get(&id)
     }
 
     pub fn tf(&self) -> Tf {
@@ -216,8 +216,8 @@ impl Padstack {
 // Describes a layer in a PCB.
 #[derive(Debug, Clone)]
 pub struct Layer {
-    pub name: Id,
-    pub id: LayerId,
+    pub name_id: Id,
+    pub layer_id: LayerId,
     pub kind: LayerKind,
 }
 
@@ -229,7 +229,7 @@ pub struct PinRef {
 
 impl PinRef {
     pub fn new(component: &Component, pin: &Pin) -> Self {
-        Self { component: component.id.clone(), pin: pin.id.clone() }
+        Self { component: component.id, pin: pin.id }
     }
 }
 
@@ -261,9 +261,10 @@ impl Via {
 }
 
 // Describes an overall PCB.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct Pcb {
     id: Id,
+    name_map: RwLock<NameMap>,
 
     // Physical structure:
     layers: Vec<Layer>,
@@ -276,19 +277,50 @@ pub struct Pcb {
     wires: Vec<Wire>,
     vias: Vec<Via>,
     nets: HashMap<Id, Net>,
-    pin_ref_net: HashMap<PinRef, Id>,
+    pin_ref_net: HashMap<PinRef, Id>, // Map PinRef to net ID.
 
     // Debug:
     debug_rts: Vec<Rt>,
 }
 
+impl Clone for Pcb {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            name_map: RwLock::new(self.name_map.read().unwrap().clone()),
+            layers: self.layers.clone(),
+            boundaries: self.boundaries.clone(),
+            keepouts: self.keepouts.clone(),
+            via_padstacks: self.via_padstacks.clone(),
+            components: self.components.clone(),
+            wires: self.wires.clone(),
+            vias: self.vias.clone(),
+            nets: self.nets.clone(),
+            pin_ref_net: self.pin_ref_net.clone(),
+            debug_rts: self.debug_rts.clone(),
+        }
+    }
+}
+
 impl Pcb {
-    pub fn set_id(&mut self, id: &str) {
-        self.id = id.to_owned();
+    pub fn name(&self, id: Id) -> String {
+        self.name_map.read().unwrap().name(id).to_string()
     }
 
-    pub fn id(&self) -> &Id {
-        &self.id
+    pub fn name_to_id(&self, name: &str) -> Id {
+        self.name_map.read().unwrap().name_to_id(name)
+    }
+
+    pub fn ensure_name(&self, name: &str) -> Id {
+        self.name_map.write().unwrap().ensure_name(name)
+    }
+
+    pub fn set_pcb_name(&mut self, name: &str) {
+        self.id = self.ensure_name(name);
+    }
+
+    pub fn pcb_id(&self) -> Id {
+        self.id
     }
 
     pub fn add_layer(&mut self, l: Layer) {
@@ -301,9 +333,9 @@ impl Pcb {
 
     pub fn layers_by_kind(&self, kind: LayerKind) -> LayerSet {
         if kind == LayerKind::All {
-            self.layers().iter().map(|v| v.id).collect()
+            self.layers().iter().map(|v| v.layer_id).collect()
         } else {
-            self.layers().iter().filter(|l| l.kind == kind).map(|v| v.id).collect()
+            self.layers().iter().filter(|l| l.kind == kind).map(|v| v.layer_id).collect()
         }
     }
 
@@ -332,15 +364,15 @@ impl Pcb {
     }
 
     pub fn add_component(&mut self, c: Component) {
-        self.components.insert(c.id.clone(), c);
+        self.components.insert(c.id, c);
     }
 
     pub fn components(&self) -> Values<'_, Id, Component> {
         self.components.values()
     }
 
-    pub fn component(&self, id: &str) -> Option<&Component> {
-        self.components.get(id)
+    pub fn component(&self, id: Id) -> Option<&Component> {
+        self.components.get(&id)
     }
 
     pub fn add_wire(&mut self, w: Wire) {
@@ -360,18 +392,18 @@ impl Pcb {
     }
 
     pub fn add_net(&mut self, n: Net) {
-        for p in n.pins {
-            self.pin_ref_net.insert(p.clone(), n.id.clone())
+        for p in n.pins.iter() {
+            self.pin_ref_net.insert(p.clone(), n.id);
         }
-        self.nets.insert(n.id.clone(), n);
+        self.nets.insert(n.id, n);
     }
 
     pub fn nets(&self) -> Values<'_, Id, Net> {
         self.nets.values()
     }
 
-    pub fn net(&self, id: &str) -> Option<&Net> {
-        self.nets.get(id)
+    pub fn net(&self, id: Id) -> Option<&Net> {
+        self.nets.get(&id)
     }
 
     pub fn add_debug_rt(&mut self, r: Rt) {
@@ -384,16 +416,16 @@ impl Pcb {
 
     pub fn pin_ref(&self, p: &PinRef) -> Result<(&Component, &Pin)> {
         let component = self
-            .component(&p.component)
+            .component(p.component)
             .ok_or_else(|| eyre!("unknown component id {}", p.component))?;
         let pin = component
-            .pin(&p.pin)
+            .pin(p.pin)
             .ok_or_else(|| eyre!("unknown pin id {} on component {}", p.pin, p.component))?;
         Ok((component, pin))
     }
 
     pub fn pin_ref_net(&self, p: &PinRef) -> Option<Id> {
-        self.pin_ref_net.get(p)
+        self.pin_ref_net.get(p).copied()
     }
 
     pub fn bounds(&self) -> Rt {

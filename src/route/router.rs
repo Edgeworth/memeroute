@@ -36,8 +36,8 @@ impl Router {
     }
 
     pub fn route(&mut self) -> Result<RouteResult> {
-        let mut net_order: Vec<_> = self.pcb.nets().map(|v| v.id.clone()).collect();
-        net_order.sort(); // TODO remove
+        let mut net_order: Vec<_> = self.pcb.nets().map(|v| v.id).collect();
+        net_order.sort_unstable(); // TODO remove
         let mut grid = GridRouter::new(self.pcb.clone(), net_order);
         grid.route()
     }

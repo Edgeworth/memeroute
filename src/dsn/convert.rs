@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use eyre::{eyre, Result};
 
 use crate::dsn::types::{
-    DsnComponent, DsnDimensionUnit, DsnId, DsnImage, DsnKeepout, DsnKeepoutType, DsnLayerId,
-    DsnLayerType, DsnNet, DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
+    DsnComponent, DsnDimensionUnit, DsnImage, DsnKeepout, DsnKeepoutType, DsnLayerType, DsnNet,
+    DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
 };
 use crate::model::geom::math::{eq, pt_eq};
 use crate::model::pcb::{
@@ -14,14 +14,15 @@ use crate::model::pcb::{
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::{circ, path, poly, rt, ShapeOps};
+use crate::name::Id;
 
 #[derive(Debug, Clone)]
 pub struct Converter {
     dsn: DsnPcb,
     pcb: Pcb,
-    padstacks: HashMap<DsnId, Padstack>,
-    images: HashMap<DsnId, Component>,
-    layers: HashMap<DsnLayerId, LayerId>,
+    padstacks: HashMap<Id, Padstack>,
+    images: HashMap<Id, Component>,
+    layers: HashMap<Id, LayerId>,
 }
 
 impl Converter {
@@ -73,7 +74,12 @@ impl Converter {
             "mixed" => self.pcb.layers_by_kind(LayerKind::Mixed),
             "power" => self.pcb.layers_by_kind(LayerKind::Power),
             "pcb" => self.pcb.layers_by_kind(LayerKind::All), // Pcb used for boundary. Put on all layers.
-            _ => LayerSet::one(*self.layers.get(id).ok_or_else(|| eyre!("unknown layer {}", id))?),
+            _ => LayerSet::one(
+                *self
+                    .layers
+                    .get(&self.pcb.ensure_name(id))
+                    .ok_or_else(|| eyre!("unknown layer {}", id))?,
+            ),
         })
     }
 
@@ -120,7 +126,7 @@ impl Converter {
 
     fn padstack(&self, v: &DsnPadstack) -> Result<Padstack> {
         Ok(Padstack {
-            id: v.padstack_id.clone(),
+            id: self.pcb.ensure_name(&v.padstack_id),
             shapes: v.shapes.iter().map(|s| self.shape(&s.shape)).collect::<Result<_>>()?,
             attach: v.attach,
         })
@@ -128,10 +134,10 @@ impl Converter {
 
     fn pin(&self, v: &DsnPin) -> Result<Pin> {
         Ok(Pin {
-            id: v.pin_id.clone(),
+            id: self.pcb.ensure_name(&v.pin_id),
             padstack: self
                 .padstacks
-                .get(&v.padstack_id)
+                .get(&self.pcb.ensure_name(&v.padstack_id))
                 .ok_or_else(|| eyre!("missing padstack with id {}", v.padstack_id))?
                 .clone(),
             rotation: self.rot(v.rotation),
@@ -155,10 +161,10 @@ impl Converter {
         for pl in v.refs.iter() {
             let mut c = self
                 .images
-                .get(&v.image_id)
+                .get(&self.pcb.ensure_name(&v.image_id))
                 .ok_or_else(|| eyre!("missing image with id {}", v.image_id))?
                 .clone();
-            c.id = pl.component_id.clone();
+            c.id = self.pcb.ensure_name(&pl.component_id);
             c.p = self.pt(pl.p);
             c.side = match pl.side {
                 DsnSide::Front => Side::Front,
@@ -173,18 +179,25 @@ impl Converter {
 
     fn net(&self, v: &DsnNet) -> Result<Net> {
         Ok(Net {
-            id: v.net_id.clone(),
+            id: self.pcb.ensure_name(&v.net_id),
             pins: v
                 .pins
                 .iter()
-                .map(|p| PinRef { component: p.component_id.clone(), pin: p.pin_id.clone() })
+                .map(|p| PinRef {
+                    component: self.pcb.ensure_name(&p.component_id),
+                    pin: self.pcb.ensure_name(&p.pin_id),
+                })
                 .collect(),
         })
     }
 
     fn convert_padstacks(&mut self) -> Result<()> {
         for v in self.dsn.library.padstacks.iter() {
-            if self.padstacks.insert(v.padstack_id.clone(), self.padstack(v)?).is_some() {
+            if self
+                .padstacks
+                .insert(self.pcb.ensure_name(&v.padstack_id), self.padstack(v)?)
+                .is_some()
+            {
                 return Err(eyre!("duplicate padstack with id {}", v.padstack_id));
             }
         }
@@ -193,7 +206,7 @@ impl Converter {
 
     fn convert_images(&mut self) -> Result<()> {
         for v in self.dsn.library.images.iter() {
-            if self.images.insert(v.image_id.clone(), self.image(v)?).is_some() {
+            if self.images.insert(self.pcb.ensure_name(&v.image_id), self.image(v)?).is_some() {
                 return Err(eyre!("duplicate image with id {}", v.image_id));
             }
         }
@@ -201,7 +214,7 @@ impl Converter {
     }
 
     pub fn convert(mut self) -> Result<Pcb> {
-        self.pcb.set_id(&self.dsn.pcb_id);
+        self.pcb.set_pcb_name(&self.dsn.pcb_id);
         if self.dsn.unit.dimension != self.dsn.resolution.dimension {
             return Err(eyre!(
                 "unit override unimplemented: {} {}",
@@ -213,7 +226,7 @@ impl Converter {
         // Layers needed for padstacks and images.
         for (id, v) in self.dsn.structure.layers.iter().enumerate() {
             let id = id as LayerId;
-            if self.layers.insert(v.layer_name.clone(), id).is_some() {
+            if self.layers.insert(self.pcb.ensure_name(&v.layer_name), id).is_some() {
                 return Err(eyre!("duplicate layer with id {}", v.layer_name));
             }
             let kind = match v.layer_type {
@@ -222,7 +235,11 @@ impl Converter {
                 DsnLayerType::Mixed => LayerKind::Mixed,
                 DsnLayerType::Jumper => LayerKind::Jumper,
             };
-            self.pcb.add_layer(Layer { name: v.layer_name.clone(), id, kind });
+            self.pcb.add_layer(Layer {
+                name_id: self.pcb.ensure_name(&v.layer_name),
+                layer_id: id,
+                kind,
+            });
         }
 
         self.convert_padstacks()?; // Padstacks are used in images.
@@ -239,7 +256,10 @@ impl Converter {
         }
         for v in self.dsn.structure.vias.iter() {
             self.pcb.add_via_padstack(
-                self.padstacks.get(v).ok_or_else(|| eyre!("unknown padstack id {}", v))?.clone(),
+                self.padstacks
+                    .get(&self.pcb.ensure_name(v))
+                    .ok_or_else(|| eyre!("unknown padstack id {}", v))?
+                    .clone(),
             );
         }
         for v in self.dsn.placement.components.iter() {
