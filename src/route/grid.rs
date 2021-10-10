@@ -9,7 +9,7 @@ use crate::model::geom::quadtree::Query;
 use crate::model::pcb::{LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::rect::{Rt, RtI};
-use crate::model::primitive::{circ, path, pt, pti, ShapeOps};
+use crate::model::primitive::{circ, pt, pti, ShapeOps};
 use crate::model::tf::Tf;
 use crate::name::{Id, NO_ID};
 use crate::route::place_model::PlaceModel;
@@ -53,7 +53,6 @@ pub type BlockMap = HashMap<State, i64>;
 
 #[derive(Debug, Clone)]
 pub struct GridRouter {
-    pcb: Pcb,
     resolution: f64,
     place: PlaceModel,
     net_order: Vec<Id>,
@@ -61,38 +60,27 @@ pub struct GridRouter {
 
 impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
-        let mut place = PlaceModel::new();
-        place.add_pcb(&pcb);
-        Self { pcb, resolution: 0.2, place, net_order }
+        let place = PlaceModel::new(pcb);
+        Self { resolution: 0.8, place, net_order }
     }
 
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
-        let (component, pin) = self.pcb.pin_ref(pin_ref)?;
+        let (component, pin) = self.place.pcb().pin_ref(pin_ref)?;
         let p = self.grid_pt((component.tf() * pin.tf()).pt(Pt::zero()));
         // TODO: Assumes connect to the center of the pin. Look at padstack instead.
         let layers = pin.padstack.shapes.iter().map(|v| v.layers).collect();
-        let net_id = self.pcb.pin_ref_net(pin_ref).ok_or_else(|| eyre!("missing net id"))?;
+        let net_id =
+            self.place.pcb().pin_ref_net(pin_ref).ok_or_else(|| eyre!("missing net id"))?;
         Ok(State { p, layers, net_id })
     }
 
     fn wire_from_states(&self, states: &[State]) -> Wire {
         let pts: Vec<_> = states.iter().map(|s| self.world_pt_mid(s.p)).collect();
-        Wire {
-            shape: LayerShape {
-                layers: LayerSet::one(states[0].layers.id().unwrap()),
-                shape: path(&pts, self.resolution * 0.8).shape(),
-            },
-            net_id: states[0].net_id,
-        }
+        self.place.create_wire(states[0].net_id, states[0].layers.id().unwrap(), &pts)
     }
 
     fn via_from_state(&self, state: &State) -> Via {
-        // TODO: Uses only one type of via.
-        Via {
-            padstack: self.pcb.via_padstacks()[0].clone(),
-            p: self.world_pt_mid(state.p),
-            net_id: state.net_id,
-        }
+        self.place.create_via(state.net_id, self.world_pt_mid(state.p))
     }
 
     fn grid_pt(&self, p: Pt) -> PtI {
@@ -281,7 +269,7 @@ impl GridRouter {
     }
 
     fn draw_debug(&mut self, res: &mut RouteResult) {
-        let bounds = self.pcb.bounds();
+        let bounds = self.place.pcb().bounds();
         // let bounds = rt(77.0495, -125.1745, 79.099, -120.75);
         let bounds =
             RtI::enclosing(self.grid_pt(bounds.bl()), self.grid_pt(bounds.tr()) + pti(1, 1));
@@ -310,11 +298,16 @@ impl RouteStrategy for GridRouter {
     fn route(&mut self) -> Result<RouteResult> {
         let mut res = RouteResult::default();
         for net_id in self.net_order.clone().into_iter() {
-            let net = self.pcb.net(net_id).ok_or_else(|| eyre!("missing net {}", net_id))?.clone();
+            let net = self
+                .place
+                .pcb()
+                .net(net_id)
+                .ok_or_else(|| eyre!("missing net {}", net_id))?
+                .clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
             let sub_result = self.connect(states)?;
-            println!("done {}, failed {}", net_id, sub_result.failed);
+            println!("done {}, failed {}", self.place.pcb().name(net_id), sub_result.failed);
             // Mark wires and vias.
             for wire in sub_result.wires.iter() {
                 self.place.add_wire(wire);
