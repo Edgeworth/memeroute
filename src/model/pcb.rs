@@ -4,6 +4,7 @@ use std::iter::FromIterator;
 use std::sync::RwLock;
 
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
+use enumset::{EnumSet, EnumSetType};
 use eyre::{eyre, Result};
 use rust_dense_bitset::{BitSet, DenseBitSet};
 
@@ -21,7 +22,7 @@ use crate::name::{Id, NameMap};
 
 pub type LayerId = u8;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum LayerKind {
     All,
     Signal,
@@ -260,6 +261,59 @@ impl Via {
     }
 }
 
+// Object types
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum ObjectType {
+    Area, // Keepout, boundary, or conducting shapes (fills)
+    Pin,  // Through hole pin objects
+    Smd,  // Surface mount pad shapes
+    Via,  // Vias
+    Wire, // Wires
+}
+
+#[derive(Debug, EnumSetType)]
+pub enum ClearanceType {
+    AreaArea,
+    PinArea,
+    PinPin,
+    SmdArea,
+    SmdPin,
+    SmdSmd,
+    ViaArea,
+    ViaPin,
+    ViaSmd,
+    ViaVia,
+    WireArea,
+    WirePin,
+    WireSmd,
+    WireVia,
+    WireWire,
+}
+
+// If there are multple clearances specified for a ClearanceType,
+// take the most specific clearance, defined by the fewest number of ClearanceTypes.
+// If there are multiple such clearances, take the one with the largest value.
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct Clearance {
+    pub amount: f64,
+    pub types: EnumSet<ClearanceType>,
+}
+
+// Describes various rules for layout of tracks.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Rule {
+    Width(f64),           // e.g. Width of track
+    Clearance(Clearance), // e.g. Minimum distance between track and via.
+    UseVia(Id),           // Use the specified via if this rule applies.
+}
+
+// Collection of rules that e.g. may apply to a given net.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RuleSet {
+    pub id: Id,
+    pub rules: Vec<Rule>,
+}
+
 // Describes an overall PCB.
 #[derive(Debug, Default)]
 pub struct Pcb {
@@ -277,7 +331,12 @@ pub struct Pcb {
     wires: Vec<Wire>,
     vias: Vec<Via>,
     nets: HashMap<Id, Net>,
-    pin_ref_net: HashMap<PinRef, Id>, // Map PinRef to net ID.
+    pin_ref_to_net: HashMap<PinRef, Id>, // Map PinRef to net ID.
+
+    // Rules:
+    rulesets: HashMap<Id, RuleSet>,
+    net_to_ruleset: HashMap<Id, Id>,
+    default_net_ruleset: Id,
 
     // Debug:
     debug_rts: Vec<Rt>,
@@ -296,7 +355,10 @@ impl Clone for Pcb {
             wires: self.wires.clone(),
             vias: self.vias.clone(),
             nets: self.nets.clone(),
-            pin_ref_net: self.pin_ref_net.clone(),
+            pin_ref_to_net: self.pin_ref_to_net.clone(),
+            rulesets: self.rulesets.clone(),
+            net_to_ruleset: self.net_to_ruleset.clone(),
+            default_net_ruleset: self.default_net_ruleset,
             debug_rts: self.debug_rts.clone(),
         }
     }
@@ -315,6 +377,36 @@ impl Pcb {
         self.name_map.write().unwrap().ensure_name(name)
     }
 
+    pub fn layers_by_kind(&self, kind: LayerKind) -> LayerSet {
+        if kind == LayerKind::All {
+            self.layers().iter().map(|v| v.layer_id).collect()
+        } else {
+            self.layers().iter().filter(|l| l.kind == kind).map(|v| v.layer_id).collect()
+        }
+    }
+
+    pub fn pin_ref(&self, p: &PinRef) -> Result<(&Component, &Pin)> {
+        let component = self
+            .component(p.component)
+            .ok_or_else(|| eyre!("unknown component id {}", p.component))?;
+        let pin = component
+            .pin(p.pin)
+            .ok_or_else(|| eyre!("unknown pin id {} on component {}", p.pin, p.component))?;
+        Ok((component, pin))
+    }
+
+    pub fn pin_ref_net(&self, p: &PinRef) -> Option<Id> {
+        self.pin_ref_to_net.get(p).copied()
+    }
+
+    pub fn bounds(&self) -> Rt {
+        // Assumes boundaries are valid.
+        rt_cloud_bounds(self.boundaries().iter().map(|v| v.shape.bounds()))
+    }
+}
+
+// Getting and setting
+impl Pcb {
     pub fn set_pcb_name(&mut self, name: &str) {
         self.id = self.ensure_name(name);
     }
@@ -323,20 +415,29 @@ impl Pcb {
         self.id
     }
 
+    pub fn add_ruleset(&mut self, r: RuleSet) {
+        self.rulesets.insert(r.id, r);
+    }
+
+    pub fn set_default_net_ruleset(&mut self, id: Id) {
+        self.default_net_ruleset = id;
+    }
+
+    pub fn set_net_ruleset(&mut self, net_id: Id, ruleset_id: Id) {
+        self.net_to_ruleset.insert(net_id, ruleset_id);
+    }
+
+    pub fn net_ruleset(&self, net_id: Id) -> &RuleSet {
+        let ruleset_id = self.net_to_ruleset.get(&net_id).unwrap_or(&self.default_net_ruleset);
+        self.rulesets.get(ruleset_id).unwrap()
+    }
+
     pub fn add_layer(&mut self, l: Layer) {
         self.layers.push(l);
     }
 
     pub fn layers(&self) -> &[Layer] {
         &self.layers
-    }
-
-    pub fn layers_by_kind(&self, kind: LayerKind) -> LayerSet {
-        if kind == LayerKind::All {
-            self.layers().iter().map(|v| v.layer_id).collect()
-        } else {
-            self.layers().iter().filter(|l| l.kind == kind).map(|v| v.layer_id).collect()
-        }
     }
 
     pub fn add_boundary(&mut self, s: LayerShape) {
@@ -393,7 +494,7 @@ impl Pcb {
 
     pub fn add_net(&mut self, n: Net) {
         for p in n.pins.iter() {
-            self.pin_ref_net.insert(p.clone(), n.id);
+            self.pin_ref_to_net.insert(p.clone(), n.id);
         }
         self.nets.insert(n.id, n);
     }
@@ -412,24 +513,5 @@ impl Pcb {
 
     pub fn debug_rts(&self) -> &[Rt] {
         &self.debug_rts
-    }
-
-    pub fn pin_ref(&self, p: &PinRef) -> Result<(&Component, &Pin)> {
-        let component = self
-            .component(p.component)
-            .ok_or_else(|| eyre!("unknown component id {}", p.component))?;
-        let pin = component
-            .pin(p.pin)
-            .ok_or_else(|| eyre!("unknown pin id {} on component {}", p.pin, p.component))?;
-        Ok((component, pin))
-    }
-
-    pub fn pin_ref_net(&self, p: &PinRef) -> Option<Id> {
-        self.pin_ref_net.get(p).copied()
-    }
-
-    pub fn bounds(&self) -> Rt {
-        // Assumes boundaries are valid.
-        rt_cloud_bounds(self.boundaries().iter().map(|v| v.shape.bounds()))
     }
 }

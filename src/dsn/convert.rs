@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 
+use enumset::{enum_set, EnumSet};
 use eyre::{eyre, Result};
 
 use crate::dsn::types::{
-    DsnComponent, DsnDimensionUnit, DsnImage, DsnKeepout, DsnKeepoutType, DsnLayerType, DsnNet,
-    DsnPadstack, DsnPcb, DsnPin, DsnRect, DsnShape, DsnSide,
+    DsnCircuit, DsnClass, DsnClearance, DsnClearanceType, DsnComponent, DsnDimensionUnit, DsnImage,
+    DsnKeepout, DsnKeepoutType, DsnLayerType, DsnNet, DsnPadstack, DsnPcb, DsnPin, DsnRect,
+    DsnRule, DsnShape, DsnSide,
 };
 use crate::model::geom::math::{eq, pt_eq};
 use crate::model::pcb::{
-    Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet, LayerShape, Net,
-    Padstack, Pcb, Pin, PinRef, Side,
+    Clearance, ClearanceType, Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet,
+    LayerShape, Net, Padstack, Pcb, Pin, PinRef, Rule, RuleSet, Side,
 };
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -177,8 +179,8 @@ impl Converter {
         Ok(components)
     }
 
-    fn net(&self, v: &DsnNet) -> Result<Net> {
-        Ok(Net {
+    fn net(&self, v: &DsnNet) -> Net {
+        Net {
             id: self.pcb.ensure_name(&v.net_id),
             pins: v
                 .pins
@@ -188,7 +190,39 @@ impl Converter {
                     pin: self.pcb.ensure_name(&p.pin_id),
                 })
                 .collect(),
-        })
+        }
+    }
+
+    fn clearance_type(&self, v: &DsnClearanceType) -> EnumSet<ClearanceType> {
+        match v {
+            DsnClearanceType::DefaultSmd => EnumSet::all(),
+            DsnClearanceType::SmdSmd => enum_set!(ClearanceType::SmdSmd),
+        }
+    }
+
+    fn clearance(&self, v: &DsnClearance) -> Clearance {
+        let types = v.types.iter().fold(enum_set!(), |a, b| a | self.clearance_type(b));
+        Clearance { amount: v.amount, types }
+    }
+
+    fn rule(&self, v: &DsnRule) -> Rule {
+        match v {
+            DsnRule::Width(w) => Rule::Width(*w),
+            DsnRule::Clearance(c) => Rule::Clearance(self.clearance(c)),
+        }
+    }
+
+    fn circuit(&self, v: &DsnCircuit) -> Rule {
+        match v {
+            DsnCircuit::UseVia(name) => Rule::UseVia(self.pcb.ensure_name(name)),
+        }
+    }
+
+    fn ruleset(&self, v: &DsnClass) -> RuleSet {
+        let id = self.pcb.ensure_name(&v.class_id);
+        let mut rules: Vec<Rule> = v.rules.iter().map(|r| self.rule(r)).collect();
+        rules.extend(v.circuits.iter().map(|c| self.circuit(c)));
+        RuleSet { id, rules }
     }
 
     fn convert_padstacks(&mut self) -> Result<()> {
@@ -270,12 +304,25 @@ impl Converter {
 
         // Routing:
         for v in self.dsn.network.nets.iter() {
-            self.pcb.add_net(self.net(v)?);
+            self.pcb.add_net(self.net(v));
+        }
+        for v in self.dsn.network.classes.iter() {
+            let ruleset = self.ruleset(v);
+            self.pcb.add_ruleset(ruleset.clone());
+            // Check for default ruleset:
+            if v.net_ids.is_empty() {
+                self.pcb.set_default_net_ruleset(ruleset.id)
+            } else {
+                for net in v.net_ids.iter() {
+                    self.pcb.set_net_ruleset(self.pcb.ensure_name(net), ruleset.id)
+                }
+            }
         }
 
         // TODO: Add wires
         // TODO: Add vias
         // TODO: Support classes for nets.
+        // TODO: Support rules from structure.
         Ok(self.pcb)
     }
 }
