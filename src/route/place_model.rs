@@ -3,10 +3,15 @@ use std::collections::HashMap;
 use eyre::Result;
 
 use crate::model::geom::quadtree::{Query, ShapeIdx, Tag, NO_TAG};
-use crate::model::pcb::{LayerId, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Via, Wire};
+use crate::model::pcb::{
+    LayerId, LayerSet, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Via, Wire,
+};
 use crate::model::primitive::compound::Compound;
+use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
+use crate::model::primitive::{path, ShapeOps};
 use crate::model::tf::Tf;
+use crate::name::Id;
 
 pub type PlaceId = (LayerId, ShapeIdx);
 
@@ -14,6 +19,7 @@ pub type PlaceId = (LayerId, ShapeIdx);
 // but also keeping them for hole drils
 #[derive(Debug, Default, Clone)]
 pub struct PlaceModel {
+    pcb: Pcb,
     boundary: HashMap<LayerId, Compound>,
     blocked: HashMap<LayerId, Compound>,
     pins: HashMap<PinRef, Vec<PlaceId>>, // Record which pins correspond to which place ids in |blocked|.
@@ -21,13 +27,16 @@ pub struct PlaceModel {
 }
 
 impl PlaceModel {
-    pub fn new() -> Self {
-        Self {
+    pub fn new(pcb: Pcb) -> Self {
+        let mut m = Self {
+            pcb: Pcb::default(), // Initially set as empty since we will initialise.
             boundary: HashMap::new(),
             blocked: HashMap::new(),
             pins: HashMap::new(),
             bounds: Rt::empty(),
-        }
+        };
+        m.init(pcb);
+        m
     }
 
     pub fn debug_rts(&self) -> Vec<Rt> {
@@ -35,7 +44,76 @@ impl PlaceModel {
         self.blocked.get(&1).unwrap().quadtree().rts()
     }
 
-    pub fn add_pcb(&mut self, pcb: &Pcb) {
+    pub fn pcb(&self) -> &Pcb {
+        &self.pcb
+    }
+
+    // Creates a wire for a given net, but doesn't add it.
+    pub fn create_wire(&self, net_id: Id, layer: u8, pts: &[Pt]) -> Wire {
+        let shape = LayerShape { layers: LayerSet::one(layer), shape: path(pts, 0.1).shape() };
+        Wire { shape, net_id }
+    }
+
+    pub fn add_wire(&mut self, wire: &Wire) -> Vec<PlaceId> {
+        Self::add_shape(self.bounds, &mut self.blocked, &Tf::identity(), &wire.shape, wire.net_id)
+    }
+
+    // Creates a via for a given net, but doesn't add it.
+    pub fn create_via(&self, net_id: Id, p: Pt) -> Via {
+        Via { padstack: self.pcb.via_padstacks()[0].clone(), p, net_id }
+    }
+
+    pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
+        self.add_padstack(&via.tf(), &via.padstack, via.net_id)
+    }
+
+    // Adds all pins in the given net.
+    pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
+        for p in net.pins.iter() {
+            let (component, pin) = pcb.pin_ref(p)?;
+            self.add_pin(&component.tf(), p.clone(), pin, net.id);
+        }
+        Ok(())
+    }
+
+    // Removes all pins in the given net.
+    pub fn remove_net(&mut self, net: &Net) {
+        for p in net.pins.iter() {
+            self.remove_pin(p);
+        }
+    }
+
+    pub fn is_wire_blocked(&self, wire: &Wire, q: Query) -> bool {
+        self.is_shape_blocked(&Tf::identity(), &wire.shape, q)
+    }
+
+    pub fn is_via_blocked(&self, via: &Via, q: Query) -> bool {
+        self.is_padstack_blocked(&via.tf(), &via.padstack, q)
+    }
+
+    pub fn is_shape_blocked(&self, tf: &Tf, ls: &LayerShape, q: Query) -> bool {
+        let s = tf.shape(&ls.shape);
+
+        for layer in ls.layers.iter() {
+            if let Some(boundary) = self.boundary.get(&layer) {
+                if !boundary.contains(&s, q) {
+                    return true;
+                }
+            }
+        }
+
+        for layer in ls.layers.iter() {
+            if let Some(blocked) = self.blocked.get(&layer) {
+                if blocked.intersects(&s, q) {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    fn init(&mut self, pcb: Pcb) {
         let tf = Tf::identity();
 
         self.bounds = self.bounds.united(&pcb.bounds());
@@ -64,14 +142,7 @@ impl PlaceModel {
                 Self::add_shape(self.bounds, &mut self.blocked, &tf, &keepout.shape, NO_TAG);
             }
         }
-    }
-
-    pub fn add_wire(&mut self, wire: &Wire) -> Vec<PlaceId> {
-        Self::add_shape(self.bounds, &mut self.blocked, &Tf::identity(), &wire.shape, wire.net_id)
-    }
-
-    pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
-        self.add_padstack(&via.tf(), &via.padstack, via.net_id)
+        self.pcb = pcb;
     }
 
     fn add_shape(
@@ -123,54 +194,8 @@ impl PlaceModel {
         }
     }
 
-    // Adds all pins in the given net.
-    pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
-        for p in net.pins.iter() {
-            let (component, pin) = pcb.pin_ref(p)?;
-            self.add_pin(&component.tf(), p.clone(), pin, net.id);
-        }
-        Ok(())
-    }
-
-    // Removes all pins in the given net.
-    pub fn remove_net(&mut self, net: &Net) {
-        for p in net.pins.iter() {
-            self.remove_pin(p);
-        }
-    }
-
     fn remove_shape(&mut self, id: PlaceId) {
         self.blocked.get_mut(&id.0).unwrap().remove_shape(id.1);
-    }
-
-    pub fn is_shape_blocked(&self, tf: &Tf, ls: &LayerShape, q: Query) -> bool {
-        let s = tf.shape(&ls.shape);
-
-        for layer in ls.layers.iter() {
-            if let Some(boundary) = self.boundary.get(&layer) {
-                if !boundary.contains(&s, q) {
-                    return true;
-                }
-            }
-        }
-
-        for layer in ls.layers.iter() {
-            if let Some(blocked) = self.blocked.get(&layer) {
-                if blocked.intersects(&s, q) {
-                    return true;
-                }
-            }
-        }
-
-        false
-    }
-
-    pub fn is_wire_blocked(&self, wire: &Wire, q: Query) -> bool {
-        self.is_shape_blocked(&Tf::identity(), &wire.shape, q)
-    }
-
-    pub fn is_via_blocked(&self, via: &Via, q: Query) -> bool {
-        self.is_padstack_blocked(&via.tf(), &via.padstack, q)
     }
 
     fn is_padstack_blocked(&self, tf: &Tf, padstack: &Padstack, q: Query) -> bool {
