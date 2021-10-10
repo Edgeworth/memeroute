@@ -202,12 +202,12 @@ impl Converter {
 
     fn clearance(&self, v: &DsnClearance) -> Clearance {
         let types = v.types.iter().fold(enum_set!(), |a, b| a | self.clearance_type(b));
-        Clearance { amount: v.amount, types }
+        Clearance { amount: self.coord(v.amount), types }
     }
 
     fn rule(&self, v: &DsnRule) -> Rule {
         match v {
-            DsnRule::Width(w) => Rule::Width(*w),
+            DsnRule::Width(w) => Rule::Radius(self.coord(*w) / 2.0),
             DsnRule::Clearance(c) => Rule::Clearance(self.clearance(c)),
         }
     }
@@ -218,11 +218,11 @@ impl Converter {
         }
     }
 
-    fn ruleset(&self, v: &DsnClass) -> RuleSet {
+    fn ruleset(&self, v: &DsnClass) -> Result<RuleSet> {
         let id = self.pcb.ensure_name(&v.class_id);
         let mut rules: Vec<Rule> = v.rules.iter().map(|r| self.rule(r)).collect();
         rules.extend(v.circuits.iter().map(|c| self.circuit(c)));
-        RuleSet { id, rules }
+        RuleSet::new(id, rules)
     }
 
     fn convert_padstacks(&mut self) -> Result<()> {
@@ -307,7 +307,7 @@ impl Converter {
             self.pcb.add_net(self.net(v));
         }
         for v in self.dsn.network.classes.iter() {
-            let ruleset = self.ruleset(v);
+            let ruleset = self.ruleset(v)?;
             self.pcb.add_ruleset(ruleset.clone());
             // Check for default ruleset:
             if v.net_ids.is_empty() {
