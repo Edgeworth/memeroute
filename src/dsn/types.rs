@@ -329,9 +329,9 @@ pub struct DsnNet {
 //    (use_via {[<padstack_id> |
 //        (use_array <via_array_template_id> [<row> <column>])]})]
 // Describes some rules about routing. Included within a class.
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct DsnCircuit {
-    pub use_via: DsnId, // Padstack id of via to use
+#[derive(Debug, Clone, PartialEq)]
+pub enum DsnCircuit {
+    UseVia(DsnId), // Padstack id of via to use
 }
 
 // <clearance_type> = [<object_type>_<object_type> | smd_via_same_net |

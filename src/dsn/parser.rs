@@ -522,7 +522,7 @@ impl Parser {
             if pt.tok == Tok::Lparen {
                 let t = self.peek(1)?;
                 match t.tok {
-                    Tok::Circuit => v.circuits.push(self.circuit()?),
+                    Tok::Circuit => v.circuits.extend(self.circuit()?),
                     Tok::Rule => v.rules.extend(self.rule()?),
                     _ => return Err(eyre!("unrecognised token '{}'", t)),
                 }
@@ -534,8 +534,8 @@ impl Parser {
         Ok(v)
     }
 
-    fn circuit(&mut self) -> Result<DsnCircuit> {
-        let mut v = DsnCircuit::default();
+    fn circuit(&mut self) -> Result<Vec<DsnCircuit>> {
+        let mut v = Vec::new();
         self.expect(Tok::Lparen)?;
         self.expect(Tok::Circuit)?;
         while self.peek(0)?.tok != Tok::Rparen {
@@ -544,7 +544,7 @@ impl Parser {
                 Tok::UseVia => {
                     self.expect(Tok::Lparen)?;
                     self.expect(Tok::UseVia)?;
-                    v.use_via = self.literal()?;
+                    v.push(DsnCircuit::UseVia(self.literal()?));
                     self.expect(Tok::Rparen)?;
                 }
                 _ => return Err(eyre!("unrecognised token '{}'", t)),
