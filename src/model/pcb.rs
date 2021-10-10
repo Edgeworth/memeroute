@@ -302,7 +302,7 @@ pub struct Clearance {
 // Describes various rules for layout of tracks.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Rule {
-    Width(f64),           // e.g. Width of track
+    Radius(f64),          // e.g. Half-width of track
     Clearance(Clearance), // e.g. Minimum distance between track and via.
     UseVia(Id),           // Use the specified via if this rule applies.
 }
@@ -311,7 +311,34 @@ pub enum Rule {
 #[derive(Debug, Clone, PartialEq)]
 pub struct RuleSet {
     pub id: Id,
-    pub rules: Vec<Rule>,
+    rules: Vec<Rule>,
+    radius: Option<f64>,
+}
+
+impl RuleSet {
+    pub fn new(id: Id, rules: Vec<Rule>) -> Result<Self> {
+        let mut rs = Self { id, rules, radius: None };
+        // Check for consistency:
+        for rule in rs.rules.iter() {
+            match rule {
+                Rule::Radius(r) => {
+                    if rs.radius.is_some() {
+                        return Err(eyre!("Multple width rules"));
+                    } else {
+                        rs.radius = Some(*r);
+                    }
+                }
+                Rule::Clearance(_) => {}
+                Rule::UseVia(_) => {}
+            }
+        }
+
+        Ok(rs)
+    }
+
+    pub fn radius(&self) -> f64 {
+        self.radius.unwrap()
+    }
 }
 
 // Describes an overall PCB.

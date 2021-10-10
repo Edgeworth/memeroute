@@ -50,7 +50,9 @@ impl PlaceModel {
 
     // Creates a wire for a given net, but doesn't add it.
     pub fn create_wire(&self, net_id: Id, layer: u8, pts: &[Pt]) -> Wire {
-        let shape = LayerShape { layers: LayerSet::one(layer), shape: path(pts, 0.1).shape() };
+        let rs = self.pcb.net_ruleset(net_id);
+        let shape =
+            LayerShape { layers: LayerSet::one(layer), shape: path(pts, rs.radius()).shape() };
         Wire { shape, net_id }
     }
 
@@ -60,6 +62,7 @@ impl PlaceModel {
 
     // Creates a via for a given net, but doesn't add it.
     pub fn create_via(&self, net_id: Id, p: Pt) -> Via {
+        // TODO: consult ruleset.
         Via { padstack: self.pcb.via_padstacks()[0].clone(), p, net_id }
     }
 
