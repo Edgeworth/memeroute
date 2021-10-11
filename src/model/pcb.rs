@@ -119,7 +119,8 @@ impl Iterator for BitSetIterator {
     }
 }
 
-// Describes a layer in a PCB.
+// Describes a layer in a PCB. Layers should be numbered from 0 up, contiguously.
+// Layers should be in order of physical stackup.
 #[derive(Debug, Clone)]
 pub struct Layer {
     pub name_id: Id,
@@ -205,8 +206,9 @@ impl Component {
     }
 
     pub fn tf(&self) -> Tf {
+        // Being on the back mirrors, i.e. horizontal flip.
         let side_tf =
-            if self.side == Side::Back { Tf::scale(pt(-1.0, -1.0)) } else { Tf::identity() };
+            if self.side == Side::Back { Tf::scale(pt(-1.0, 1.0)) } else { Tf::identity() };
         Tf::translate(self.p) * Tf::rotate(self.rotation) * side_tf
     }
 }
