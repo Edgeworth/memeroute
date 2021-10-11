@@ -25,6 +25,7 @@ impl NameMap {
     }
 
     pub fn new_id(&mut self) -> Id {
+        // TODO: may overwrite regular name.
         self.add_name("anon")
     }
 

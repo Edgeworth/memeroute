@@ -118,6 +118,14 @@ impl Iterator for BitSetIterator {
     }
 }
 
+// Describes a layer in a PCB.
+#[derive(Debug, Clone)]
+pub struct Layer {
+    pub name_id: Id,
+    pub layer_id: LayerId,  // Should be less than 64. 
+    pub kind: LayerKind,
+}
+
 #[derive(Debug, Clone)]
 pub struct LayerShape {
     pub layers: LayerSet,
@@ -172,6 +180,8 @@ impl Pin {
 #[derive(Debug, Default, Clone)]
 pub struct Component {
     pub id: Id,
+     // Id of the footprint for this component. Only used in exporting currently.
+    pub footprint_id: Id,
     pub p: Pt,
     pub side: Side,
     pub rotation: f64,
@@ -212,14 +222,6 @@ impl Padstack {
     pub fn layers(&self) -> LayerSet {
         self.shapes.iter().map(|s| s.layers).collect()
     }
-}
-
-// Describes a layer in a PCB.
-#[derive(Debug, Clone)]
-pub struct Layer {
-    pub name_id: Id,
-    pub layer_id: LayerId,
-    pub kind: LayerKind,
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]

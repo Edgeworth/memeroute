@@ -150,6 +150,7 @@ impl DesignToPcb {
 
     fn image(&self, v: &DsnImage) -> Result<Component> {
         let mut c = Component::default();
+        c.footprint_id = self.pcb.ensure_name(&v.image_id);
         c.outlines = v.outlines.iter().map(|p| self.shape(p)).collect::<Result<_>>()?;
         c.keepouts = v.keepouts.iter().map(|p| self.keepout(p)).collect::<Result<_>>()?;
         for pin in v.pins.iter() {
