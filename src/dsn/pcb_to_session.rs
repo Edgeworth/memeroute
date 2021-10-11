@@ -48,7 +48,7 @@ impl PcbToSession {
     }
 
     fn id(&mut self, id: Id) {
-        self.name(&self.pcb.name(id));
+        self.name(&self.pcb.to_name(id));
     }
 
     fn name(&mut self, name: &str) {
@@ -231,7 +231,7 @@ impl PcbToSession {
 
         let mut footprints: HashMap<String, Vec<Component>> = HashMap::new();
         for c in pcb.components() {
-            footprints.entry(pcb.name(c.footprint_id)).or_insert_with(Vec::new).push(c.clone());
+            footprints.entry(pcb.to_name(c.footprint_id)).or_insert_with(Vec::new).push(c.clone());
         }
         for (name, cs) in footprints {
             self.component(&name, cs);
@@ -256,13 +256,13 @@ impl PcbToSession {
         }
         for wire in pcb.wires() {
             nets.get_mut(&wire.net_id)
-                .ok_or_else(|| eyre!("missing net with name {}", pcb.name(wire.net_id)))?
+                .ok_or_else(|| eyre!("missing net with name {}", pcb.to_name(wire.net_id)))?
                 .1
                 .push(wire.clone());
         }
         for via in pcb.vias() {
             nets.get_mut(&via.net_id)
-                .ok_or_else(|| eyre!("missing net with name {}", pcb.name(via.net_id)))?
+                .ok_or_else(|| eyre!("missing net with name {}", pcb.to_name(via.net_id)))?
                 .2
                 .push(via.clone());
         }

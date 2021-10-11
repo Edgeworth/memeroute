@@ -122,7 +122,7 @@ impl Iterator for BitSetIterator {
 #[derive(Debug, Clone)]
 pub struct Layer {
     pub name_id: Id,
-    pub layer_id: LayerId,  // Should be less than 64. 
+    pub layer_id: LayerId, // Should be less than 64.
     pub kind: LayerKind,
 }
 
@@ -180,7 +180,7 @@ impl Pin {
 #[derive(Debug, Default, Clone)]
 pub struct Component {
     pub id: Id,
-     // Id of the footprint for this component. Only used in exporting currently.
+    // Id of the footprint for this component. Only used in exporting currently.
     pub footprint_id: Id,
     pub p: Pt,
     pub side: Side,
@@ -394,16 +394,12 @@ impl Clone for Pcb {
 }
 
 impl Pcb {
-    pub fn name(&self, id: Id) -> String {
+    pub fn to_name(&self, id: Id) -> String {
         self.name_map.read().unwrap().name(id).to_string()
     }
 
-    pub fn name_to_id(&self, name: &str) -> Id {
-        self.name_map.read().unwrap().name_to_id(name)
-    }
-
-    pub fn ensure_name(&self, name: &str) -> Id {
-        self.name_map.write().unwrap().ensure_name(name)
+    pub fn to_id(&self, name: &str) -> Id {
+        self.name_map.write().unwrap().name_to_id(name)
     }
 
     pub fn layers_by_kind(&self, kind: LayerKind) -> LayerSet {
@@ -437,7 +433,7 @@ impl Pcb {
 // Getting and setting
 impl Pcb {
     pub fn set_pcb_name(&mut self, name: &str) {
-        self.id = self.ensure_name(name);
+        self.id = self.to_id(name);
     }
 
     pub fn pcb_id(&self) -> Id {
