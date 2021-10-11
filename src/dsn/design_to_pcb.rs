@@ -19,7 +19,7 @@ use crate::model::primitive::{circ, path, poly, rt, ShapeOps};
 use crate::name::Id;
 
 #[derive(Debug, Clone)]
-pub struct Converter {
+pub struct DesignToPcb {
     dsn: DsnPcb,
     pcb: Pcb,
     padstacks: HashMap<Id, Padstack>,
@@ -27,7 +27,7 @@ pub struct Converter {
     layers: HashMap<Id, LayerId>,
 }
 
-impl Converter {
+impl DesignToPcb {
     pub fn new(dsn: DsnPcb) -> Self {
         Self {
             dsn,
