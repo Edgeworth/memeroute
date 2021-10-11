@@ -120,7 +120,7 @@ impl PcbToSession {
 
     fn circle(&mut self, layer: &str, s: &Circle) {
         self.begin("circle");
-        self.token(layer);
+        self.name(layer);
         self.coord(s.r() * 2.0);
         self.pt(s.p());
         self.end();
@@ -128,7 +128,8 @@ impl PcbToSession {
 
     fn path(&mut self, layer: &str, s: &Path) {
         self.begin("path");
-        self.token(layer);
+        self.name(layer);
+        self.coord(s.r() * 2.0);
         for pt in s.pts() {
             self.pt(*pt);
         }
@@ -137,7 +138,7 @@ impl PcbToSession {
 
     fn polygon(&mut self, layer: &str, s: &Poly) {
         self.begin("polygon");
-        self.token(layer);
+        self.name(layer);
         self.coord(0.0);
         for pt in s.pts() {
             self.pt(*pt);
@@ -147,7 +148,7 @@ impl PcbToSession {
 
     fn rect(&mut self, layer: &str, s: &Rt) {
         self.begin("rect");
-        self.token(layer);
+        self.name(layer);
         self.pt(s.bl());
         self.pt(s.tr());
         self.end();
@@ -180,8 +181,6 @@ impl PcbToSession {
     }
 
     fn shape(&mut self, shape: &LayerShape) {
-        self.begin("shape");
-
         let l = self.layer_id(&shape.layers).unwrap();
         match &shape.shape {
             Shape::Circle(s) => self.circle(&l, s),
@@ -190,8 +189,6 @@ impl PcbToSession {
             Shape::Rect(s) => self.rect(&l, s),
             _ => unimplemented!(), // TODO: Transform these shapes.
         }
-
-        self.end();
     }
 
     fn padstack(&mut self, ps: &Padstack) {
@@ -199,7 +196,9 @@ impl PcbToSession {
         self.id(ps.id);
 
         for shape in ps.shapes.iter() {
+            self.begin("shape");
             self.shape(shape);
+            self.end();
         }
 
         if ps.attach {
