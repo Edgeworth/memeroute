@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
 use eyre::{eyre, Result};
+use strum::IntoEnumIterator;
 
-use crate::model::pcb::{Component, LayerSet, LayerShape, Net, Padstack, Pcb, Side, Via, Wire};
+use crate::model::pcb::{
+    Component, LayerKind, LayerSet, LayerShape, Net, Padstack, Pcb, Side, Via, Wire,
+};
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
@@ -153,13 +156,32 @@ impl PcbToSession {
     fn layer_id(&self, l: &LayerSet) -> Option<String> {
         // Try to find a layer ID or specctra layer ID name that fits this
         // layer set.
-        // If only one layer is set, just use that layer's name.
-        // Otherwise, search for a LayerKind that gives this set.
-        // TODO: Implement.
-        None
+        if let Some(lid) = l.id() {
+            // If only one layer is set, just use that layer's name.
+            Some(self.pcb.to_name(self.pcb.layer_by_id(lid).name_id))
+        } else {
+            // Otherwise, search for a LayerKind that gives this set.
+            for kind in LayerKind::iter() {
+                if l == &self.pcb.layers_by_kind(kind) {
+                    return Some(
+                        match kind {
+                            LayerKind::All => "all",
+                            LayerKind::Signal => "signal",
+                            LayerKind::Power => "power",
+                            LayerKind::Mixed => "mixed",
+                            LayerKind::Jumper => "jumper",
+                        }
+                        .to_string(),
+                    );
+                }
+            }
+            None
+        }
     }
 
     fn shape(&mut self, shape: &LayerShape) {
+        self.begin("shape");
+
         let l = self.layer_id(&shape.layers).unwrap();
         match &shape.shape {
             Shape::Circle(s) => self.circle(&l, s),
@@ -168,6 +190,8 @@ impl PcbToSession {
             Shape::Rect(s) => self.rect(&l, s),
             _ => unimplemented!(), // TODO: Transform these shapes.
         }
+
+        self.end();
     }
 
     fn padstack(&mut self, ps: &Padstack) {
