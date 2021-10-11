@@ -69,8 +69,8 @@ impl DesignToPcb {
         r
     }
 
-    fn layers(&self, id: &str) -> Result<LayerSet> {
-        Ok(match id {
+    fn layers(&self, name: &str) -> Result<LayerSet> {
+        Ok(match name {
             "signal" => self.pcb.layers_by_kind(LayerKind::Signal),
             "jumper" => self.pcb.layers_by_kind(LayerKind::Jumper),
             "mixed" => self.pcb.layers_by_kind(LayerKind::Mixed),
@@ -79,8 +79,8 @@ impl DesignToPcb {
             _ => LayerSet::one(
                 *self
                     .layers
-                    .get(&self.pcb.ensure_name(id))
-                    .ok_or_else(|| eyre!("unknown layer {}", id))?,
+                    .get(&self.pcb.to_id(name))
+                    .ok_or_else(|| eyre!("unknown layer {}", name))?,
             ),
         })
     }
@@ -128,7 +128,7 @@ impl DesignToPcb {
 
     fn padstack(&self, v: &DsnPadstack) -> Result<Padstack> {
         Ok(Padstack {
-            id: self.pcb.ensure_name(&v.padstack_id),
+            id: self.pcb.to_id(&v.padstack_id),
             shapes: v.shapes.iter().map(|s| self.shape(&s.shape)).collect::<Result<_>>()?,
             attach: v.attach,
         })
@@ -136,10 +136,10 @@ impl DesignToPcb {
 
     fn pin(&self, v: &DsnPin) -> Result<Pin> {
         Ok(Pin {
-            id: self.pcb.ensure_name(&v.pin_id),
+            id: self.pcb.to_id(&v.pin_id),
             padstack: self
                 .padstacks
-                .get(&self.pcb.ensure_name(&v.padstack_id))
+                .get(&self.pcb.to_id(&v.padstack_id))
                 .ok_or_else(|| eyre!("missing padstack with id {}", v.padstack_id))?
                 .clone(),
             rotation: self.rot(v.rotation),
@@ -150,7 +150,7 @@ impl DesignToPcb {
 
     fn image(&self, v: &DsnImage) -> Result<Component> {
         let mut c = Component::default();
-        c.footprint_id = self.pcb.ensure_name(&v.image_id);
+        c.footprint_id = self.pcb.to_id(&v.image_id);
         c.outlines = v.outlines.iter().map(|p| self.shape(p)).collect::<Result<_>>()?;
         c.keepouts = v.keepouts.iter().map(|p| self.keepout(p)).collect::<Result<_>>()?;
         for pin in v.pins.iter() {
@@ -164,10 +164,10 @@ impl DesignToPcb {
         for pl in v.refs.iter() {
             let mut c = self
                 .images
-                .get(&self.pcb.ensure_name(&v.image_id))
+                .get(&self.pcb.to_id(&v.image_id))
                 .ok_or_else(|| eyre!("missing image with id {}", v.image_id))?
                 .clone();
-            c.id = self.pcb.ensure_name(&pl.component_id);
+            c.id = self.pcb.to_id(&pl.component_id);
             c.p = self.pt(pl.p);
             c.side = match pl.side {
                 DsnSide::Front => Side::Front,
@@ -182,13 +182,13 @@ impl DesignToPcb {
 
     fn net(&self, v: &DsnNet) -> Net {
         Net {
-            id: self.pcb.ensure_name(&v.net_id),
+            id: self.pcb.to_id(&v.net_id),
             pins: v
                 .pins
                 .iter()
                 .map(|p| PinRef {
-                    component: self.pcb.ensure_name(&p.component_id),
-                    pin: self.pcb.ensure_name(&p.pin_id),
+                    component: self.pcb.to_id(&p.component_id),
+                    pin: self.pcb.to_id(&p.pin_id),
                 })
                 .collect(),
         }
@@ -215,12 +215,12 @@ impl DesignToPcb {
 
     fn circuit(&self, v: &DsnCircuit) -> Rule {
         match v {
-            DsnCircuit::UseVia(name) => Rule::UseVia(self.pcb.ensure_name(name)),
+            DsnCircuit::UseVia(name) => Rule::UseVia(self.pcb.to_id(name)),
         }
     }
 
     fn ruleset(&self, v: &DsnClass) -> Result<RuleSet> {
-        let id = self.pcb.ensure_name(&v.class_id);
+        let id = self.pcb.to_id(&v.class_id);
         let mut rules: Vec<Rule> = v.rules.iter().map(|r| self.rule(r)).collect();
         rules.extend(v.circuits.iter().map(|c| self.circuit(c)));
         RuleSet::new(id, rules)
@@ -230,7 +230,7 @@ impl DesignToPcb {
         for v in self.dsn.library.padstacks.iter() {
             if self
                 .padstacks
-                .insert(self.pcb.ensure_name(&v.padstack_id), self.padstack(v)?)
+                .insert(self.pcb.to_id(&v.padstack_id), self.padstack(v)?)
                 .is_some()
             {
                 return Err(eyre!("duplicate padstack with id {}", v.padstack_id));
@@ -241,7 +241,7 @@ impl DesignToPcb {
 
     fn convert_images(&mut self) -> Result<()> {
         for v in self.dsn.library.images.iter() {
-            if self.images.insert(self.pcb.ensure_name(&v.image_id), self.image(v)?).is_some() {
+            if self.images.insert(self.pcb.to_id(&v.image_id), self.image(v)?).is_some() {
                 return Err(eyre!("duplicate image with id {}", v.image_id));
             }
         }
@@ -261,7 +261,7 @@ impl DesignToPcb {
         // Layers needed for padstacks and images.
         for (id, v) in self.dsn.structure.layers.iter().enumerate() {
             let id = id as LayerId;
-            if self.layers.insert(self.pcb.ensure_name(&v.layer_name), id).is_some() {
+            if self.layers.insert(self.pcb.to_id(&v.layer_name), id).is_some() {
                 return Err(eyre!("duplicate layer with id {}", v.layer_name));
             }
             let kind = match v.layer_type {
@@ -271,7 +271,7 @@ impl DesignToPcb {
                 DsnLayerType::Jumper => LayerKind::Jumper,
             };
             self.pcb.add_layer(Layer {
-                name_id: self.pcb.ensure_name(&v.layer_name),
+                name_id: self.pcb.to_id(&v.layer_name),
                 layer_id: id,
                 kind,
             });
@@ -292,7 +292,7 @@ impl DesignToPcb {
         for v in self.dsn.structure.vias.iter() {
             self.pcb.add_via_padstack(
                 self.padstacks
-                    .get(&self.pcb.ensure_name(v))
+                    .get(&self.pcb.to_id(v))
                     .ok_or_else(|| eyre!("unknown padstack id {}", v))?
                     .clone(),
             );
@@ -315,7 +315,7 @@ impl DesignToPcb {
                 self.pcb.set_default_net_ruleset(ruleset.id)
             } else {
                 for net in v.net_ids.iter() {
-                    self.pcb.set_net_ruleset(self.pcb.ensure_name(net), ruleset.id)
+                    self.pcb.set_net_ruleset(self.pcb.to_id(net), ruleset.id)
                 }
             }
         }

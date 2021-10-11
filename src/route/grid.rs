@@ -307,7 +307,7 @@ impl RouteStrategy for GridRouter {
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
             let sub_result = self.connect(states)?;
-            println!("done {}, failed {}", self.place.pcb().name(net_id), sub_result.failed);
+            println!("done {}, failed {}", self.place.pcb().to_name(net_id), sub_result.failed);
             // Mark wires and vias.
             for wire in sub_result.wires.iter() {
                 self.place.add_wire(wire);

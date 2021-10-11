@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 // Integer IDs representing names. Readable names used in PCB.
+// Note that IDs represent strings, not objects. They don't uniquely identify an object.
 pub type Id = usize;
 pub const NO_ID: Id = Id::MAX;
 
@@ -16,17 +17,8 @@ impl NameMap {
         self.id_to_name.get(&id).unwrap()
     }
 
-    pub fn name_to_id(&self, name: &str) -> Id {
-        *self.name_to_id.get(name).unwrap()
-    }
-
-    pub fn ensure_name(&mut self, name: &str) -> Id {
+    pub fn name_to_id(&mut self, name: &str) -> Id {
         if let Some(id) = self.name_to_id.get(name) { *id } else { self.add_name(name) }
-    }
-
-    pub fn new_id(&mut self) -> Id {
-        // TODO: may overwrite regular name.
-        self.add_name("anon")
     }
 
     fn add_name(&mut self, name: &str) -> Id {
