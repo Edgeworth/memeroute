@@ -19,6 +19,7 @@ use eyre::Result;
 use memeroute::dsn::design_to_pcb::DesignToPcb;
 use memeroute::dsn::lexer::Lexer;
 use memeroute::dsn::parser::Parser;
+use memeroute::dsn::pcb_to_session::PcbToSession;
 use memeroute::model::pcb::Pcb;
 use structopt::StructOpt;
 
@@ -43,6 +44,7 @@ fn load_pcb<P: AsRef<Path>>(path: P) -> Result<Pcb> {
     let parser = Parser::new(&lexer.lex()?);
     let pcb = parser.parse()?;
     let pcb = DesignToPcb::new(pcb).convert()?;
+    println!("{}", PcbToSession::new(pcb.clone()).convert()?);
     Ok(pcb)
 }
 
