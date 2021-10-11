@@ -1,7 +1,10 @@
+use std::path::{Path, PathBuf};
+
 use eframe::egui::Widget;
 use eframe::{egui, epi};
+use memeroute::dsn::pcb_to_session::PcbToSession;
 use memeroute::model::pcb::Pcb;
-use memeroute::route::router::Router;
+use memeroute::route::router::{apply_route_result, Router};
 use serde::{Deserialize, Serialize};
 
 use crate::pcb::pcb_view::PcbView;
@@ -23,12 +26,13 @@ pub struct MemerouteGui {
     s: State,
     pcb: Pcb,
     pcb_view: PcbView,
+    data_path: PathBuf,
 }
 
 impl MemerouteGui {
-    pub fn new(pcb: Pcb) -> Self {
+    pub fn new<P: AsRef<Path>>(pcb: Pcb, data_path: P) -> Self {
         let pcb_view = PcbView::new(pcb.clone(), pcb.bounds());
-        Self { s: Default::default(), pcb, pcb_view }
+        Self { s: Default::default(), pcb, pcb_view, data_path: data_path.as_ref().into() }
     }
 }
 
@@ -66,6 +70,7 @@ impl epi::App for MemerouteGui {
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
 
+
             if ui.button("Route").clicked() {
                 let mut router = Router::new(self.pcb.clone());
                 let resp = router.route().unwrap();
@@ -75,17 +80,11 @@ impl epi::App for MemerouteGui {
                     resp.wires.len(),
                     resp.vias.len()
                 );
-                for wire in resp.wires.into_iter() {
-                    self.pcb.add_wire(wire);
-                }
+                apply_route_result(&mut self.pcb, &resp);
 
-                for via in resp.vias.into_iter() {
-                    self.pcb.add_via(via);
-                }
-
-                for rt in resp.debug_rts.into_iter() {
-                    self.pcb.add_debug_rt(rt);
-                }
+                let output_path = self.data_path.with_extension("ses");
+                let ses = PcbToSession::new(self.pcb.clone()).convert().unwrap();
+                std::fs::write(output_path, ses).unwrap();
 
                 // Update pcb view.
                 self.pcb_view.set_pcb(self.pcb.clone());

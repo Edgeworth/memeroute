@@ -42,3 +42,15 @@ impl Router {
         grid.route()
     }
 }
+
+pub fn apply_route_result(pcb: &mut Pcb, r: &RouteResult) {
+    for wire in r.wires.iter() {
+        pcb.add_wire(wire.clone());
+    }
+    for via in r.vias.iter() {
+        pcb.add_via(via.clone());
+    }
+    for rt in r.debug_rts.iter() {
+        pcb.add_debug_rt(*rt);
+    }
+}
