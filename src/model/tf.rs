@@ -76,7 +76,7 @@ impl Tf {
         assert!(eq(self.m[(2, 0)], 0.0));
         assert!(eq(self.m[(2, 1)], 0.0));
         assert!(eq(self.m[(2, 2)], 1.0));
-        assert!(eq(self.m[(0, 0)], self.m[(1, 1)]));
+        assert!(eq(self.m[(0, 0)].abs(), self.m[(1, 1)].abs()));
         assert!(eq(self.m[(0, 1)], -self.m[(1, 0)]));
     }
 
