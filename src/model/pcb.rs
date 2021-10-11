@@ -7,6 +7,7 @@ use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use enumset::{EnumSet, EnumSetType};
 use eyre::{eyre, Result};
 use rust_dense_bitset::{BitSet, DenseBitSet};
+use strum::EnumIter;
 
 use crate::model::geom::bounds::rt_cloud_bounds;
 use crate::model::primitive::point::Pt;
@@ -22,7 +23,7 @@ use crate::name::{Id, NameMap};
 
 pub type LayerId = u8;
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, EnumIter)]
 pub enum LayerKind {
     All,
     Signal,
@@ -408,6 +409,10 @@ impl Pcb {
         } else {
             self.layers().iter().filter(|l| l.kind == kind).map(|v| v.layer_id).collect()
         }
+    }
+
+    pub fn layer_by_id(&self, lid: LayerId) -> &Layer {
+        self.layers().iter().find(|l| l.layer_id == lid).unwrap()
     }
 
     pub fn pin_ref(&self, p: &PinRef) -> Result<(&Component, &Pin)> {
