@@ -2,7 +2,7 @@ use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
 use lazy_static::lazy_static;
 use memeroute::model::pcb::{
-    Component, Keepout, LayerId, LayerSet, LayerShape, Padstack, Pcb, Pin, Side,
+    Component, Keepout, LayerId, LayerSet, LayerShape, Padstack, Pcb, Pin,
 };
 use memeroute::model::primitive::point::Pt;
 use memeroute::model::primitive::rect::Rt;
@@ -140,20 +140,18 @@ impl PcbView {
 
     fn draw_component(&self, tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
-        // TODO!! this
-        let side_idx = match v.side {
-            Side::Front => 0,
-            Side::Back => 1,
-        };
         let tf = tf * v.tf();
+        // TODO: Push this colour handling down, just do per layer colours.
         for outline in v.outlines.iter() {
-            shapes.extend(self.draw_shape(&tf, outline, OUTLINE[side_idx]));
+            let idx = outline.layers.first().unwrap();
+            shapes.extend(self.draw_shape(&tf, outline, OUTLINE[idx]));
         }
         for keepout in v.keepouts.iter() {
             shapes.extend(self.draw_keepout(&tf, keepout, *KEEPOUT));
         }
         for pin in v.pins() {
-            shapes.extend(self.draw_pin(&tf, pin, PIN[side_idx]))
+            let idx = pin.padstack.layers().first().unwrap();
+            shapes.extend(self.draw_pin(&tf, pin, PIN[idx]))
         }
         shapes
     }

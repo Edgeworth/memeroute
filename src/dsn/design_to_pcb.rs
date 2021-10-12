@@ -11,7 +11,7 @@ use crate::dsn::types::{
 use crate::model::geom::math::{eq, pt_eq};
 use crate::model::pcb::{
     Clearance, ClearanceType, Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet,
-    LayerShape, Net, Padstack, Pcb, Pin, PinRef, Rule, RuleSet, Side,
+    LayerShape, Net, Padstack, Pcb, Pin, PinRef, Rule, RuleSet,
 };
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -169,12 +169,12 @@ impl DesignToPcb {
                 .clone();
             c.id = self.pcb.to_id(&pl.component_id);
             c.p = self.pt(pl.p);
-            c.side = match pl.side {
-                DsnSide::Front => Side::Front,
-                DsnSide::Back => Side::Back,
+            c.rotation = self.rot(pl.rotation);
+            match pl.side {
+                DsnSide::Front => {}
+                DsnSide::Back => c.flip(self.pcb.layers().len()),
                 DsnSide::Both => return Err(eyre!("invalid side specification")),
             };
-            c.rotation = self.rot(pl.rotation);
             components.push(c);
         }
         Ok(components)
@@ -228,11 +228,7 @@ impl DesignToPcb {
 
     fn convert_padstacks(&mut self) -> Result<()> {
         for v in self.dsn.library.padstacks.iter() {
-            if self
-                .padstacks
-                .insert(self.pcb.to_id(&v.padstack_id), self.padstack(v)?)
-                .is_some()
-            {
+            if self.padstacks.insert(self.pcb.to_id(&v.padstack_id), self.padstack(v)?).is_some() {
                 return Err(eyre!("duplicate padstack with id {}", v.padstack_id));
             }
         }

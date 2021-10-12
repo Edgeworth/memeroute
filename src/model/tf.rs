@@ -116,7 +116,6 @@ impl Tf {
         tri(self.pt(pts[0]), self.pt(pts[1]), self.pt(pts[2]))
     }
 
-
     pub fn shape(&self, s: &Shape) -> Shape {
         match s {
             Shape::Capsule(s) => self.cap(s).shape(),

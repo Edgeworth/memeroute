@@ -4,7 +4,7 @@ use eyre::{eyre, Result};
 use strum::IntoEnumIterator;
 
 use crate::model::pcb::{
-    Component, LayerKind, LayerSet, LayerShape, Net, Padstack, Pcb, Side, Via, Wire,
+    Component, LayerKind, LayerSet, LayerShape, Net, Padstack, Pcb, Via, Wire,
 };
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::path_shape::Path;
@@ -69,10 +69,10 @@ impl PcbToSession {
         self.token(&format!("{:.2}", v));
     }
 
-    fn side(&mut self, side: Side) {
-        let side = match side {
-            Side::Front => "front",
-            Side::Back => "back",
+    fn side(&mut self, back: bool) {
+        let side = match back {
+            false => "front",
+            true => "back",
         };
         self.token(side);
     }
@@ -106,7 +106,7 @@ impl PcbToSession {
             self.begin("place");
             self.id(c.id);
             self.pt(c.p);
-            self.side(c.side);
+            self.side(c.flipped());
             self.rot(c.rotation);
             self.end();
         }
