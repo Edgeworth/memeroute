@@ -10,6 +10,7 @@ use crate::model::primitive::rect::Rt;
 use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{poly, ShapeOps};
+use crate::model::tf::Tf;
 
 #[derive(Debug, Clone)]
 pub enum Shape {
@@ -34,6 +35,10 @@ impl Shape {
             }
             s => s,
         }
+    }
+
+    pub fn apply(&mut self, tf: &Tf) {
+        *self = tf.shape(self);
     }
 }
 

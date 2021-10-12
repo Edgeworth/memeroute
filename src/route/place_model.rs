@@ -49,7 +49,7 @@ impl PlaceModel {
     }
 
     // Creates a wire for a given net, but doesn't add it.
-    pub fn create_wire(&self, net_id: Id, layer: u8, pts: &[Pt]) -> Wire {
+    pub fn create_wire(&self, net_id: Id, layer: LayerId, pts: &[Pt]) -> Wire {
         let rs = self.pcb.net_ruleset(net_id);
         let shape =
             LayerShape { layers: LayerSet::one(layer), shape: path(pts, rs.radius()).shape() };

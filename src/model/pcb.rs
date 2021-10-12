@@ -21,7 +21,7 @@ use crate::name::{Id, NameMap};
 // Units are in millimetres.
 // All rotations are in degrees, counterclockwise from the positive x axis.
 
-pub type LayerId = u8;
+pub type LayerId = usize;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, EnumIter)]
 pub enum LayerKind {
@@ -66,6 +66,10 @@ impl LayerSet {
         if self.len() == 1 { Some(self.l.first_set() as LayerId) } else { None }
     }
 
+    pub fn first(&self) -> Option<LayerId> {
+        if !self.is_empty() { Some(self.l.first_set() as LayerId) } else { None }
+    }
+
     pub fn contains(&self, layer: LayerId) -> bool {
         self.l.get_bit(layer as usize)
     }
@@ -80,6 +84,13 @@ impl LayerSet {
 
     pub fn remove(&mut self, layer: LayerId) {
         self.l.set_bit(layer as usize, false);
+    }
+
+    // Flips layers, e.g. moving a component from front to back.
+    // This is based on the assumption that layers are in physical order.
+    pub fn flip(&mut self, num_layers: usize) {
+        self.l = self.l.reverse();
+        self.l >>= 64 - num_layers;
     }
 }
 
@@ -134,6 +145,12 @@ pub struct LayerShape {
     pub shape: Shape,
 }
 
+impl LayerShape {
+    pub fn flip(&mut self, num_layers: usize) {
+        self.layers.flip(num_layers);
+    }
+}
+
 // Keepout: No routing whatsoever.
 // ViaKeepout: No vias.
 // WireKeepout: No wires.
@@ -151,15 +168,9 @@ pub struct Keepout {
     pub shape: LayerShape,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Side {
-    Front,
-    Back,
-}
-
-impl Default for Side {
-    fn default() -> Self {
-        Self::Front
+impl Keepout {
+    pub fn flip(&mut self, num_layers: usize) {
+        self.shape.flip(num_layers);
     }
 }
 
@@ -176,6 +187,10 @@ impl Pin {
     pub fn tf(&self) -> Tf {
         Tf::translate(self.p) * Tf::rotate(self.rotation)
     }
+
+    pub fn flip(&mut self, num_layers: usize) {
+        self.padstack.flip(num_layers);
+    }
 }
 
 // Describes a component at a location.
@@ -185,11 +200,11 @@ pub struct Component {
     // Id of the footprint for this component. Only used in exporting currently.
     pub footprint_id: Id,
     pub p: Pt,
-    pub side: Side,
     pub rotation: f64,
     pub outlines: Vec<LayerShape>,
     pub keepouts: Vec<Keepout>,
     pins: HashMap<Id, Pin>,
+    flipped: bool,
 }
 
 impl Component {
@@ -207,9 +222,25 @@ impl Component {
 
     pub fn tf(&self) -> Tf {
         // Being on the back mirrors, i.e. horizontal flip.
-        let side_tf =
-            if self.side == Side::Back { Tf::scale(pt(-1.0, 1.0)) } else { Tf::identity() };
+        let side_tf = if self.flipped { Tf::scale(pt(-1.0, 1.0)) } else { Tf::identity() };
         Tf::translate(self.p) * Tf::rotate(self.rotation) * side_tf
+    }
+
+    pub fn flip(&mut self, num_layers: usize) {
+        self.flipped = !self.flipped;
+        for v in self.outlines.iter_mut() {
+            v.flip(num_layers);
+        }
+        for v in self.keepouts.iter_mut() {
+            v.flip(num_layers);
+        }
+        for v in self.pins.values_mut() {
+            v.flip(num_layers);
+        }
+    }
+
+    pub fn flipped(&self) -> bool {
+        self.flipped
     }
 }
 
@@ -224,6 +255,12 @@ pub struct Padstack {
 impl Padstack {
     pub fn layers(&self) -> LayerSet {
         self.shapes.iter().map(|s| s.layers).collect()
+    }
+
+    pub fn flip(&mut self, num_layers: usize) {
+        for v in self.shapes.iter_mut() {
+            v.flip(num_layers);
+        }
     }
 }
 
