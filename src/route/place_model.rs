@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use eyre::Result;
 
 use crate::model::geom::qt::quadtree::ShapeIdx;
-use crate::model::geom::qt::query::{Query, ShapeInfo, Tag, NO_TAG};
+use crate::model::geom::qt::query::{Query, QueryId, QueryKind, ShapeInfo, NO_ID};
 use crate::model::pcb::{
     LayerId, LayerSet, LayerShape, Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Via, Wire,
 };
@@ -63,8 +63,8 @@ impl PlaceModel {
             &mut self.blocked,
             &Tf::identity(),
             &wire.shape,
-            wire.net_id,
-            ObjectKind::Wire as usize,
+            QueryId(wire.net_id),
+            ObjectKind::Wire.into(),
         )
     }
 
@@ -75,14 +75,14 @@ impl PlaceModel {
     }
 
     pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
-        self.add_padstack(&via.tf(), &via.padstack, via.net_id, ObjectKind::Via as usize)
+        self.add_padstack(&via.tf(), &via.padstack, QueryId(via.net_id), ObjectKind::Via.into())
     }
 
     // Adds all pins in the given net.
     pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
         for p in net.pins.iter() {
             let (component, pin) = pcb.pin_ref(p)?;
-            self.add_pin(&component.tf(), p.clone(), pin, net.id);
+            self.add_pin(&component.tf(), p.clone(), pin, QueryId(net.id));
         }
         Ok(())
     }
@@ -134,8 +134,8 @@ impl PlaceModel {
                 &mut self.boundary,
                 &tf,
                 boundary,
-                NO_TAG,
-                ObjectKind::Area as usize,
+                NO_ID,
+                ObjectKind::Area.into(),
             );
         }
 
@@ -151,8 +151,8 @@ impl PlaceModel {
                 &mut self.blocked,
                 &tf,
                 &keepout.shape,
-                NO_TAG,
-                ObjectKind::Area as usize,
+                NO_ID,
+                ObjectKind::Area.into(),
             );
         }
 
@@ -160,7 +160,7 @@ impl PlaceModel {
             let tf = tf * c.tf();
             for pin in c.pins() {
                 let r = PinRef::new(c, pin);
-                let id = pcb.pin_ref_net(&r).unwrap_or(NO_TAG);
+                let id = if let Some(id) = pcb.pin_ref_net(&r) { QueryId(id) } else { NO_ID };
                 self.add_pin(&tf, r, pin, id);
             }
             for keepout in c.keepouts.iter() {
@@ -169,8 +169,8 @@ impl PlaceModel {
                     &mut self.blocked,
                     &tf,
                     &keepout.shape,
-                    NO_TAG,
-                    ObjectKind::Area as usize,
+                    NO_ID,
+                    ObjectKind::Area.into(),
                 );
             }
         }
@@ -182,8 +182,8 @@ impl PlaceModel {
         map: &mut HashMap<LayerId, Compound>,
         tf: &Tf,
         ls: &LayerShape,
-        id: Tag,
-        kind: Tag,
+        id: QueryId,
+        kind: QueryKind,
     ) -> Vec<PlaceId> {
         let s = tf.shape(&ls.shape);
         let mut idxs = Vec::new();
@@ -201,7 +201,13 @@ impl PlaceModel {
         idxs
     }
 
-    fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack, id: Tag, kind: Tag) -> Vec<PlaceId> {
+    fn add_padstack(
+        &mut self,
+        tf: &Tf,
+        padstack: &Padstack,
+        id: QueryId,
+        kind: QueryKind,
+    ) -> Vec<PlaceId> {
         padstack
             .shapes
             .iter()
@@ -210,8 +216,8 @@ impl PlaceModel {
             .collect()
     }
 
-    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, id: Tag) -> Vec<PlaceId> {
-        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, id, ObjectKind::Pin as usize);
+    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, id: QueryId) -> Vec<PlaceId> {
+        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, id, ObjectKind::Pin.into());
         let e = self.pins.entry(pinref).or_insert_with(Vec::new);
         for &id in ids.iter() {
             e.push(id);

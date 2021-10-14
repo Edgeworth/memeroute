@@ -1,16 +1,20 @@
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
 
-pub type Tag = usize;
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct QueryId(pub usize);
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct QueryKind(pub usize);
 
-pub const NO_TAG: usize = usize::MAX;
+pub const NO_ID: QueryId = QueryId(usize::MAX);
+pub const NO_KIND: QueryKind = QueryKind(usize::MAX);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Query {
     All,
-    Id(Tag),
-    ExceptId(Tag),
-    Kind(Tag),
+    Id(QueryId),
+    ExceptId(QueryId),
+    Kind(QueryKind),
 }
 
 pub fn matches_query(s: &ShapeInfo, q: Query) -> bool {
@@ -25,28 +29,28 @@ pub fn matches_query(s: &ShapeInfo, q: Query) -> bool {
 #[derive(Debug, Clone)]
 pub struct ShapeInfo {
     shape: Shape,
-    id: Tag,
-    kind: Tag,
+    id: QueryId,
+    kind: QueryKind,
 }
 
 impl ShapeInfo {
-    pub fn new(shape: Shape, id: Tag, kind: Tag) -> Self {
+    pub fn new(shape: Shape, id: QueryId, kind: QueryKind) -> Self {
         Self { shape, id, kind }
     }
 
     pub fn anon(shape: Shape) -> Self {
-        Self { shape, id: NO_TAG, kind: NO_TAG }
+        Self { shape, id: NO_ID, kind: NO_KIND }
     }
 
     pub fn shape(&self) -> &Shape {
         &self.shape
     }
 
-    pub fn id(&self) -> Tag {
+    pub fn id(&self) -> QueryId {
         self.id
     }
 
-    pub fn kind(&self) -> Tag {
+    pub fn kind(&self) -> QueryKind {
         self.kind
     }
 }
