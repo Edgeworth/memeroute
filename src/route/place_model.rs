@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use eyre::Result;
 
-use crate::model::geom::quadtree::{Query, ShapeIdx, ShapeInfo, Tag, NO_TAG};
+use crate::model::geom::qt::quadtree::ShapeIdx;
+use crate::model::geom::qt::query::{Query, ShapeInfo, Tag, NO_TAG};
 use crate::model::pcb::{
     LayerId, LayerSet, LayerShape, Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Via, Wire,
 };

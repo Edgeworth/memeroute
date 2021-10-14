@@ -2,23 +2,13 @@ use std::collections::HashMap;
 use std::mem::swap;
 
 use crate::model::geom::bounds::rt_cloud_bounds;
+use crate::model::geom::qt::query::{decompose_shape, matches_query, Query, ShapeInfo};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
 
 type NodeIdx = usize;
 pub type ShapeIdx = usize;
-pub type Tag = usize;
-
-pub const NO_TAG: usize = usize::MAX;
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Query {
-    All,
-    Id(Tag),
-    ExceptId(Tag),
-    Kind(Tag),
-}
 
 // How many tests to do before splitting a node.
 const TEST_THRESHOLD: usize = 4;
@@ -54,23 +44,6 @@ impl Default for Node {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ShapeInfo {
-    shape: Shape,
-    id: Tag,
-    kind: Tag,
-}
-
-impl ShapeInfo {
-    pub fn new(shape: Shape, id: Tag, kind: Tag) -> Self {
-        Self { shape, id, kind }
-    }
-
-    pub fn anon(shape: Shape) -> Self {
-        Self { shape, id: NO_TAG, kind: NO_TAG }
-    }
-}
-
 #[derive(Debug, Default, Clone)]
 pub struct QuadTree {
     shapes: Vec<ShapeInfo>,
@@ -83,7 +56,7 @@ pub struct QuadTree {
 
 impl QuadTree {
     pub fn new(shapes: Vec<ShapeInfo>) -> Self {
-        let bounds = rt_cloud_bounds(shapes.iter().map(|s| s.shape.bounds()));
+        let bounds = rt_cloud_bounds(shapes.iter().map(|s| s.shape().bounds()));
         let nodes = vec![
             Node::default(),
             Node {
@@ -130,24 +103,11 @@ impl QuadTree {
         self.rts_internal(self.nodes[idx].tl, r.tl_quadrant(), rts);
     }
 
-    // Split paths up so they are spread out more.
-    // Split compound shapes up.
-    fn decompose_shape(s: ShapeInfo) -> Vec<ShapeInfo> {
-        let shapes = match s.shape {
-            Shape::Compound(s) => s.quadtree().shapes().iter().map(|v| v.shape.clone()).collect(),
-            Shape::Path(s) => s.caps().map(|v| v.shape()).collect(),
-            s => vec![s],
-        };
-        let id = s.id;
-        let kind = s.kind;
-        shapes.into_iter().map(|shape| ShapeInfo { shape, id, kind }).collect()
-    }
-
     pub fn add_shape(&mut self, s: ShapeInfo) -> Vec<ShapeIdx> {
-        let bounds = self.bounds().united(&s.shape.bounds());
+        let bounds = self.bounds().united(&s.shape().bounds());
         // If this shape expands the bounds, rebuild the tree.
         // TODO: Don't rebuild the tree?
-        let s = Self::decompose_shape(s);
+        let s = decompose_shape(s);
         let mut shape_idxs = Vec::new();
         if bounds != self.bounds() {
             let mut shapes = Vec::new();
@@ -205,15 +165,6 @@ impl QuadTree {
         todo!()
     }
 
-    fn matches_query(s: &ShapeInfo, q: Query) -> bool {
-        match q {
-            Query::All => true,
-            Query::Id(tag) => tag == s.id,
-            Query::ExceptId(tag) => tag != s.id,
-            Query::Kind(tag) => tag == s.kind,
-        }
-    }
-
     fn cached_intersects(
         shapes: &[ShapeInfo],
         cache: &mut HashMap<ShapeIdx, bool>,
@@ -221,12 +172,12 @@ impl QuadTree {
         s: &Shape,
         q: Query,
     ) -> bool {
-        if !Self::matches_query(&shapes[idx], q) {
+        if !matches_query(&shapes[idx], q) {
             false
         } else if let Some(res) = cache.get(&idx) {
             *res
         } else {
-            let res = shapes[idx].shape.intersects_shape(s);
+            let res = shapes[idx].shape().intersects_shape(s);
             cache.insert(idx, res);
             res
         }
@@ -239,12 +190,12 @@ impl QuadTree {
         s: &Shape,
         q: Query,
     ) -> bool {
-        if !Self::matches_query(&shapes[idx], q) {
+        if !matches_query(&shapes[idx], q) {
             false
         } else if let Some(res) = cache.get(&idx) {
             *res
         } else {
-            let res = shapes[idx].shape.contains_shape(s);
+            let res = shapes[idx].shape().contains_shape(s);
             cache.insert(idx, res);
             res
         }
@@ -371,7 +322,7 @@ impl QuadTree {
 
             for inter in push_down {
                 let Node { bl, br, tr, tl, .. } = self.nodes[idx];
-                let shape = &self.shapes[inter.shape_idx].shape;
+                let shape = &self.shapes[inter.shape_idx].shape();
 
                 // Put it into all children it intersects.
                 for (quad, quad_idx) in [

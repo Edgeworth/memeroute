@@ -1,6 +1,7 @@
 use std::cell::{Ref, RefCell};
 
-use crate::model::geom::quadtree::{QuadTree, Query, ShapeIdx, ShapeInfo};
+use crate::model::geom::qt::quadtree::{QuadTree, ShapeIdx};
+use crate::model::geom::qt::query::{Query, ShapeInfo};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;

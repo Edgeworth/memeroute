@@ -5,7 +5,7 @@ use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
 use crate::model::geom::math::f64_cmp;
-use crate::model::geom::quadtree::Query;
+use crate::model::geom::qt::query::Query;
 use crate::model::pcb::{LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::rect::{Rt, RtI};
