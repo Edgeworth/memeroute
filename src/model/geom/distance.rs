@@ -8,7 +8,11 @@ use crate::model::primitive::rect::Rt;
 use crate::model::primitive::seg;
 use crate::model::primitive::segment::Segment;
 
-// Currently these don't return signed distance.
+// Distance functions should return 0 if there is intersection or containment.
+// This property is used by quadtree which returns 0 if it detects an intersection
+// by e.g. regular intersection tests.
+
+// TODO:Audit these functions.
 
 // Returns the distance from the circle to the boundary of the
 // rectangle. Doesn't work if the point is inside the rectangle.
@@ -33,6 +37,10 @@ pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
     let project = b.line().project(*a);
     let dist = st_dist.min(en_dist);
     if b.contains(project) { dist.min(a.dist(project)) } else { dist }
+}
+
+pub fn rt_rt_dist(a: &Rt, b: &Rt) -> f64 {
+    todo!()
 }
 
 pub fn rt_seg_dist(a: &Rt, b: &Segment) -> f64 {
