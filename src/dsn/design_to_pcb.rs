@@ -10,7 +10,7 @@ use crate::dsn::types::{
 };
 use crate::model::geom::math::{eq, pt_eq};
 use crate::model::pcb::{
-    Clearance, ClearanceType, Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet,
+    Clearance, ClearanceKind, Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet,
     LayerShape, Net, Padstack, Pcb, Pin, PinRef, Rule, RuleSet,
 };
 use crate::model::primitive::point::Pt;
@@ -194,16 +194,16 @@ impl DesignToPcb {
         }
     }
 
-    fn clearance_type(&self, v: &DsnClearanceType) -> EnumSet<ClearanceType> {
+    fn clearance_type(&self, v: &DsnClearanceType) -> EnumSet<ClearanceKind> {
         match v {
             DsnClearanceType::DefaultSmd => EnumSet::all(),
-            DsnClearanceType::SmdSmd => enum_set!(ClearanceType::SmdSmd),
+            DsnClearanceType::SmdSmd => enum_set!(ClearanceKind::SmdSmd),
         }
     }
 
     fn clearance(&self, v: &DsnClearance) -> Clearance {
         let types = v.types.iter().fold(enum_set!(), |a, b| a | self.clearance_type(b));
-        Clearance { amount: self.coord(v.amount), types }
+        Clearance { amount: self.coord(v.amount), kinds: types }
     }
 
     fn rule(&self, v: &DsnRule) -> Rule {

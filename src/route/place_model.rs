@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use eyre::Result;
 
-use crate::model::geom::quadtree::{Query, ShapeIdx, Tag, NO_TAG};
+use crate::model::geom::quadtree::{Query, ShapeIdx, ShapeInfo, Tag, NO_TAG};
 use crate::model::pcb::{
-    LayerId, LayerSet, LayerShape, Net, Padstack, Pcb, Pin, PinRef, Via, Wire,
+    LayerId, LayerSet, LayerShape, Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Via, Wire,
 };
 use crate::model::primitive::compound::Compound;
 use crate::model::primitive::point::Pt;
@@ -57,7 +57,14 @@ impl PlaceModel {
     }
 
     pub fn add_wire(&mut self, wire: &Wire) -> Vec<PlaceId> {
-        Self::add_shape(self.bounds, &mut self.blocked, &Tf::identity(), &wire.shape, wire.net_id)
+        Self::add_shape(
+            self.bounds,
+            &mut self.blocked,
+            &Tf::identity(),
+            &wire.shape,
+            wire.net_id,
+            ObjectKind::Wire as usize,
+        )
     }
 
     // Creates a via for a given net, but doesn't add it.
@@ -67,7 +74,7 @@ impl PlaceModel {
     }
 
     pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
-        self.add_padstack(&via.tf(), &via.padstack, via.net_id)
+        self.add_padstack(&via.tf(), &via.padstack, via.net_id, ObjectKind::Via as usize)
     }
 
     // Adds all pins in the given net.
@@ -121,7 +128,14 @@ impl PlaceModel {
 
         self.bounds = self.bounds.united(&pcb.bounds());
         for boundary in pcb.boundaries() {
-            Self::add_shape(self.bounds, &mut self.boundary, &tf, boundary, NO_TAG);
+            Self::add_shape(
+                self.bounds,
+                &mut self.boundary,
+                &tf,
+                boundary,
+                NO_TAG,
+                ObjectKind::Area as usize,
+            );
         }
 
         for wire in pcb.wires() {
@@ -131,18 +145,32 @@ impl PlaceModel {
             self.add_via(via);
         }
         for keepout in pcb.keepouts() {
-            Self::add_shape(self.bounds, &mut self.blocked, &tf, &keepout.shape, NO_TAG);
+            Self::add_shape(
+                self.bounds,
+                &mut self.blocked,
+                &tf,
+                &keepout.shape,
+                NO_TAG,
+                ObjectKind::Area as usize,
+            );
         }
 
         for c in pcb.components() {
             let tf = tf * c.tf();
             for pin in c.pins() {
                 let r = PinRef::new(c, pin);
-                let tag = pcb.pin_ref_net(&r).unwrap_or(NO_TAG);
-                self.add_pin(&tf, r, pin, tag);
+                let id = pcb.pin_ref_net(&r).unwrap_or(NO_TAG);
+                self.add_pin(&tf, r, pin, id);
             }
             for keepout in c.keepouts.iter() {
-                Self::add_shape(self.bounds, &mut self.blocked, &tf, &keepout.shape, NO_TAG);
+                Self::add_shape(
+                    self.bounds,
+                    &mut self.blocked,
+                    &tf,
+                    &keepout.shape,
+                    NO_TAG,
+                    ObjectKind::Area as usize,
+                );
             }
         }
         self.pcb = pcb;
@@ -153,7 +181,8 @@ impl PlaceModel {
         map: &mut HashMap<LayerId, Compound>,
         tf: &Tf,
         ls: &LayerShape,
-        tag: Tag,
+        id: Tag,
+        kind: Tag,
     ) -> Vec<PlaceId> {
         let s = tf.shape(&ls.shape);
         let mut idxs = Vec::new();
@@ -162,7 +191,7 @@ impl PlaceModel {
             idxs.extend(
                 map.entry(layer)
                     .or_insert_with(|| Compound::with_bounds(&bounds))
-                    .add_shape(s.clone(), tag)
+                    .add_shape(ShapeInfo::new(s.clone(), id, kind))
                     .iter()
                     .map(|&v| (layer, v)),
             );
@@ -171,17 +200,17 @@ impl PlaceModel {
         idxs
     }
 
-    fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack, tag: Tag) -> Vec<PlaceId> {
+    fn add_padstack(&mut self, tf: &Tf, padstack: &Padstack, id: Tag, kind: Tag) -> Vec<PlaceId> {
         padstack
             .shapes
             .iter()
-            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape, tag))
+            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape, id, kind))
             .flatten()
             .collect()
     }
 
-    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, tag: Tag) -> Vec<PlaceId> {
-        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, tag);
+    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, id: Tag) -> Vec<PlaceId> {
+        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, id, ObjectKind::Pin as usize);
         let e = self.pins.entry(pinref).or_insert_with(Vec::new);
         for &id in ids.iter() {
             e.push(id);
