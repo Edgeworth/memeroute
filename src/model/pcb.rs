@@ -303,9 +303,9 @@ impl Via {
     }
 }
 
-// Object types
+// Object kinds
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum ObjectType {
+pub enum ObjectKind {
     Area, // Keepout, boundary, or conducting shapes (fills)
     Pin,  // Through hole pin objects
     Smd,  // Surface mount pad shapes
@@ -314,7 +314,7 @@ pub enum ObjectType {
 }
 
 #[derive(Debug, EnumSetType)]
-pub enum ClearanceType {
+pub enum ClearanceKind {
     AreaArea,
     PinArea,
     PinPin,
@@ -338,7 +338,7 @@ pub enum ClearanceType {
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Clearance {
     pub amount: f64,
-    pub types: EnumSet<ClearanceType>,
+    pub kinds: EnumSet<ClearanceKind>,
 }
 
 // Describes various rules for layout of tracks.

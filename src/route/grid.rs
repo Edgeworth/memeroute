@@ -180,7 +180,7 @@ impl GridRouter {
 
                     let wire = self.wire_from_states(&[cur, next]);
                     // Wire is blocked if anything other than its net is there.
-                    if !is_via && self.place.is_wire_blocked(&wire, Query::Except(next.net_id)) {
+                    if !is_via && self.place.is_wire_blocked(&wire, Query::ExceptId(next.net_id)) {
                         continue;
                     }
 
