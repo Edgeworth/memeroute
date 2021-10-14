@@ -22,6 +22,7 @@ rand = {version = "*", features = ["small_rng"]}
 regex = "*"
 rust-dense-bitset = "*"
 serde = {version = "*", features = ["derive"]}
+smallvec = "*"
 strum = {version = "*", features = ["derive"]}
 
 [dev-dependencies]

@@ -1,8 +1,15 @@
 use std::collections::HashMap;
 use std::mem::swap;
 
+use ordered_float::OrderedFloat;
+use smallvec::{smallvec, SmallVec};
+
 use crate::model::geom::bounds::rt_cloud_bounds;
-use crate::model::geom::qt::query::{decompose_shape, matches_query, Query, ShapeInfo};
+use crate::model::geom::distance::rt_rt_dist;
+use crate::model::geom::qt::query::{
+    cached_contains, cached_dist, cached_intersects, decompose_shape, matches_query, Query,
+    ShapeInfo,
+};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
@@ -52,6 +59,7 @@ pub struct QuadTree {
     bounds: Rt,
     intersect_cache: HashMap<ShapeIdx, bool>, // Caches intersection tests.
     contain_cache: HashMap<ShapeIdx, bool>,   // Caches containment tests.
+    dist_cache: HashMap<ShapeIdx, f64>,       // Caches distance tests.
 }
 
 impl QuadTree {
@@ -149,6 +157,7 @@ impl QuadTree {
     fn reset_cache(&mut self) {
         self.intersect_cache.clear();
         self.contain_cache.clear();
+        self.dist_cache.clear();
     }
 
     pub fn intersects(&mut self, s: &Shape, q: Query) -> bool {
@@ -161,44 +170,9 @@ impl QuadTree {
         self.contain(s, q, 1, self.bounds(), 0)
     }
 
-    pub fn dist(&mut self, _s: &Shape, _q: Query) -> f64 {
-        todo!()
-    }
-
-    fn cached_intersects(
-        shapes: &[ShapeInfo],
-        cache: &mut HashMap<ShapeIdx, bool>,
-        idx: ShapeIdx,
-        s: &Shape,
-        q: Query,
-    ) -> bool {
-        if !matches_query(&shapes[idx], q) {
-            false
-        } else if let Some(res) = cache.get(&idx) {
-            *res
-        } else {
-            let res = shapes[idx].shape().intersects_shape(s);
-            cache.insert(idx, res);
-            res
-        }
-    }
-
-    fn cached_contains(
-        shapes: &[ShapeInfo],
-        cache: &mut HashMap<ShapeIdx, bool>,
-        idx: ShapeIdx,
-        s: &Shape,
-        q: Query,
-    ) -> bool {
-        if !matches_query(&shapes[idx], q) {
-            false
-        } else if let Some(res) = cache.get(&idx) {
-            *res
-        } else {
-            let res = shapes[idx].shape().contains_shape(s);
-            cache.insert(idx, res);
-            res
-        }
+    pub fn dist(&mut self, s: &Shape, q: Query) -> f64 {
+        self.reset_cache();
+        self.distance(s, q, 1, self.bounds(), f64::MAX, 0)
     }
 
     fn inter(&mut self, s: &Shape, q: Query, idx: NodeIdx, r: Rt, depth: usize) -> bool {
@@ -209,8 +183,12 @@ impl QuadTree {
 
         // If there are any shapes containing this node they must intersect with
         // |s| since it intersects |bounds|.
-        if q == Query::All && !self.nodes[idx].contain.is_empty() {
-            return true;
+        if !self.nodes[idx].contain.is_empty() {
+            for &contain in self.nodes[idx].contain.iter() {
+                if matches_query(&self.shapes[contain], q) {
+                    return true;
+                }
+            }
         }
 
         // TODO: Could check if |s| contains the bounds here and return true if
@@ -244,13 +222,7 @@ impl QuadTree {
         let mut had_intersection = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            if Self::cached_intersects(
-                &self.shapes,
-                &mut self.intersect_cache,
-                inter.shape_idx,
-                s,
-                q,
-            ) {
+            if cached_intersects(&self.shapes, &mut self.intersect_cache, inter.shape_idx, s, q) {
                 had_intersection = true;
                 break;
             }
@@ -268,8 +240,12 @@ impl QuadTree {
 
         // If bounds contains |s| and there is something that contains the
         // bounds, then that contains |s|.
-        if q == Query::All && !self.nodes[idx].contain.is_empty() && r.contains_shape(s) {
-            return true;
+        if !self.nodes[idx].contain.is_empty() && r.contains_shape(s) {
+            for &contain in self.nodes[idx].contain.iter() {
+                if matches_query(&self.shapes[contain], q) {
+                    return true;
+                }
+            }
         }
 
         // Check children, if they exist. Do this first as we expect traversing
@@ -300,7 +276,7 @@ impl QuadTree {
         let mut had_containment = false;
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            if Self::cached_contains(&self.shapes, &mut self.contain_cache, inter.shape_idx, s, q) {
+            if cached_contains(&self.shapes, &mut self.contain_cache, inter.shape_idx, s, q) {
                 had_containment = true;
                 break;
             }
@@ -308,6 +284,67 @@ impl QuadTree {
         self.maybe_push_down(idx, r, depth);
 
         had_containment
+    }
+
+    fn distance(
+        &mut self,
+        s: &Shape,
+        q: Query,
+        idx: NodeIdx,
+        r: Rt,
+        mut best: f64,
+        depth: usize,
+    ) -> f64 {
+        // If bounds intersects |s| and there is something that contains the
+        // bounds, then the distance is zero (intersecting a shape).
+        if !self.nodes[idx].contain.is_empty() {
+            for &contain in self.nodes[idx].contain.iter() {
+                if matches_query(&self.shapes[contain], q) {
+                    return 0.0;
+                }
+            }
+        }
+
+        // Traverse children in order of shortest AABB distance. This optimises the
+        // good case where a small object goes directly to objects near it.
+        let b = s.bounds();
+        let mut children: SmallVec<[(f64, usize, Rt); 4]> = smallvec![];
+        if self.nodes[idx].bl != NO_NODE {
+            let child_rt = r.bl_quadrant();
+            children.push((rt_rt_dist(&child_rt, &b), self.nodes[idx].bl, child_rt));
+        }
+        if self.nodes[idx].br != NO_NODE {
+            let child_rt = r.br_quadrant();
+            children.push((rt_rt_dist(&child_rt, &b), self.nodes[idx].br, child_rt));
+        }
+        if self.nodes[idx].tr != NO_NODE {
+            let child_rt = r.tr_quadrant();
+            children.push((rt_rt_dist(&child_rt, &b), self.nodes[idx].tr, child_rt));
+        }
+        if self.nodes[idx].tl != NO_NODE {
+            let child_rt = r.tl_quadrant();
+            children.push((rt_rt_dist(&child_rt, &b), self.nodes[idx].tl, child_rt));
+        }
+        children.sort_unstable_by_key(|v| OrderedFloat(v.0));
+
+        // If we can't do better than the current best in this node, give up.
+        for (lower_bound, child_idx, child_rt) in children {
+            // Distance must be greater than lower bound, and this is sorted by
+            // lower bound dist, so early exit.
+            if best < lower_bound {
+                break;
+            }
+            best = best.min(self.distance(s, q, child_idx, child_rt, best, depth + 1));
+        }
+
+        // Check shapes that intersect this node:
+        for inter in self.nodes[idx].intersect.iter_mut() {
+            inter.tests += 1;
+            best = best.min(cached_dist(&self.shapes, &mut self.dist_cache, inter.shape_idx, s, q));
+        }
+        self.maybe_push_down(idx, r, depth);
+
+        best
     }
 
     // Move any shapes to child nodes, if necessary.

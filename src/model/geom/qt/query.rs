@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use crate::model::geom::qt::quadtree::ShapeIdx;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
 
@@ -66,4 +69,58 @@ pub fn decompose_shape(s: ShapeInfo) -> Vec<ShapeInfo> {
     let id = s.id;
     let kind = s.kind;
     shapes.into_iter().map(|shape| ShapeInfo { shape, id, kind }).collect()
+}
+
+pub fn cached_intersects(
+    shapes: &[ShapeInfo],
+    cache: &mut HashMap<ShapeIdx, bool>,
+    idx: ShapeIdx,
+    s: &Shape,
+    q: Query,
+) -> bool {
+    if !matches_query(&shapes[idx], q) {
+        false
+    } else if let Some(res) = cache.get(&idx) {
+        *res
+    } else {
+        let res = shapes[idx].shape().intersects_shape(s);
+        cache.insert(idx, res);
+        res
+    }
+}
+
+pub fn cached_contains(
+    shapes: &[ShapeInfo],
+    cache: &mut HashMap<ShapeIdx, bool>,
+    idx: ShapeIdx,
+    s: &Shape,
+    q: Query,
+) -> bool {
+    if !matches_query(&shapes[idx], q) {
+        false
+    } else if let Some(res) = cache.get(&idx) {
+        *res
+    } else {
+        let res = shapes[idx].shape().contains_shape(s);
+        cache.insert(idx, res);
+        res
+    }
+}
+
+pub fn cached_dist(
+    shapes: &[ShapeInfo],
+    cache: &mut HashMap<ShapeIdx, f64>,
+    idx: ShapeIdx,
+    s: &Shape,
+    q: Query,
+) -> f64 {
+    if !matches_query(&shapes[idx], q) {
+        f64::MAX // Let's say distance to the empty set is infinity-ish.
+    } else if let Some(res) = cache.get(&idx) {
+        *res
+    } else {
+        let res = shapes[idx].shape().dist_to_shape(s);
+        cache.insert(idx, res);
+        res
+    }
 }

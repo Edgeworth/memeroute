@@ -1225,6 +1225,7 @@ dependencies = [
  "regex",
  "rust-dense-bitset",
  "serde",
+ "smallvec",
  "strum",
 ]
 
