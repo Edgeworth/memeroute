@@ -10,6 +10,7 @@ use rust_dense_bitset::{BitSet, DenseBitSet};
 use strum::EnumIter;
 
 use crate::model::geom::bounds::rt_cloud_bounds;
+use crate::model::geom::qt::query::QueryKind;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -311,6 +312,12 @@ pub enum ObjectKind {
     Smd,  // Surface mount pad shapes
     Via,  // Vias
     Wire, // Wires
+}
+
+impl From<ObjectKind> for QueryKind {
+    fn from(kind: ObjectKind) -> Self {
+        Self(kind as usize)
+    }
 }
 
 #[derive(Debug, EnumSetType)]

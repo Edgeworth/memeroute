@@ -5,7 +5,7 @@ use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
 use crate::model::geom::math::f64_cmp;
-use crate::model::geom::qt::query::Query;
+use crate::model::geom::qt::query::{Query, QueryId};
 use crate::model::pcb::{LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::rect::{Rt, RtI};
@@ -180,7 +180,9 @@ impl GridRouter {
 
                     let wire = self.wire_from_states(&[cur, next]);
                     // Wire is blocked if anything other than its net is there.
-                    if !is_via && self.place.is_wire_blocked(&wire, Query::ExceptId(next.net_id)) {
+                    if !is_via
+                        && self.place.is_wire_blocked(&wire, Query::ExceptId(QueryId(next.net_id)))
+                    {
                         continue;
                     }
 
