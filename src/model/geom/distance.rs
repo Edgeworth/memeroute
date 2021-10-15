@@ -39,7 +39,7 @@ pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
     if b.contains(project) { dist.min(a.dist(project)) } else { dist }
 }
 
-pub fn rt_rt_dist(a: &Rt, b: &Rt) -> f64 {
+pub fn rt_rt_dist(_a: &Rt, _b: &Rt) -> f64 {
     todo!()
 }
 

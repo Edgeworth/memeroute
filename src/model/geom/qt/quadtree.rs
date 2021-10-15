@@ -183,11 +183,9 @@ impl QuadTree {
 
         // If there are any shapes containing this node they must intersect with
         // |s| since it intersects |bounds|.
-        if !self.nodes[idx].contain.is_empty() {
-            for &contain in self.nodes[idx].contain.iter() {
-                if matches_query(&self.shapes[contain], q) {
-                    return true;
-                }
+        for &contain in self.nodes[idx].contain.iter() {
+            if matches_query(&self.shapes[contain], q) {
+                return true;
             }
         }
 
@@ -240,7 +238,7 @@ impl QuadTree {
 
         // If bounds contains |s| and there is something that contains the
         // bounds, then that contains |s|.
-        if !self.nodes[idx].contain.is_empty() && r.contains_shape(s) {
+        if r.contains_shape(s) {
             for &contain in self.nodes[idx].contain.iter() {
                 if matches_query(&self.shapes[contain], q) {
                     return true;
@@ -297,7 +295,8 @@ impl QuadTree {
     ) -> f64 {
         // If bounds intersects |s| and there is something that contains the
         // bounds, then the distance is zero (intersecting a shape).
-        if !self.nodes[idx].contain.is_empty() {
+        let b = s.bounds();
+        if r.contains_rt(&b) {
             for &contain in self.nodes[idx].contain.iter() {
                 if matches_query(&self.shapes[contain], q) {
                     return 0.0;
@@ -307,7 +306,6 @@ impl QuadTree {
 
         // Traverse children in order of shortest AABB distance. This optimises the
         // good case where a small object goes directly to objects near it.
-        let b = s.bounds();
         let mut children: SmallVec<[(f64, usize, Rt); 4]> = smallvec![];
         if self.nodes[idx].bl != NO_NODE {
             let child_rt = r.bl_quadrant();
@@ -402,6 +400,7 @@ mod tests {
     use rand::{Rng, SeedableRng};
 
     use super::*;
+    use crate::model::geom::qt::query::ALL;
     use crate::model::primitive::{circ, poly, pt, rt, tri};
 
     #[test]
@@ -410,11 +409,11 @@ mod tests {
             tri(pt(1.0, 2.0), pt(5.0, 2.0), pt(4.0, 5.0)).shape(),
         )]);
         for _ in 0..TEST_THRESHOLD {
-            assert!(qt.intersects(&pt(3.0, 3.0).shape(), Query::All));
+            assert!(qt.intersects(&pt(3.0, 3.0).shape(), ALL));
         }
 
-        assert!(qt.intersects(&pt(3.0, 3.0).shape(), Query::All));
-        assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape(), Query::All));
+        assert!(qt.intersects(&pt(3.0, 3.0).shape(), ALL));
+        assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL));
     }
 
     #[test]
@@ -423,11 +422,11 @@ mod tests {
             poly(&[pt(1.0, 2.0), pt(5.0, 2.0), pt(4.0, 5.0)]).shape(),
         )]);
         for _ in 0..TEST_THRESHOLD {
-            assert!(qt.intersects(&pt(3.0, 3.0).shape(), Query::All));
+            assert!(qt.intersects(&pt(3.0, 3.0).shape(), ALL));
         }
 
-        assert!(qt.intersects(&pt(3.0, 3.0).shape(), Query::All));
-        assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape(), Query::All));
+        assert!(qt.intersects(&pt(3.0, 3.0).shape(), ALL));
+        assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL));
     }
 
     #[test]
@@ -445,11 +444,11 @@ mod tests {
         for _ in 0..100 {
             let p0 = pt(r.gen_range(-50.0..150.0), r.gen_range(-150.0..-100.0));
             let p1 = pt(r.gen_range(-50.0..150.0), r.gen_range(-150.0..-100.0));
-            assert_eq!(poly.contains_shape(&p0.shape()), qt.contains(&p0.shape(), Query::All));
+            assert_eq!(poly.contains_shape(&p0.shape()), qt.contains(&p0.shape(), ALL));
             let rt = Rt::enclosing(p0, p1);
-            assert_eq!(poly.contains_shape(&rt.shape()), qt.contains(&rt.shape(), Query::All));
+            assert_eq!(poly.contains_shape(&rt.shape()), qt.contains(&rt.shape(), ALL));
             let c = circ(p0, r.gen_range(0.01..100.0));
-            assert_eq!(poly.contains_shape(&c.shape()), qt.contains(&c.shape(), Query::All));
+            assert_eq!(poly.contains_shape(&c.shape()), qt.contains(&c.shape(), ALL));
         }
     }
 }
