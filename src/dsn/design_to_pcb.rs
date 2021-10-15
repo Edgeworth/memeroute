@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use enumset::{enum_set, EnumSet};
 use eyre::{eyre, Result};
+use itertools::Itertools;
+use strum::IntoEnumIterator;
 
 use crate::dsn::types::{
     DsnCircuit, DsnClass, DsnClearance, DsnClearanceType, DsnComponent, DsnDimensionUnit, DsnImage,
@@ -10,8 +11,8 @@ use crate::dsn::types::{
 };
 use crate::model::geom::math::{eq, pt_eq};
 use crate::model::pcb::{
-    Clearance, ClearanceKind, Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet,
-    LayerShape, Net, Padstack, Pcb, Pin, PinRef, Rule, RuleSet,
+    Clearance, Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet, LayerShape,
+    Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Rule, RuleSet,
 };
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
@@ -194,16 +195,21 @@ impl DesignToPcb {
         }
     }
 
-    fn clearance_type(&self, v: &DsnClearanceType) -> EnumSet<ClearanceKind> {
+    fn clearance_type(&self, v: &DsnClearanceType) -> Vec<(ObjectKind, ObjectKind)> {
         match v {
-            DsnClearanceType::DefaultSmd => EnumSet::all(),
-            DsnClearanceType::SmdSmd => enum_set!(ClearanceKind::SmdSmd),
+            DsnClearanceType::DefaultSmd => {
+                ObjectKind::iter().cartesian_product(ObjectKind::iter()).collect()
+            }
+            DsnClearanceType::SmdSmd => vec![(ObjectKind::Smd, ObjectKind::Smd)],
         }
     }
 
     fn clearance(&self, v: &DsnClearance) -> Clearance {
-        let types = v.types.iter().fold(enum_set!(), |a, b| a | self.clearance_type(b));
-        Clearance { amount: self.coord(v.amount), kinds: types }
+        let pairs = v.types.iter().fold(vec![], |mut a, b| {
+            a.extend(self.clearance_type(b));
+            a
+        });
+        Clearance::new(self.coord(v.amount), &pairs)
     }
 
     fn rule(&self, v: &DsnRule) -> Rule {
