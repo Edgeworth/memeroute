@@ -4,13 +4,13 @@ use std::iter::FromIterator;
 use std::sync::RwLock;
 
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
-use enumset::{EnumSet, EnumSetType};
+use enumset::{enum_set, EnumSet, EnumSetType};
 use eyre::{eyre, Result};
 use rust_dense_bitset::{BitSet, DenseBitSet};
 use strum::EnumIter;
 
 use crate::model::geom::bounds::rt_cloud_bounds;
-use crate::model::geom::qt::query::QueryKind;
+use crate::model::geom::qt::query::QueryKinds;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -314,9 +314,9 @@ pub enum ObjectKind {
     Wire, // Wires
 }
 
-impl From<ObjectKind> for QueryKind {
-    fn from(kind: ObjectKind) -> Self {
-        Self(kind as usize)
+impl ObjectKind {
+    pub fn query(&self) -> QueryKinds {
+        QueryKinds(DenseBitSet::from_integer(enum_set!(self).as_u64()))
     }
 }
 

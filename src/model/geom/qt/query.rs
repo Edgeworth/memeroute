@@ -1,31 +1,32 @@
 use std::collections::HashMap;
 
+use rust_dense_bitset::DenseBitSet;
+
 use crate::model::geom::qt::quadtree::ShapeIdx;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct QueryId(pub usize);
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct QueryKind(pub usize);
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct QueryKinds(pub DenseBitSet);
 
 pub const NO_ID: QueryId = QueryId(usize::MAX);
-pub const NO_KIND: QueryKind = QueryKind(usize::MAX);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Query {
     All,
     Id(QueryId),
     ExceptId(QueryId),
-    Kind(QueryKind),
+    CommonKind(QueryKinds), // Query all shapes who have a common kind with the query value.
 }
 
 pub fn matches_query(s: &ShapeInfo, q: Query) -> bool {
     match q {
         Query::All => true,
-        Query::Id(tag) => tag == s.id,
-        Query::ExceptId(tag) => tag != s.id,
-        Query::Kind(tag) => tag == s.kind,
+        Query::Id(id) => id == s.id,
+        Query::ExceptId(id) => id != s.id,
+        Query::CommonKind(kinds) => (kinds.0 & s.kinds.0).any(),
     }
 }
 
@@ -33,16 +34,16 @@ pub fn matches_query(s: &ShapeInfo, q: Query) -> bool {
 pub struct ShapeInfo {
     shape: Shape,
     id: QueryId,
-    kind: QueryKind,
+    kinds: QueryKinds, // A bitmask.
 }
 
 impl ShapeInfo {
-    pub fn new(shape: Shape, id: QueryId, kind: QueryKind) -> Self {
-        Self { shape, id, kind }
+    pub fn new(shape: Shape, id: QueryId, kinds: QueryKinds) -> Self {
+        Self { shape, id, kinds }
     }
 
     pub fn anon(shape: Shape) -> Self {
-        Self { shape, id: NO_ID, kind: NO_KIND }
+        Self { shape, id: NO_ID, kinds: QueryKinds(DenseBitSet::new()) }
     }
 
     pub fn shape(&self) -> &Shape {
@@ -53,8 +54,8 @@ impl ShapeInfo {
         self.id
     }
 
-    pub fn kind(&self) -> QueryKind {
-        self.kind
+    pub fn kinds(&self) -> QueryKinds {
+        self.kinds
     }
 }
 
@@ -67,8 +68,8 @@ pub fn decompose_shape(s: ShapeInfo) -> Vec<ShapeInfo> {
         s => vec![s],
     };
     let id = s.id;
-    let kind = s.kind;
-    shapes.into_iter().map(|shape| ShapeInfo { shape, id, kind }).collect()
+    let kinds = s.kinds;
+    shapes.into_iter().map(|shape| ShapeInfo { shape, id, kinds }).collect()
 }
 
 pub fn cached_intersects(

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use eyre::Result;
 
 use crate::model::geom::qt::quadtree::ShapeIdx;
-use crate::model::geom::qt::query::{Query, QueryId, QueryKind, ShapeInfo, NO_ID};
+use crate::model::geom::qt::query::{Query, QueryId, QueryKinds, ShapeInfo, NO_ID};
 use crate::model::pcb::{
     LayerId, LayerSet, LayerShape, Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Via, Wire,
 };
@@ -64,7 +64,7 @@ impl PlaceModel {
             &Tf::identity(),
             &wire.shape,
             QueryId(wire.net_id),
-            ObjectKind::Wire.into(),
+            ObjectKind::Wire.query(),
         )
     }
 
@@ -75,7 +75,7 @@ impl PlaceModel {
     }
 
     pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
-        self.add_padstack(&via.tf(), &via.padstack, QueryId(via.net_id), ObjectKind::Via.into())
+        self.add_padstack(&via.tf(), &via.padstack, QueryId(via.net_id), ObjectKind::Via.query())
     }
 
     // Adds all pins in the given net.
@@ -138,7 +138,7 @@ impl PlaceModel {
                 &tf,
                 boundary,
                 NO_ID,
-                ObjectKind::Area.into(),
+                ObjectKind::Area.query(),
             );
         }
 
@@ -155,7 +155,7 @@ impl PlaceModel {
                 &tf,
                 &keepout.shape,
                 NO_ID,
-                ObjectKind::Area.into(),
+                ObjectKind::Area.query(),
             );
         }
 
@@ -173,7 +173,7 @@ impl PlaceModel {
                     &tf,
                     &keepout.shape,
                     NO_ID,
-                    ObjectKind::Area.into(),
+                    ObjectKind::Area.query(),
                 );
             }
         }
@@ -186,7 +186,7 @@ impl PlaceModel {
         tf: &Tf,
         ls: &LayerShape,
         id: QueryId,
-        kind: QueryKind,
+        kinds: QueryKinds,
     ) -> Vec<PlaceId> {
         let s = tf.shape(&ls.shape);
         let mut idxs = Vec::new();
@@ -195,7 +195,7 @@ impl PlaceModel {
             idxs.extend(
                 map.entry(layer)
                     .or_insert_with(|| Compound::with_bounds(&bounds))
-                    .add_shape(ShapeInfo::new(s.clone(), id, kind))
+                    .add_shape(ShapeInfo::new(s.clone(), id, kinds))
                     .iter()
                     .map(|&v| (layer, v)),
             );
@@ -209,18 +209,18 @@ impl PlaceModel {
         tf: &Tf,
         padstack: &Padstack,
         id: QueryId,
-        kind: QueryKind,
+        kinds: QueryKinds,
     ) -> Vec<PlaceId> {
         padstack
             .shapes
             .iter()
-            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape, id, kind))
+            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape, id, kinds))
             .flatten()
             .collect()
     }
 
     fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, id: QueryId) -> Vec<PlaceId> {
-        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, id, ObjectKind::Pin.into());
+        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, id, ObjectKind::Pin.query());
         let e = self.pins.entry(pinref).or_insert_with(Vec::new);
         for &id in ids.iter() {
             e.push(id);
