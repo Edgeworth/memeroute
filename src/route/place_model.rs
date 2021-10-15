@@ -2,10 +2,12 @@ use std::collections::HashMap;
 
 use eyre::Result;
 
+use crate::model::geom::math::le;
 use crate::model::geom::qt::quadtree::ShapeIdx;
-use crate::model::geom::qt::query::{Query, QueryId, QueryKinds, ShapeInfo, NO_ID};
+use crate::model::geom::qt::query::{Kinds, KindsQuery, Query, ShapeInfo, Tag, TagQuery, NO_TAG};
 use crate::model::pcb::{
-    LayerId, LayerSet, LayerShape, Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Via, Wire,
+    Clearance, LayerId, LayerSet, LayerShape, Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Via,
+    Wire,
 };
 use crate::model::primitive::compound::Compound;
 use crate::model::primitive::point::Pt;
@@ -63,7 +65,7 @@ impl PlaceModel {
             &mut self.blocked,
             &Tf::identity(),
             &wire.shape,
-            QueryId(wire.net_id),
+            Tag(wire.net_id),
             ObjectKind::Wire.query(),
         )
     }
@@ -75,14 +77,14 @@ impl PlaceModel {
     }
 
     pub fn add_via(&mut self, via: &Via) -> Vec<PlaceId> {
-        self.add_padstack(&via.tf(), &via.padstack, QueryId(via.net_id), ObjectKind::Via.query())
+        self.add_padstack(&via.tf(), &via.padstack, Tag(via.net_id), ObjectKind::Via.query())
     }
 
     // Adds all pins in the given net.
     pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
         for p in net.pins.iter() {
             let (component, pin) = pcb.pin_ref(p)?;
-            self.add_pin(&component.tf(), p.clone(), pin, QueryId(net.id));
+            self.add_pin(&component.tf(), p.clone(), pin, Tag(net.id));
         }
         Ok(())
     }
@@ -94,32 +96,65 @@ impl PlaceModel {
         }
     }
 
-    pub fn is_wire_blocked(&self, wire: &Wire, q: Query) -> bool {
-        // TODO: need to go through each clearance rule and check it.
-        // want to be able to give enumset to quadtree
-        // need to collect Wire clearances
-        self.is_shape_blocked(&Tf::identity(), &wire.shape, q)
+    pub fn is_wire_blocked(&self, wire: &Wire) -> bool {
+        self.is_shape_blocked(
+            &Tf::identity(),
+            &wire.shape,
+            TagQuery::Except(Tag(wire.net_id)),
+            ObjectKind::Wire,
+            self.pcb.net_ruleset(wire.net_id).clearances(),
+        )
     }
 
-    pub fn is_via_blocked(&self, via: &Via, q: Query) -> bool {
-        self.is_padstack_blocked(&via.tf(), &via.padstack, q)
+    pub fn is_via_blocked(&self, via: &Via) -> bool {
+        // TODO: check clearances here
+        self.is_padstack_blocked(
+            &via.tf(),
+            &via.padstack,
+            TagQuery::All,
+            ObjectKind::Via,
+            self.pcb.net_ruleset(via.net_id).clearances(),
+        )
     }
 
-    pub fn is_shape_blocked(&self, tf: &Tf, ls: &LayerShape, q: Query) -> bool {
+    pub fn is_shape_blocked(
+        &self,
+        tf: &Tf,
+        ls: &LayerShape,
+        q: TagQuery,
+        kind: ObjectKind,
+        clearances: &[Clearance],
+    ) -> bool {
         let s = tf.shape(&ls.shape);
 
         for layer in ls.layers.iter() {
             if let Some(boundary) = self.boundary.get(&layer) {
-                if !boundary.contains(&s, q) {
+                // TODO: Convert boundary to path and compute distance to it for clearance.
+                if !boundary.contains(&s, Query(q, KindsQuery::All)) {
                     return true;
                 }
             }
         }
 
+        // Check for intersection first, it's generally cheaper than checking distance.
         for layer in ls.layers.iter() {
             if let Some(blocked) = self.blocked.get(&layer) {
-                if blocked.intersects(&s, q) {
+                if blocked.intersects(&s, Query(q, KindsQuery::All)) {
                     return true;
+                }
+            }
+        }
+
+        // Check for clearance.
+        for layer in ls.layers.iter() {
+            if let Some(blocked) = self.blocked.get(&layer) {
+                for c in clearances {
+                    if le(
+                        blocked.dist(&s, Query(q, KindsQuery::HasCommon(c.subset_for(kind)))),
+                        c.amount(),
+                    ) {
+                        return true;
+                    }
                 }
             }
         }
@@ -137,7 +172,7 @@ impl PlaceModel {
                 &mut self.boundary,
                 &tf,
                 boundary,
-                NO_ID,
+                NO_TAG,
                 ObjectKind::Area.query(),
             );
         }
@@ -154,7 +189,7 @@ impl PlaceModel {
                 &mut self.blocked,
                 &tf,
                 &keepout.shape,
-                NO_ID,
+                NO_TAG,
                 ObjectKind::Area.query(),
             );
         }
@@ -163,8 +198,8 @@ impl PlaceModel {
             let tf = tf * c.tf();
             for pin in c.pins() {
                 let r = PinRef::new(c, pin);
-                let id = if let Some(id) = pcb.pin_ref_net(&r) { QueryId(id) } else { NO_ID };
-                self.add_pin(&tf, r, pin, id);
+                let tag = if let Some(tag) = pcb.pin_ref_net(&r) { Tag(tag) } else { NO_TAG };
+                self.add_pin(&tf, r, pin, tag);
             }
             for keepout in c.keepouts.iter() {
                 Self::add_shape(
@@ -172,7 +207,7 @@ impl PlaceModel {
                     &mut self.blocked,
                     &tf,
                     &keepout.shape,
-                    NO_ID,
+                    NO_TAG,
                     ObjectKind::Area.query(),
                 );
             }
@@ -185,8 +220,8 @@ impl PlaceModel {
         map: &mut HashMap<LayerId, Compound>,
         tf: &Tf,
         ls: &LayerShape,
-        id: QueryId,
-        kinds: QueryKinds,
+        tag: Tag,
+        kinds: Kinds,
     ) -> Vec<PlaceId> {
         let s = tf.shape(&ls.shape);
         let mut idxs = Vec::new();
@@ -195,7 +230,7 @@ impl PlaceModel {
             idxs.extend(
                 map.entry(layer)
                     .or_insert_with(|| Compound::with_bounds(&bounds))
-                    .add_shape(ShapeInfo::new(s.clone(), id, kinds))
+                    .add_shape(ShapeInfo::new(s.clone(), tag, kinds))
                     .iter()
                     .map(|&v| (layer, v)),
             );
@@ -208,19 +243,19 @@ impl PlaceModel {
         &mut self,
         tf: &Tf,
         padstack: &Padstack,
-        id: QueryId,
-        kinds: QueryKinds,
+        tag: Tag,
+        kinds: Kinds,
     ) -> Vec<PlaceId> {
         padstack
             .shapes
             .iter()
-            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape, id, kinds))
+            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape, tag, kinds))
             .flatten()
             .collect()
     }
 
-    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, id: QueryId) -> Vec<PlaceId> {
-        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, id, ObjectKind::Pin.query());
+    fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, tag: Tag) -> Vec<PlaceId> {
+        let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, tag, ObjectKind::Pin.query());
         let e = self.pins.entry(pinref).or_insert_with(Vec::new);
         for &id in ids.iter() {
             e.push(id);
@@ -240,7 +275,14 @@ impl PlaceModel {
         self.blocked.get_mut(&id.0).unwrap().remove_shape(id.1);
     }
 
-    fn is_padstack_blocked(&self, tf: &Tf, padstack: &Padstack, q: Query) -> bool {
-        padstack.shapes.iter().any(|shape| self.is_shape_blocked(tf, shape, q))
+    fn is_padstack_blocked(
+        &self,
+        tf: &Tf,
+        padstack: &Padstack,
+        q: TagQuery,
+        kind: ObjectKind,
+        clearances: &[Clearance],
+    ) -> bool {
+        padstack.shapes.iter().any(|shape| self.is_shape_blocked(tf, shape, q, kind, clearances))
     }
 }

@@ -5,8 +5,8 @@ use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
 use crate::model::geom::math::f64_cmp;
-use crate::model::geom::qt::query::{Query, QueryId};
-use crate::model::pcb::{LayerSet, LayerShape, Pcb, PinRef, Via, Wire};
+use crate::model::geom::qt::query::TagQuery;
+use crate::model::pcb::{LayerSet, LayerShape, ObjectKind, Pcb, PinRef, Via, Wire};
 use crate::model::primitive::point::{Pt, PtI};
 use crate::model::primitive::rect::{Rt, RtI};
 use crate::model::primitive::{circ, pt, pti, ShapeOps};
@@ -180,15 +180,13 @@ impl GridRouter {
 
                     let wire = self.wire_from_states(&[cur, next]);
                     // Wire is blocked if anything other than its net is there.
-                    if !is_via
-                        && self.place.is_wire_blocked(&wire, Query::ExceptId(QueryId(next.net_id)))
-                    {
+                    if !is_via && self.place.is_wire_blocked(&wire) {
                         continue;
                     }
 
                     // Vias are blocked by anything since they create a hole.
                     let via = self.via_from_state(&next);
-                    if is_via && (self.place.is_via_blocked(&via, Query::All)) {
+                    if is_via && (self.place.is_via_blocked(&via)) {
                         continue;
                     }
 
@@ -280,7 +278,13 @@ impl GridRouter {
                 let p = pti(l, b);
                 let shape = circ(self.world_pt_mid(p), self.resolution / 2.0).shape();
                 let shape = LayerShape { layers: LayerSet::one(0), shape };
-                if self.place.is_shape_blocked(&Tf::identity(), &shape, Query::All) {
+                if self.place.is_shape_blocked(
+                    &Tf::identity(),
+                    &shape,
+                    TagQuery::All,
+                    ObjectKind::Wire,
+                    &[],
+                ) {
                     continue;
                 }
                 res.wires.push(Wire { shape, net_id: NO_ID });

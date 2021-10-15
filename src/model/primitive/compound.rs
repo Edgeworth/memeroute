@@ -1,7 +1,7 @@
 use std::cell::{Ref, RefCell};
 
 use crate::model::geom::qt::quadtree::{QuadTree, ShapeIdx};
-use crate::model::geom::qt::query::{Query, ShapeInfo};
+use crate::model::geom::qt::query::{Query, ShapeInfo, ALL};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::ShapeOps;
@@ -59,16 +59,16 @@ impl ShapeOps for Compound {
     }
 
     fn intersects_shape(&self, s: &Shape) -> bool {
-        self.qt.borrow_mut().intersects(s, Query::All)
+        self.qt.borrow_mut().intersects(s, ALL)
     }
 
     // N.B. this will check if any one shape in the compound contains |s|.
     // If |s| is covered using multiple shapes then that won't be detected.
     fn contains_shape(&self, s: &Shape) -> bool {
-        self.qt.borrow_mut().contains(s, Query::All)
+        self.qt.borrow_mut().contains(s, ALL)
     }
 
     fn dist_to_shape(&self, s: &Shape) -> f64 {
-        self.qt.borrow_mut().dist(s, Query::All)
+        self.qt.borrow_mut().dist(s, ALL)
     }
 }

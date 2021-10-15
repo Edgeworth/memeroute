@@ -10,7 +10,7 @@ use rust_dense_bitset::{BitSet, DenseBitSet};
 use strum::EnumIter;
 
 use crate::model::geom::bounds::rt_cloud_bounds;
-use crate::model::geom::qt::query::QueryKinds;
+use crate::model::geom::qt::query::Kinds;
 use crate::model::primitive::point::Pt;
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
@@ -315,8 +315,8 @@ pub enum ObjectKind {
 }
 
 impl ObjectKind {
-    pub fn query(&self) -> QueryKinds {
-        QueryKinds(DenseBitSet::from_integer(enum_set!(self).as_u64()))
+    pub fn query(&self) -> Kinds {
+        Kinds(DenseBitSet::from_integer(enum_set!(self).as_u64()))
     }
 }
 
@@ -344,13 +344,13 @@ impl Clearance {
     }
 
     // Returns set of ObjectKind that |kind| has a clearance rule with.
-    pub fn subset_for(&self, kind: ObjectKind) -> EnumSet<ObjectKind> {
+    pub fn subset_for(&self, kind: ObjectKind) -> Kinds {
         match kind {
-            ObjectKind::Area => self.area_kinds,
-            ObjectKind::Pin => self.pin_kinds,
-            ObjectKind::Smd => self.smd_kinds,
-            ObjectKind::Via => self.via_kinds,
-            ObjectKind::Wire => self.wire_kinds,
+            ObjectKind::Area => Kinds(DenseBitSet::from_integer(self.area_kinds.as_u64())),
+            ObjectKind::Pin => Kinds(DenseBitSet::from_integer(self.pin_kinds.as_u64())),
+            ObjectKind::Smd => Kinds(DenseBitSet::from_integer(self.smd_kinds.as_u64())),
+            ObjectKind::Via => Kinds(DenseBitSet::from_integer(self.via_kinds.as_u64())),
+            ObjectKind::Wire => Kinds(DenseBitSet::from_integer(self.wire_kinds.as_u64())),
         }
     }
 
@@ -362,6 +362,10 @@ impl Clearance {
             ObjectKind::Via => &mut self.via_kinds,
             ObjectKind::Wire => &mut self.wire_kinds,
         }
+    }
+
+    pub fn amount(&self) -> f64 {
+        self.amount
     }
 }
 
@@ -377,25 +381,32 @@ pub enum Rule {
 #[derive(Debug, Clone, PartialEq)]
 pub struct RuleSet {
     pub id: Id,
-    rules: Vec<Rule>,
     radius: Option<f64>,
+    clearances: Vec<Clearance>,
+    use_via: Option<Id>,
 }
 
 impl RuleSet {
     pub fn new(id: Id, rules: Vec<Rule>) -> Result<Self> {
-        let mut rs = Self { id, rules, radius: None };
+        let mut rs = Self { id, radius: None, clearances: Vec::new(), use_via: None };
         // Check for consistency:
-        for rule in rs.rules.iter() {
+        for rule in rules.into_iter() {
             match rule {
                 Rule::Radius(r) => {
                     if rs.radius.is_some() {
                         return Err(eyre!("Multple width rules"));
                     } else {
-                        rs.radius = Some(*r);
+                        rs.radius = Some(r);
                     }
                 }
-                Rule::Clearance(_) => {}
-                Rule::UseVia(_) => {}
+                Rule::Clearance(c) => rs.clearances.push(c),
+                Rule::UseVia(v) => {
+                    if rs.use_via.is_some() {
+                        return Err(eyre!("Multple use_via rules"));
+                    } else {
+                        rs.use_via = Some(v);
+                    }
+                }
             }
         }
 
@@ -404,6 +415,14 @@ impl RuleSet {
 
     pub fn radius(&self) -> f64 {
         self.radius.unwrap()
+    }
+
+    pub fn clearances(&self) -> &[Clearance] {
+        &self.clearances
+    }
+
+    pub fn use_via(&self) -> Option<Id> {
+        self.use_via
     }
 }
 
