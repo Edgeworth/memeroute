@@ -305,7 +305,7 @@ impl Via {
 }
 
 // Object kinds
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, EnumSetType, EnumIter)]
 pub enum ObjectKind {
     Area, // Keepout, boundary, or conducting shapes (fills)
     Pin,  // Through hole pin objects
@@ -320,32 +320,49 @@ impl From<ObjectKind> for QueryKind {
     }
 }
 
-#[derive(Debug, EnumSetType)]
-pub enum ClearanceKind {
-    AreaArea,
-    PinArea,
-    PinPin,
-    SmdArea,
-    SmdPin,
-    SmdSmd,
-    ViaArea,
-    ViaPin,
-    ViaSmd,
-    ViaVia,
-    WireArea,
-    WirePin,
-    WireSmd,
-    WireVia,
-    WireWire,
-}
-
 // If there are multple clearances specified for a ClearanceType,
 // take the most specific clearance, defined by the fewest number of ClearanceTypes.
 // If there are multiple such clearances, take the one with the largest value.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Clearance {
-    pub amount: f64,
-    pub kinds: EnumSet<ClearanceKind>,
+    amount: f64,
+    area_kinds: EnumSet<ObjectKind>,
+    pin_kinds: EnumSet<ObjectKind>,
+    smd_kinds: EnumSet<ObjectKind>,
+    via_kinds: EnumSet<ObjectKind>,
+    wire_kinds: EnumSet<ObjectKind>,
+}
+
+impl Clearance {
+    pub fn new(amount: f64, pairs: &[(ObjectKind, ObjectKind)]) -> Self {
+        let mut c = Self { amount, ..Self::default() };
+        for &(a, b) in pairs {
+            c.subset_for_mut(a).insert(b);
+            c.subset_for_mut(b).insert(a);
+        }
+        c
+    }
+
+    // Returns set of ObjectKind that |kind| has a clearance rule with.
+    pub fn subset_for(&self, kind: ObjectKind) -> EnumSet<ObjectKind> {
+        match kind {
+            ObjectKind::Area => self.area_kinds,
+            ObjectKind::Pin => self.pin_kinds,
+            ObjectKind::Smd => self.smd_kinds,
+            ObjectKind::Via => self.via_kinds,
+            ObjectKind::Wire => self.wire_kinds,
+        }
+    }
+
+    fn subset_for_mut(&mut self, kind: ObjectKind) -> &mut EnumSet<ObjectKind> {
+        match kind {
+            ObjectKind::Area => &mut self.area_kinds,
+            ObjectKind::Pin => &mut self.pin_kinds,
+            ObjectKind::Smd => &mut self.smd_kinds,
+            ObjectKind::Via => &mut self.via_kinds,
+            ObjectKind::Wire => &mut self.wire_kinds,
+        }
+    }
 }
 
 // Describes various rules for layout of tracks.

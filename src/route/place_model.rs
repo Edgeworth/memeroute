@@ -70,7 +70,7 @@ impl PlaceModel {
 
     // Creates a via for a given net, but doesn't add it.
     pub fn create_via(&self, net_id: Id, p: Pt) -> Via {
-        // TODO: consult ruleset.
+        // TODO: consult ruleset to choose via.
         Via { padstack: self.pcb.via_padstacks()[0].clone(), p, net_id }
     }
 
@@ -95,6 +95,9 @@ impl PlaceModel {
     }
 
     pub fn is_wire_blocked(&self, wire: &Wire, q: Query) -> bool {
+        // TODO: need to go through each clearance rule and check it.
+        // want to be able to give enumset to quadtree
+        // need to collect Wire clearances
         self.is_shape_blocked(&Tf::identity(), &wire.shape, q)
     }
 
