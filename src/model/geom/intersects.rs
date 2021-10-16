@@ -109,7 +109,10 @@ pub fn circ_intersects_rt(a: &Circle, b: &Rt) -> bool {
 
     // Check if the circle centre is contained in the rect or
     // the distance from the boundary of the rect to the circle is less than 0.
-    b.contains(a.p()) || lt(circ_rt_dist(a, b), 0.0)
+    // Project circle centre onto the rectangle:
+    let p = a.p().clamp(b);
+    let d = p.dist(a.p()) - a.r();
+    b.contains(a.p()) || lt(d, 0.0)
 }
 
 pub fn circ_intersects_tri(a: &Circle, b: &Tri) -> bool {
@@ -206,8 +209,21 @@ pub fn rt_intersects_tri(a: &Rt, b: &Tri) -> bool {
     true
 }
 
-pub fn rt_intersects_seg(_a: &Rt, _b: &Segment) -> bool {
-    todo!()
+pub fn rt_intersects_seg(a: &Rt, b: &Segment) -> bool {
+    if a.contains(b.st()) || a.contains(b.en()) {
+        return true;
+    }
+    // Test seg axis:
+    if pts_strictly_right_of(&b.line(), &a.pts()) {
+        return false;
+    }
+    // Test rect axes:
+    for seg in a.segs() {
+        if pts_strictly_right_of(&seg.line(), &[b.st(), b.en()]) {
+            return false;
+        }
+    }
+    true
 }
 
 pub fn seg_intersects_seg(a: &Segment, b: &Segment) -> bool {

@@ -3,7 +3,7 @@ use std::ops::Index;
 use crate::model::geom::bounds::pt_cloud_bounds;
 use crate::model::geom::contains::{path_contains_rt, path_contains_seg};
 use crate::model::geom::convex::remove_collinear;
-use crate::model::geom::distance::{circ_path_dist, path_poly_dist, rt_path_dist};
+use crate::model::geom::distance::{cap_path_dist, circ_path_dist, path_poly_dist, rt_path_dist};
 use crate::model::geom::intersects::{
     cap_intersects_path, circ_intersects_path, path_intersects_path, path_intersects_poly,
     path_intersects_rt,
@@ -96,7 +96,7 @@ impl ShapeOps for Path {
 
     fn dist_to_shape(&self, s: &Shape) -> f64 {
         match s {
-            Shape::Capsule(_) => todo!(),
+            Shape::Capsule(s) => cap_path_dist(s, self),
             Shape::Circle(s) => circ_path_dist(s, self),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),

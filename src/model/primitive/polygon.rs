@@ -9,7 +9,7 @@ use crate::model::geom::contains::{
     poly_contains_seg,
 };
 use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
-use crate::model::geom::distance::{cap_poly_dist, path_poly_dist};
+use crate::model::geom::distance::{cap_poly_dist, circ_poly_dist, path_poly_dist};
 use crate::model::geom::intersects::{
     cap_intersects_poly, circ_intersects_poly, path_intersects_poly, poly_intersects_rt,
 };
@@ -107,7 +107,7 @@ impl ShapeOps for Poly {
     fn dist_to_shape(&self, s: &Shape) -> f64 {
         match s {
             Shape::Capsule(s) => cap_poly_dist(s, self),
-            Shape::Circle(_) => todo!(),
+            Shape::Circle(s) => circ_poly_dist(s, self),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => path_poly_dist(s, self),
