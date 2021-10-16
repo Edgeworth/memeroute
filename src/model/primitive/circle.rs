@@ -1,5 +1,5 @@
 use crate::model::geom::contains::{circ_contains_pt, circ_contains_rt};
-use crate::model::geom::distance::circ_rt_dist;
+use crate::model::geom::distance::{cap_circ_dist, circ_path_dist, circ_rt_dist};
 use crate::model::geom::intersects::{
     circ_intersects_circ, circ_intersects_path, circ_intersects_poly, circ_intersects_rt,
     circ_intersects_tri,
@@ -70,11 +70,11 @@ impl ShapeOps for Circle {
 
     fn dist_to_shape(&self, s: &Shape) -> f64 {
         match s {
-            Shape::Capsule(_) => todo!(),
+            Shape::Capsule(s) => cap_circ_dist(s, self),
             Shape::Circle(_) => todo!(),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
-            Shape::Path(_) => todo!(),
+            Shape::Path(s) => circ_path_dist(self, s),
             Shape::Point(_) => todo!(),
             Shape::Polygon(_) => todo!(),
             Shape::Rect(s) => circ_rt_dist(self, s),

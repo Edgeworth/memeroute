@@ -1,6 +1,6 @@
 use derive_more::Display;
 
-use crate::model::geom::distance::{pt_seg_dist, rt_seg_dist, seg_seg_dist};
+use crate::model::geom::distance::{cap_seg_dist, pt_seg_dist, rt_seg_dist, seg_seg_dist};
 use crate::model::geom::intersects::{line_intersects_seg, rt_intersects_seg, seg_intersects_seg};
 use crate::model::geom::math::is_collinear;
 use crate::model::primitive::line_shape::Line;
@@ -83,7 +83,7 @@ impl ShapeOps for Segment {
 
     fn dist_to_shape(&self, s: &Shape) -> f64 {
         match s {
-            Shape::Capsule(_) => todo!(),
+            Shape::Capsule(s) => cap_seg_dist(s, self),
             Shape::Circle(_) => todo!(),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),

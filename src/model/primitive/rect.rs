@@ -5,7 +5,7 @@ use crate::model::geom::contains::{
     rt_contains_cap, rt_contains_circ, rt_contains_path, rt_contains_poly, rt_contains_seg,
     rt_contains_tri,
 };
-use crate::model::geom::distance::{circ_rt_dist, pt_rt_dist, rt_rt_dist, rt_seg_dist};
+use crate::model::geom::distance::{circ_rt_dist, pt_rt_dist, rt_path_dist, rt_rt_dist, rt_seg_dist};
 use crate::model::geom::intersects::{
     cap_intersects_rt, circ_intersects_rt, path_intersects_rt, poly_intersects_rt,
     rt_intersects_rt, rt_intersects_seg, rt_intersects_tri,
@@ -227,7 +227,7 @@ impl ShapeOps for Rt {
             Shape::Circle(s) => circ_rt_dist(s, self),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
-            Shape::Path(_) => todo!(),
+            Shape::Path(s) => rt_path_dist(self, s),
             Shape::Point(s) => pt_rt_dist(s, self),
             Shape::Polygon(_) => todo!(),
             Shape::Rect(s) => rt_rt_dist(self, s),
