@@ -1,5 +1,9 @@
-use crate::model::geom::intersects::seg_intersects_seg;
-use crate::model::geom::math::f64_cmp;
+use crate::model::geom::contains::poly_contains_pt;
+use crate::model::geom::intersects::{
+    cap_intersects_poly, circ_intersects_poly, circ_intersects_rt, rt_intersects_rt,
+    rt_intersects_seg, seg_intersects_seg,
+};
+use crate::model::geom::math::eq;
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
@@ -14,15 +18,42 @@ use crate::model::primitive::segment::Segment;
 // This property is used by quadtree which returns 0 if it detects an intersection
 // by e.g. regular intersection tests.
 
-// TODO: Audit these functions e.g. for returning 0
+fn min_dist(iter: impl Iterator<Item = f64>) -> f64 {
+    let mut best = f64::MAX;
+    for i in iter {
+        best = best.min(i);
+        if eq(best, 0.0) {
+            return best;
+        }
+    }
+    best
+}
+
+pub fn cap_cap_dist(a: &Capsule, b: &Capsule) -> f64 {
+    let d = seg_seg_dist(&a.seg(), &b.seg()) - a.r() - b.r();
+    d.max(0.0)
+}
 
 pub fn cap_circ_dist(a: &Capsule, b: &Circle) -> f64 {
     let d = pt_seg_dist(&b.p(), &a.seg()) - a.r() - b.r();
     d.max(0.0)
 }
 
+pub fn cap_path_dist(a: &Capsule, b: &Path) -> f64 {
+    min_dist(b.caps().map(|cap| cap_cap_dist(a, &cap)))
+}
+
 pub fn cap_poly_dist(a: &Capsule, b: &Poly) -> f64 {
-    b.edges().map(|[&p0, &p1]| cap_seg_dist(a, &seg(p0, p1))).min_by(f64_cmp).unwrap()
+    if cap_intersects_poly(a, b) {
+        0.0
+    } else {
+        min_dist(b.edges().map(|[&p0, &p1]| cap_seg_dist(a, &seg(p0, p1))))
+    }
+}
+
+pub fn cap_rt_dist(a: &Capsule, b: &Rt) -> f64 {
+    let d = rt_seg_dist(b, &a.seg()) - a.r();
+    d.max(0.0)
 }
 
 pub fn cap_seg_dist(a: &Capsule, b: &Segment) -> f64 {
@@ -30,16 +61,32 @@ pub fn cap_seg_dist(a: &Capsule, b: &Segment) -> f64 {
     d.max(0.0)
 }
 
-pub fn circ_path_dist(a: &Circle, b: &Path) -> f64 {
-    b.caps().map(|cap| cap_circ_dist(&cap, a)).min_by(f64_cmp).unwrap()
+pub fn circ_circ_dist(a: &Circle, b: &Circle) -> f64 {
+    let d = pt_pt_dist(&a.p(), &b.p()) - a.r() - b.r();
+    d.max(0.0)
 }
 
-// Returns the distance from the circle to the boundary of the
-// rectangle. Doesn't work if the point is inside the rectangle.
+pub fn circ_path_dist(a: &Circle, b: &Path) -> f64 {
+    min_dist(b.caps().map(|cap| cap_circ_dist(&cap, a)))
+}
+
+pub fn circ_poly_dist(a: &Circle, b: &Poly) -> f64 {
+    if circ_intersects_poly(a, b) {
+        0.0
+    } else {
+        let d = poly_pt_dist(b, &a.p()) - a.r();
+        d.max(0.0)
+    }
+}
+
 pub fn circ_rt_dist(a: &Circle, b: &Rt) -> f64 {
-    // Project circle centre onto the rectangle:
-    let p = a.p().clamp(b);
-    p.dist(a.p()) - a.r()
+    if circ_intersects_rt(a, b) {
+        0.0
+    } else {
+        // Project circle centre onto the rectangle:
+        let p = a.p().clamp(b);
+        p.dist(a.p()) - a.r()
+    }
 }
 
 pub fn line_pt_dist(a: &Line, b: &Pt) -> f64 {
@@ -47,18 +94,29 @@ pub fn line_pt_dist(a: &Line, b: &Pt) -> f64 {
 }
 
 pub fn path_poly_dist(a: &Path, b: &Poly) -> f64 {
-    a.caps().map(|cap| cap_poly_dist(&cap, b)).min_by(f64_cmp).unwrap()
+    min_dist(a.caps().map(|cap| cap_poly_dist(&cap, b)))
 }
 
-// Works inside of the polygon too. Distance to the boundary.
-pub fn pt_poly_dist(a: &Pt, b: &Poly) -> f64 {
-    b.edges().map(|[&p0, &p1]| pt_seg_dist(a, &seg(p0, p1))).min_by(f64_cmp).unwrap()
+pub fn poly_pt_dist(a: &Poly, b: &Pt) -> f64 {
+    if poly_contains_pt(a, b) {
+        0.0
+    } else {
+        min_dist(a.edges().map(|[&p0, &p1]| pt_seg_dist(b, &seg(p0, p1))))
+    }
+}
+
+pub fn pt_pt_dist(a: &Pt, b: &Pt) -> f64 {
+    a.dist(*b)
 }
 
 pub fn pt_rt_dist(a: &Pt, b: &Rt) -> f64 {
-    // Project centre onto the rectangle:
-    let p = a.clamp(b);
-    p.dist(*a)
+    if b.contains(*a) {
+        0.0
+    } else {
+        // Project centre onto the rectangle:
+        let p = a.clamp(b);
+        p.dist(*a)
+    }
 }
 
 pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
@@ -70,17 +128,25 @@ pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
 }
 
 pub fn rt_path_dist(a: &Rt, b: &Path) -> f64 {
-    todo!()
+    min_dist(b.caps().map(|cap| cap_rt_dist(&cap, a)))
 }
 
 pub fn rt_rt_dist(a: &Rt, b: &Rt) -> f64 {
-    // check points on a to b
-    a.pts().iter().map(|p| pt_rt_dist(p, b)).min_by(f64_cmp).unwrap()
+    if rt_intersects_rt(a, b) {
+        0.0
+    } else {
+        // check points on a to b
+        min_dist(a.pts().iter().map(|p| pt_rt_dist(p, b)))
+    }
 }
 
 pub fn rt_seg_dist(a: &Rt, b: &Segment) -> f64 {
-    // Check for closest distance from the segment to the edges of the rectangle.
-    a.segs().iter().map(|seg| seg_seg_dist(seg, b)).min_by(f64_cmp).unwrap()
+    if rt_intersects_seg(a, b) {
+        0.0
+    } else {
+        // Check for closest distance from the segment to the edges of the rectangle.
+        min_dist(a.segs().iter().map(|seg| seg_seg_dist(seg, b)))
+    }
 }
 
 pub fn seg_seg_dist(a: &Segment, b: &Segment) -> f64 {
