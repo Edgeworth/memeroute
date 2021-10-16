@@ -1,4 +1,4 @@
-use crate::model::geom::distance::{poly_pt_dist, pt_seg_dist};
+use crate::model::geom::distance::{polyline_pt_dist, pt_seg_dist};
 use crate::model::geom::math::{ge, is_left_of, is_right_of, le, lt, orientation};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
@@ -14,7 +14,7 @@ pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
     // Bounding box check.
     if !a.bounds().contains(*b) {
         return false;
-    }
+    }          
 
     le(pt_seg_dist(b, &a.seg()), a.r())
 }
@@ -98,7 +98,7 @@ pub fn poly_contains_circ(a: &Poly, b: &Circle) -> bool {
     if !poly_contains_pt(a, &b.p()) {
         return false;
     }
-    ge(poly_pt_dist(a, &b.p()), b.r())
+    ge(polyline_pt_dist(a.pts(), &b.p()), b.r())
 }
 
 pub fn poly_contains_path(a: &Poly, b: &Path) -> bool {

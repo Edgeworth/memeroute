@@ -61,7 +61,7 @@ pub struct GridRouter {
 impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
         let place = PlaceModel::new(pcb);
-        Self { resolution: 0.1, place, net_order }
+        Self { resolution: 0.4, place, net_order }
     }
 
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {
@@ -312,6 +312,15 @@ impl RouteStrategy for GridRouter {
                 .clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
+            // let wire = self.wire_from_states(&[
+            //     State { p: self.grid_pt(pt(26.5, -81.9)), layers: LayerSet::one(0), net_id },
+            //     State { p: self.grid_pt(pt(27.5, -81.9)), layers: LayerSet::one(0), net_id },
+            // ]);
+            // println!("wire: {:?}", wire);
+            // // Wire is blocked if anything other than its net is there.
+            // println!("blocked: {}", self.place.is_wire_blocked(&wire));
+            // res.wires.push(wire);
+
             let sub_result = self.connect(states)?;
             println!("done {}, failed {}", self.place.pcb().to_name(net_id), sub_result.failed);
             // Mark wires and vias.
@@ -322,6 +331,7 @@ impl RouteStrategy for GridRouter {
                 self.place.add_via(via);
             }
             res.merge(sub_result);
+            // break;
         }
 
         // self.draw_debug(&mut res);

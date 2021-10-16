@@ -9,7 +9,9 @@ use crate::model::geom::contains::{
     poly_contains_seg,
 };
 use crate::model::geom::convex::{ensure_ccw, is_convex_ccw, remove_collinear};
-use crate::model::geom::distance::{cap_poly_dist, circ_poly_dist, path_poly_dist};
+use crate::model::geom::distance::{
+    cap_poly_dist, circ_poly_dist, path_poly_dist, poly_pt_dist, poly_rt_dist,
+};
 use crate::model::geom::intersects::{
     cap_intersects_poly, circ_intersects_poly, path_intersects_poly, poly_intersects_rt,
 };
@@ -111,9 +113,9 @@ impl ShapeOps for Poly {
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(s) => path_poly_dist(s, self),
-            Shape::Point(_) => todo!(),
+            Shape::Point(s) => poly_pt_dist(self, s),
             Shape::Polygon(_) => todo!(),
-            Shape::Rect(_) => todo!(),
+            Shape::Rect(s) => poly_rt_dist(self, s),
             Shape::Segment(_) => todo!(),
             Shape::Tri(_) => todo!(),
         }
