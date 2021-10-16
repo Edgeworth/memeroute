@@ -338,10 +338,10 @@ impl QuadTree {
 
         // Check shapes that intersect this node:
         for inter in self.nodes[idx].intersect.iter_mut() {
-            //inter.tests += 1;
+            inter.tests += 1;
             best = best.min(cached_dist(&self.shapes, &mut self.dist_cache, inter.shape_idx, s, q));
         }
-        //self.maybe_push_down(idx, r, depth);
+        self.maybe_push_down(idx, r, depth);
 
         best
     }

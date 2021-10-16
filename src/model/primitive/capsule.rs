@@ -1,6 +1,7 @@
 use derive_more::Display;
 
 use crate::model::geom::contains::{cap_contains_pt, cap_contains_rt};
+use crate::model::geom::distance::{cap_circ_dist, cap_poly_dist, cap_seg_dist};
 use crate::model::geom::intersects::{
     cap_intersects_cap, cap_intersects_circ, cap_intersects_path, cap_intersects_poly,
     cap_intersects_rt, cap_intersects_tri,
@@ -109,14 +110,14 @@ impl ShapeOps for Capsule {
     fn dist_to_shape(&self, s: &Shape) -> f64 {
         match s {
             Shape::Capsule(_) => todo!(),
-            Shape::Circle(_) => todo!(),
+            Shape::Circle(s) => cap_circ_dist(self, s),
             Shape::Compound(_) => todo!(),
             Shape::Line(_) => todo!(),
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
-            Shape::Polygon(_) => todo!(),
+            Shape::Polygon(s) => cap_poly_dist(self, s),
             Shape::Rect(_) => todo!(),
-            Shape::Segment(_) => todo!(),
+            Shape::Segment(s) => cap_seg_dist(self, s),
             Shape::Tri(_) => todo!(),
         }
     }
