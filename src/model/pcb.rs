@@ -320,9 +320,8 @@ impl ObjectKind {
     }
 }
 
-// If there are multple clearances specified for a ClearanceType,
-// take the most specific clearance, defined by the fewest number of ClearanceTypes.
-// If there are multiple such clearances, take the one with the largest value.
+// TODO: If multiple clearances with overlapping object kinds, which one select?
+// Or apply all of them?
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Clearance {
     amount: f64,

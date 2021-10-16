@@ -31,6 +31,12 @@ pub fn pt_poly_dist(a: &Pt, b: &Poly) -> f64 {
     b.edges().map(|[&p0, &p1]| pt_seg_dist(a, &seg(p0, p1))).min_by(f64_cmp).unwrap()
 }
 
+pub fn pt_rt_dist(a: &Pt, b: &Rt) -> f64 {
+    // Project centre onto the rectangle:
+    let p = a.clamp(b);
+    p.dist(*a)
+}
+
 pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
     let st_dist = a.dist(b.st());
     let en_dist = a.dist(b.en());
@@ -39,8 +45,9 @@ pub fn pt_seg_dist(a: &Pt, b: &Segment) -> f64 {
     if b.contains(project) { dist.min(a.dist(project)) } else { dist }
 }
 
-pub fn rt_rt_dist(_a: &Rt, _b: &Rt) -> f64 {
-    todo!()
+pub fn rt_rt_dist(a: &Rt, b: &Rt) -> f64 {
+    // check points on a to b
+    a.pts().iter().map(|p| pt_rt_dist(p, b)).min_by(f64_cmp).unwrap()
 }
 
 pub fn rt_seg_dist(a: &Rt, b: &Segment) -> f64 {

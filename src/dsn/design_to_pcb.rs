@@ -197,7 +197,7 @@ impl DesignToPcb {
 
     fn clearance_type(&self, v: &DsnClearanceType) -> Vec<(ObjectKind, ObjectKind)> {
         match v {
-            DsnClearanceType::DefaultSmd => {
+            DsnClearanceType::All | DsnClearanceType::DefaultSmd => {
                 ObjectKind::iter().cartesian_product(ObjectKind::iter()).collect()
             }
             DsnClearanceType::SmdSmd => vec![(ObjectKind::Smd, ObjectKind::Smd)],

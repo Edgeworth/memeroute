@@ -61,7 +61,7 @@ pub struct GridRouter {
 impl GridRouter {
     pub fn new(pcb: Pcb, net_order: Vec<Id>) -> Self {
         let place = PlaceModel::new(pcb);
-        Self { resolution: 0.4, place, net_order }
+        Self { resolution: 0.8, place, net_order }
     }
 
     fn pin_ref_state(&self, pin_ref: &PinRef) -> Result<State> {

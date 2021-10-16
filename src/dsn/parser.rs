@@ -423,6 +423,11 @@ impl Parser {
             });
             self.expect(Tok::Rparen)?;
         }
+
+        // If no type is specified, assume it applies to everything.
+        if v.types.is_empty() {
+            v.types.push(DsnClearanceType::All);
+        }
         self.expect(Tok::Rparen)?;
         Ok(v)
     }

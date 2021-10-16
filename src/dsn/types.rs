@@ -339,6 +339,7 @@ pub enum DsnCircuit {
 //    antipad_gap | pad_to_turn_gap | smd_to_turn_gap]
 #[derive(Debug, Clone, PartialEq)]
 pub enum DsnClearanceType {
+    All, // If unspecified, choose all.
     // This is not part of the official spec but default seems to be used to
     // mean wildcard for any type (and overriden by specific designations)
     DefaultSmd,
