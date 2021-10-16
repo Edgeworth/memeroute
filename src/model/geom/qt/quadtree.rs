@@ -327,7 +327,6 @@ impl QuadTree {
 
         // If we can't do better than the current best in this node, give up.
         for (lower_bound, child_idx, child_rt) in children {
-            //println!("{} {} {} {} {}", lower_bound, child_idx, child_rt, best, depth);
             // Distance must be greater than lower bound, and this is sorted by
             // lower bound dist, so early exit.
             if best < lower_bound {
@@ -339,7 +338,8 @@ impl QuadTree {
         // Check shapes that intersect this node:
         for inter in self.nodes[idx].intersect.iter_mut() {
             inter.tests += 1;
-            best = best.min(cached_dist(&self.shapes, &mut self.dist_cache, inter.shape_idx, s, q));
+            let d = cached_dist(&self.shapes, &mut self.dist_cache, inter.shape_idx, s, q);
+            best = best.min(d);
         }
         self.maybe_push_down(idx, r, depth);
 
@@ -428,6 +428,11 @@ mod tests {
 
         assert!(qt.intersects(&pt(3.0, 3.0).shape(), ALL));
         assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL));
+        assert!(qt.contains(&pt(3.0, 3.0).shape(), ALL));
+        assert!(!qt.contains(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL));
+        assert_eq!(qt.dist(&pt(3.0, 3.0).shape(), ALL), 0.0);
+        assert_eq!(qt.dist(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL), 0.0);
+        assert_eq!(qt.dist(&pt(5.0, 1.0).shape(), ALL), 1.0);
     }
 
     #[test]

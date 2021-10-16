@@ -1,7 +1,7 @@
 use crate::model::geom::contains::poly_contains_pt;
 use crate::model::geom::intersects::{
-    cap_intersects_poly, circ_intersects_poly, circ_intersects_rt, rt_intersects_rt,
-    rt_intersects_seg, seg_intersects_seg,
+    cap_intersects_poly, circ_intersects_poly, circ_intersects_rt, poly_intersects_rt,
+    rt_intersects_rt, rt_intersects_seg, seg_intersects_seg,
 };
 use crate::model::geom::math::eq;
 use crate::model::primitive::capsule::Capsule;
@@ -9,7 +9,7 @@ use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::Poly;
+use crate::model::primitive::polygon::{Poly, edges};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::seg;
 use crate::model::primitive::segment::Segment;
@@ -97,11 +97,24 @@ pub fn path_poly_dist(a: &Path, b: &Poly) -> f64 {
     min_dist(a.caps().map(|cap| cap_poly_dist(&cap, b)))
 }
 
+// Distance to a polygon outline.
+pub fn polyline_pt_dist(a: &[Pt], b: &Pt) -> f64 {
+min_dist(edges(a).map(|[&p0, &p1]| pt_seg_dist(b, &seg(p0, p1))))
+}
+
 pub fn poly_pt_dist(a: &Poly, b: &Pt) -> f64 {
     if poly_contains_pt(a, b) {
         0.0
     } else {
-        min_dist(a.edges().map(|[&p0, &p1]| pt_seg_dist(b, &seg(p0, p1))))
+        polyline_pt_dist(a.pts(), b)
+    }
+}
+
+pub fn poly_rt_dist(a: &Poly, b: &Rt) -> f64 {
+    if poly_intersects_rt(a, b) {
+        0.0
+    } else {
+        min_dist(a.edges().map(|[&p0, &p1]| rt_seg_dist(b, &seg(p0, p1))))
     }
 }
 
@@ -160,4 +173,24 @@ pub fn seg_seg_dist(a: &Segment, b: &Segment) -> f64 {
     best = best.min(pt_seg_dist(&b.st(), a));
     best = best.min(pt_seg_dist(&b.en(), a));
     best
+}
+
+#[cfg(test)]
+mod tests {
+    use approx::assert_relative_eq;
+
+    use super::*;
+    use crate::model::primitive::{circ, pt};
+
+    #[test]
+    fn test_circ_circ() {
+        assert_relative_eq!(
+            0.0,
+            circ_circ_dist(&circ(pt(0.0, 0.0), 0.4), &circ(pt(0.0, 0.0), 0.4))
+        );
+        assert_relative_eq!(
+            130.94659781997535,
+            circ_circ_dist(&circ(pt(111.6414, -70.632), 0.762), &circ(pt(0.0, 0.0), 0.4))
+        );
+    }
 }

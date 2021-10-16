@@ -23,6 +23,7 @@ pub type PlaceId = (LayerId, ShapeIdx);
 #[derive(Debug, Default, Clone)]
 pub struct PlaceModel {
     pcb: Pcb,
+    // TODO: Can move layerids to quadtree?
     boundary: HashMap<LayerId, Compound>,
     blocked: HashMap<LayerId, Compound>,
     pins: HashMap<PinRef, Vec<PlaceId>>, // Record which pins correspond to which place ids in |blocked|.
@@ -107,7 +108,6 @@ impl PlaceModel {
     }
 
     pub fn is_via_blocked(&self, via: &Via) -> bool {
-        // TODO: check clearances here
         self.is_padstack_blocked(
             &via.tf(),
             &via.padstack,

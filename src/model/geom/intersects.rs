@@ -1,5 +1,5 @@
 use crate::model::geom::contains::{cap_contains_pt, tri_contains_pt};
-use crate::model::geom::distance::{circ_rt_dist, rt_seg_dist, seg_seg_dist};
+use crate::model::geom::distance::{rt_seg_dist, seg_seg_dist};
 use crate::model::geom::math::{le, lt, ne, orientation, pts_strictly_right_of};
 use crate::model::primitive::capsule::Capsule;
 use crate::model::primitive::circle::Circle;
