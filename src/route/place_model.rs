@@ -149,10 +149,8 @@ impl PlaceModel {
         for layer in ls.layers.iter() {
             if let Some(blocked) = self.blocked.get(&layer) {
                 for c in clearances {
-                    if le(
-                        blocked.dist(&s, Query(q, KindsQuery::HasCommon(c.subset_for(kind)))),
-                        c.amount(),
-                    ) {
+                    let d = blocked.dist(&s, Query(q, KindsQuery::HasCommon(c.subset_for(kind))));
+                    if le(d, c.amount()) {
                         return true;
                     }
                 }

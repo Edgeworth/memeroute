@@ -5,7 +5,7 @@ use nalgebra::{vector, Vector2};
 use serde::{Deserialize, Serialize};
 
 use crate::model::geom::contains::{cap_contains_pt, circ_contains_pt, poly_contains_pt};
-use crate::model::geom::distance::{line_pt_dist, pt_seg_dist};
+use crate::model::geom::distance::{line_pt_dist, pt_rt_dist, pt_seg_dist};
 use crate::model::primitive::rect::Rt;
 use crate::model::primitive::shape::Shape;
 use crate::model::primitive::{pt, pti, rt, ShapeOps};
@@ -151,7 +151,7 @@ impl ShapeOps for Pt {
             Shape::Path(_) => todo!(),
             Shape::Point(_) => todo!(),
             Shape::Polygon(_) => todo!(),
-            Shape::Rect(_) => todo!(),
+            Shape::Rect(s) => pt_rt_dist(self, s),
             Shape::Segment(s) => pt_seg_dist(self, s),
             Shape::Tri(_) => todo!(),
         }
