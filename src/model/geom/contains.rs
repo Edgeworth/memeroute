@@ -14,7 +14,7 @@ pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
     // Bounding box check.
     if !a.bounds().contains(*b) {
         return false;
-    }          
+    }
 
     le(pt_seg_dist(b, &a.seg()), a.r())
 }
