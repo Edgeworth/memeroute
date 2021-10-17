@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use eframe::egui::Widget;
 use eframe::{egui, epi};
@@ -72,13 +73,15 @@ impl epi::App for MemerouteGui {
 
 
             if ui.button("Route").clicked() {
-                let mut router = Router::new(self.pcb.clone());
-                let resp = router.route().unwrap();
+                let router = Router::new(self.pcb.clone());
+                let start = Instant::now();
+                let resp = router.run_ga().unwrap();
                 println!(
-                    "Route result succeeded: {}, {} wires {} vias",
+                    "Route result succeeded: {}, {} wires {} vias, time: {:?}",
                     !resp.failed,
                     resp.wires.len(),
-                    resp.vias.len()
+                    resp.vias.len(),
+                    Instant::now().duration_since(start)
                 );
                 apply_route_result(&mut self.pcb, &resp);
 
