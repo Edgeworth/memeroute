@@ -15,6 +15,7 @@ earcutr = "*"
 enumset = "*"
 eyre = "*"
 itertools = "*"
+memega = {path = "../libs/memega"}
 nalgebra = "*"
 ordered-float = "*"
 priority-queue = "*"
