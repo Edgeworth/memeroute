@@ -1,7 +1,7 @@
 use crate::model::geom::contains::poly_contains_pt;
 use crate::model::geom::intersects::{
     cap_intersects_poly, circ_intersects_poly, circ_intersects_rt, poly_intersects_rt,
-    rt_intersects_rt, rt_intersects_seg, seg_intersects_seg,
+    rt_intersects_seg, seg_intersects_seg,
 };
 use crate::model::geom::math::eq;
 use crate::model::primitive::capsule::Capsule;
@@ -9,10 +9,10 @@ use crate::model::primitive::circle::Circle;
 use crate::model::primitive::line_shape::Line;
 use crate::model::primitive::path_shape::Path;
 use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::{Poly, edges};
+use crate::model::primitive::polygon::{edges, Poly};
 use crate::model::primitive::rect::Rt;
-use crate::model::primitive::seg;
 use crate::model::primitive::segment::Segment;
+use crate::model::primitive::{pt, seg};
 
 // Distance functions should return 0 if there is intersection or containment.
 // This property is used by quadtree which returns 0 if it detects an intersection
@@ -99,15 +99,11 @@ pub fn path_poly_dist(a: &Path, b: &Poly) -> f64 {
 
 // Distance to a polygon outline.
 pub fn polyline_pt_dist(a: &[Pt], b: &Pt) -> f64 {
-min_dist(edges(a).map(|[&p0, &p1]| pt_seg_dist(b, &seg(p0, p1))))
+    min_dist(edges(a).map(|[&p0, &p1]| pt_seg_dist(b, &seg(p0, p1))))
 }
 
 pub fn poly_pt_dist(a: &Poly, b: &Pt) -> f64 {
-    if poly_contains_pt(a, b) {
-        0.0
-    } else {
-        polyline_pt_dist(a.pts(), b)
-    }
+    if poly_contains_pt(a, b) { 0.0 } else { polyline_pt_dist(a.pts(), b) }
 }
 
 pub fn poly_rt_dist(a: &Poly, b: &Rt) -> f64 {
@@ -145,12 +141,11 @@ pub fn rt_path_dist(a: &Rt, b: &Path) -> f64 {
 }
 
 pub fn rt_rt_dist(a: &Rt, b: &Rt) -> f64 {
-    if rt_intersects_rt(a, b) {
-        0.0
-    } else {
-        // check points on a to b
-        min_dist(a.pts().iter().map(|p| pt_rt_dist(p, b)))
-    }
+    // Compute shortest distance between each axis.
+    // Select a non-negative distance. Not possible for both axis differences to be positive.
+    let x = (a.l() - b.r()).max(b.l() - a.r()).max(0.0);
+    let y = (a.b() - b.t()).max(b.b() - a.t()).max(0.0);
+    pt(x, y).mag()
 }
 
 pub fn rt_seg_dist(a: &Rt, b: &Segment) -> f64 {
@@ -180,17 +175,47 @@ mod tests {
     use approx::assert_relative_eq;
 
     use super::*;
-    use crate::model::primitive::{circ, pt};
+    use crate::model::geom::math::EP;
+    use crate::model::primitive::{cap, circ, pt, rt};
 
     #[test]
     fn test_circ_circ() {
-        assert_relative_eq!(
-            0.0,
-            circ_circ_dist(&circ(pt(0.0, 0.0), 0.4), &circ(pt(0.0, 0.0), 0.4))
-        );
+        let circ1 = circ(pt(0.0, 0.0), 0.4);
+        assert_relative_eq!(0.0, circ_circ_dist(&circ1, &circ1));
         assert_relative_eq!(
             130.94659781997535,
-            circ_circ_dist(&circ(pt(111.6414, -70.632), 0.762), &circ(pt(0.0, 0.0), 0.4))
+            circ_circ_dist(&circ(pt(111.6414, -70.632), 0.762), &circ1)
+        );
+    }
+
+    #[test]
+    fn test_cap_cap() {
+        let cap1 = cap(pt(47.0, -119.4), pt(47.8, -118.6), 0.125);
+        let cap2 = cap(pt(47.0, -119.8), pt(46.6, -120.2), 0.125);
+
+        assert_relative_eq!(0.15, cap_cap_dist(&cap1, &cap2), epsilon = EP);
+    }
+
+    #[test]
+    fn test_cap_circ() {
+        let cap = cap(pt(19.8, -100.6), pt(35.8, -100.6), 0.125);
+        let circ = circ(pt(24.5, -98.25), 2.05);
+
+        assert_relative_eq!(0.175, cap_circ_dist(&cap, &circ), epsilon = EP);
+    }
+
+    #[test]
+    fn test_rt_rt() {
+        let rt1 = rt(0.0, 0.0, 1.0, 1.0);
+
+        assert_relative_eq!(0.0, rt_rt_dist(&rt1, &rt1), epsilon = EP);
+        assert_relative_eq!(0.0, rt_rt_dist(&rt(1.0, 1.0, 2.0, 2.0), &rt1), epsilon = EP);
+        assert_relative_eq!(1.0, rt_rt_dist(&rt(2.0, 0.5, 2.0, 2.0), &rt1), epsilon = EP);
+        assert_relative_eq!(1.0, rt_rt_dist(&rt(-2.0, 0.5, -1.0, 2.0), &rt1), epsilon = EP);
+        assert_relative_eq!(
+            2.0_f64.sqrt(),
+            rt_rt_dist(&rt(2.0, 2.0, 3.0, 3.0), &rt1),
+            epsilon = EP
         );
     }
 }
