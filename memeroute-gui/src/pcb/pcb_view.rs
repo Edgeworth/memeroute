@@ -54,7 +54,7 @@ pub struct PcbView {
 impl Widget for &mut PcbView {
     fn ui(self, ui: &mut Ui) -> Response {
         let (response, painter) =
-            ui.allocate_painter(ui.available_size_before_wrap_finite(), Sense::click_and_drag());
+            ui.allocate_painter(ui.available_size_before_wrap(), Sense::click_and_drag());
 
         if response.dragged_by(PointerButton::Middle) {
             let p = response.drag_delta();

@@ -1,6 +1,6 @@
 [package]
 authors = ["Eliot Courtney <edgeworth.dev@gmail.com>"]
-edition = "2018"
+edition = "2021"
 name = "memeroute-gui"
 version = "0.1.0"
 
