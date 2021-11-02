@@ -1,6 +1,6 @@
 use std::f64::consts::TAU;
 
-use eframe::egui::epaint::{Mesh, Vertex};
+use eframe::egui::epaint::{Mesh, PathShape, Vertex};
 use eframe::egui::{epaint, Color32};
 use memeroute::model::primitive::point::Pt;
 use memeroute::model::primitive::pt;
@@ -24,7 +24,12 @@ pub fn fill_circle(tf: &Tf, p: Pt, r: f64, col: Color32) -> epaint::Shape {
         vert.push(to_pos2(tf.pt(pt(p.x + rad.cos() * r, p.y + rad.sin() * r))));
         vert.push(to_pos2(tf.pt(pt(p.x + rad_next.cos() * r, p.y + rad_next.sin() * r))));
     }
-    epaint::Shape::Path { points: vert, closed: true, fill: col, stroke: Default::default() }
+    epaint::Shape::Path(PathShape {
+        points: vert,
+        closed: true,
+        fill: col,
+        stroke: Default::default(),
+    })
 }
 
 pub fn fill_polygon(tf: &Tf, pts: &[Pt], tris: &[u32], col: Color32) -> epaint::Shape {

@@ -75,7 +75,8 @@ impl epi::App for MemerouteGui {
             if ui.button("Route").clicked() {
                 let router = Router::new(self.pcb.clone());
                 let start = Instant::now();
-                let resp = router.run_ga().unwrap();
+                let resp = router.route(router.rand_net_order()).unwrap();
+                // let resp = router.run_ga().unwrap();
                 println!(
                     "Route result succeeded: {}, {} wires {} vias, time: {:?}",
                     !resp.failed,
