@@ -45,7 +45,7 @@ impl epi::App for MemerouteGui {
     fn setup(
         &mut self,
         _ctx: &egui::CtxRef,
-        _frame: &mut epi::Frame<'_>,
+        _frame: &epi::Frame,
         storage: Option<&dyn epi::Storage>,
     ) {
         if let Some(storage) = storage {
@@ -57,10 +57,10 @@ impl epi::App for MemerouteGui {
         epi::set_value(storage, epi::APP_KEY, &self.s);
     }
 
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
+    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                egui::menu::menu(ui, "File", |ui| {
+                ui.menu_button("File", |ui| {
                     if ui.button("Quit").clicked() {
                         frame.quit();
                     }

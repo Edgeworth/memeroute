@@ -163,7 +163,7 @@ impl PcbView {
         shapes: Vec<epaint::Shape>,
     ) {
         for s in shapes.into_iter() {
-            tess.tessellate_shape(ctx.fonts().texture().size(), s, mesh);
+            tess.tessellate_shape(ctx.fonts().font_image().size(), s, mesh);
         }
     }
 
