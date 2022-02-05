@@ -4,7 +4,7 @@ use crate::model::primitive::point::Pt;
 
 pub fn remove_collinear(pts: &[Pt]) -> Vec<Pt> {
     if pts.len() <= 2 {
-        return pts.iter().copied().collect();
+        return pts.to_vec();
     }
     let mut out = vec![pts[0], pts[1]];
     for &p in pts.iter().skip(2) {

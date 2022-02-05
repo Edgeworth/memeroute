@@ -1,15 +1,15 @@
-use std::sync::{Mutex, RwLock};
+use std::sync::Mutex;
 
 use eyre::Result;
 use memega::cfg::{
-    Cfg, Crossover, Duplicates, Mutation, Niching, Replacement, Species, Stagnation, Survival,
+    Cfg, Crossover, Duplicates, Mutation, Niching, Replacement, Stagnation, Survival,
 };
 use memega::eval::Evaluator;
 use memega::ops::crossover::{crossover_cycle, crossover_order, crossover_pmx};
-use memega::ops::distance::{count_different, kendall_tau};
+use memega::ops::distance::kendall_tau;
 use memega::ops::mutation::{mutate_insert, mutate_inversion, mutate_scramble, mutate_swap};
+use memega::run_evolve_debug;
 use memega::runner::Runner;
-use memega::{run_evolve, run_evolve_debug};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 
@@ -123,7 +123,7 @@ impl Evaluator for Router {
         }
     }
 
-    fn fitness(&self, s: &Self::Genome, gen: usize) -> f64 {
+    fn fitness(&self, s: &Self::Genome, _: usize) -> f64 {
         let res = self.route(s.clone()).unwrap();
         let mut cost = 0.0;
         if res.failed {

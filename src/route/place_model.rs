@@ -247,8 +247,9 @@ impl PlaceModel {
         padstack
             .shapes
             .iter()
-            .map(|shape| Self::add_shape(self.bounds, &mut self.blocked, tf, shape, tag, kinds))
-            .flatten()
+            .flat_map(|shape| {
+                Self::add_shape(self.bounds, &mut self.blocked, tf, shape, tag, kinds)
+            })
             .collect()
     }
 

@@ -268,7 +268,7 @@ impl GridRouter {
         Ok(res)
     }
 
-    fn draw_debug(&mut self, res: &mut RouteResult) {
+    fn _draw_debug(&mut self, res: &mut RouteResult) {
         let bounds = self.place.pcb().bounds();
         // let bounds = rt(77.0495, -125.1745, 79.099, -120.75);
         let bounds =
