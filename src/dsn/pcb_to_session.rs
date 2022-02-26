@@ -70,10 +70,7 @@ impl PcbToSession {
     }
 
     fn side(&mut self, back: bool) {
-        let side = match back {
-            false => "front",
-            true => "back",
-        };
+        let side = if back { "back" } else { "front" };
         self.token(side);
     }
 
@@ -154,7 +151,7 @@ impl PcbToSession {
         self.end();
     }
 
-    fn layer_id(&self, l: &LayerSet) -> Option<String> {
+    fn layer_id(&self, l: LayerSet) -> Option<String> {
         // Try to find a layer ID or specctra layer ID name that fits this
         // layer set.
         if let Some(lid) = l.id() {
@@ -163,7 +160,7 @@ impl PcbToSession {
         } else {
             // Otherwise, search for a LayerKind that gives this set.
             for kind in LayerKind::iter() {
-                if l == &self.pcb.layers_by_kind(kind) {
+                if l == self.pcb.layers_by_kind(kind) {
                     return Some(
                         match kind {
                             LayerKind::All => "all",
@@ -181,7 +178,7 @@ impl PcbToSession {
     }
 
     fn shape(&mut self, shape: &LayerShape) {
-        let l = self.layer_id(&shape.layers).unwrap();
+        let l = self.layer_id(shape.layers).unwrap();
         match &shape.shape {
             Shape::Circle(s) => self.circle(&l, s),
             Shape::Path(s) => self.path(&l, s),
@@ -195,7 +192,7 @@ impl PcbToSession {
         self.begin("padstack");
         self.id(ps.id);
 
-        for shape in ps.shapes.iter() {
+        for shape in &ps.shapes {
             self.begin("shape");
             self.shape(shape);
             self.end();

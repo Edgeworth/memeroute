@@ -57,22 +57,22 @@ impl Lexer {
                     self.token.push(next);
                 }
                 self.next()?; // Discard ending character
-                self.push()?;
+                self.push();
             } else {
                 // Ends current token:
                 if c.is_whitespace() || c == '(' || c == ')' {
-                    self.push()?;
+                    self.push();
                 }
                 if !c.is_whitespace() {
                     self.token.push(c);
                 }
                 // Is complete token:
                 if c == '(' || c == ')' {
-                    self.push()?;
+                    self.push();
                 }
             }
         }
-        self.push()?;
+        self.push();
         Ok(self.tokens)
     }
 
@@ -89,7 +89,7 @@ impl Lexer {
         }
     }
 
-    fn push(&mut self) -> Result<()> {
+    fn push(&mut self) {
         if !self.token.is_empty() {
             let token = Token {
                 tok: Tok::from_str(&self.token.to_lowercase()).unwrap_or(Tok::Literal),
@@ -98,6 +98,5 @@ impl Lexer {
             self.tokens.push(token);
             self.token.clear();
         }
-        Ok(())
     }
 }

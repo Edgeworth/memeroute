@@ -1,4 +1,5 @@
 # Copyright 2021 E.
+from pathlib import Path
 import re
 import sys
 
@@ -436,7 +437,6 @@ counts: dict[str, int] = {}
 
 
 def add_path():
-    global counts
     ct = ".".join(path)
     counts.setdefault(ct, 0)
     counts[ct] += 1
@@ -447,11 +447,10 @@ def valid_keyword(t):
 
 
 def print_counts():
-    global counts
     vals = [(v, k) for k, v in counts.items()]
     vals.sort(key=lambda x: (x[1], x[0]))
     for v, k in vals:
-        print("%s: %d" % (k, v))
+        print(f"{k}: {v}")
 
 
 def process(data: str):
@@ -509,8 +508,8 @@ def process(data: str):
 
 for v in sys.argv[1:]:
     try:
-        data = open(v).read()
+        data = Path(v).read_text(encoding="utf-8")
         process(data)
-    except:
+    except Exception:
         print("Failed to process", v)
 print_counts()

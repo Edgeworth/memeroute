@@ -8,8 +8,8 @@ use memega::eval::Evaluator;
 use memega::ops::crossover::{crossover_cycle, crossover_order, crossover_pmx};
 use memega::ops::distance::kendall_tau;
 use memega::ops::mutation::{mutate_insert, mutate_inversion, mutate_scramble, mutate_swap};
-use memega::run_evolve_debug;
-use memega::runner::Runner;
+use memega::run::runner::Runner;
+use memega::util::run::run_evolve_debug;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 
@@ -140,13 +140,13 @@ impl Evaluator for Router {
 }
 
 pub fn apply_route_result(pcb: &mut Pcb, r: &RouteResult) {
-    for wire in r.wires.iter() {
+    for wire in &r.wires {
         pcb.add_wire(wire.clone());
     }
-    for via in r.vias.iter() {
+    for via in &r.vias {
         pcb.add_via(via.clone());
     }
-    for rt in r.debug_rts.iter() {
+    for rt in &r.debug_rts {
         pcb.add_debug_rt(*rt);
     }
 }

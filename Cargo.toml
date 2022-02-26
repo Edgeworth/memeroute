@@ -1,35 +1,40 @@
 [package]
 authors = ["E <edgeworth.dev@gmail.com>"]
+categories = ["autoroute", "pcb"]
+description = "pcb autorouter"
 edition = "2021"
+license = "GPL-3.0"
 name = "memeroute"
+readme = "README.md"
+repository = "https://github.com/Edgeworth/memeroute"
 version = "0.1.0"
 
 [workspace]
 members = ["memeroute-gui"]
 
 [dependencies]
-approx = "*"
-auto_ops = "*"
-derive_more = "*"
-earcutr = "*"
-enumset = "*"
-eyre = "*"
-itertools = "*"
-memega = {path = "../libs/memega"}
-nalgebra = "*"
-ordered-float = "*"
-priority-queue = "*"
-rand = {version = "*", features = ["small_rng"]}
-regex = "*"
-rust-dense-bitset = "*"
-serde = {version = "*", features = ["derive"]}
-smallvec = "*"
-strum = {version = "*", features = ["derive"]}
-
-[dev-dependencies]
-criterion = {version = "*", features = ["real_blackbox"]}
+approx = "0.5.1"
+auto_ops = "0.3.0"
+derive_more = "0.99.17"
+earcutr = "0.2.0"
+enumset = "1.0.8"
+eyre = "0.6.7"
+itertools = "0.10.3"
+memega = {path = "../memega"}
+nalgebra = "0.30.1"
+ordered-float = "2.10.0"
+priority-queue = "1.2.1"
+rand = {version = "0.8.5", features = ["small_rng"]}
+regex = "1.5.5"
+rust-dense-bitset = "0.1.1"
+serde = {version = "1.0.136", features = ["derive"]}
+smallvec = "1.8.0"
+strum = {version = "0.24.0", features = ["derive"]}
 
 # Build dependencies with optimisations - debug builds will run faster
 # but dependencies don't change often.
 [profile.dev.package."*"]
 opt-level = 3
+
+[profile.release]
+lto = true

@@ -28,20 +28,24 @@ impl std::fmt::Debug for Path {
 }
 
 impl Path {
+    #[must_use]
     pub fn new(pts: &[Pt], r: f64) -> Self {
         let pts = remove_collinear(pts);
         let bounds = pt_cloud_bounds(&pts).inset(-r / 2.0, -r / 2.0);
         Self { pts, r, bounds }
     }
 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.pts.len()
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    #[must_use]
     pub fn pts(&self) -> &[Pt] {
         &self.pts
     }
@@ -50,6 +54,7 @@ impl Path {
         self.pts.array_windows::<2>().map(move |v| cap(v[0], v[1], self.r))
     }
 
+    #[must_use]
     pub const fn r(&self) -> f64 {
         self.r
     }

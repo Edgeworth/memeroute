@@ -83,7 +83,7 @@ impl ShapeInfo {
 pub fn decompose_shape(s: ShapeInfo) -> Vec<ShapeInfo> {
     let shapes = match s.shape {
         Shape::Compound(s) => s.quadtree().shapes().iter().map(|v| v.shape.clone()).collect(),
-        Shape::Path(s) => s.caps().map(|v| v.shape()).collect(),
+        Shape::Path(s) => s.caps().map(ShapeOps::shape).collect(),
         s => vec![s],
     };
     let tag = s.tag;
@@ -91,9 +91,9 @@ pub fn decompose_shape(s: ShapeInfo) -> Vec<ShapeInfo> {
     shapes.into_iter().map(|shape| ShapeInfo { shape, tag, kinds }).collect()
 }
 
-pub fn cached_intersects(
+pub fn cached_intersects<S: ::std::hash::BuildHasher>(
     shapes: &[ShapeInfo],
-    cache: &mut HashMap<ShapeIdx, bool>,
+    cache: &mut HashMap<ShapeIdx, bool, S>,
     idx: ShapeIdx,
     s: &Shape,
     q: Query,
@@ -109,9 +109,9 @@ pub fn cached_intersects(
     }
 }
 
-pub fn cached_contains(
+pub fn cached_contains<S: ::std::hash::BuildHasher>(
     shapes: &[ShapeInfo],
-    cache: &mut HashMap<ShapeIdx, bool>,
+    cache: &mut HashMap<ShapeIdx, bool, S>,
     idx: ShapeIdx,
     s: &Shape,
     q: Query,
@@ -127,9 +127,9 @@ pub fn cached_contains(
     }
 }
 
-pub fn cached_dist(
+pub fn cached_dist<S: ::std::hash::BuildHasher>(
     shapes: &[ShapeInfo],
-    cache: &mut HashMap<ShapeIdx, f64>,
+    cache: &mut HashMap<ShapeIdx, f64, S>,
     idx: ShapeIdx,
     s: &Shape,
     q: Query,

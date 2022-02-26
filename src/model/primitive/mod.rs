@@ -32,42 +32,52 @@ pub trait ShapeOps {
     fn dist_to_shape(&self, s: &Shape) -> f64;
 }
 
+#[must_use]
 pub fn cap(st: Pt, en: Pt, r: f64) -> Capsule {
     Capsule::new(st, en, r)
 }
 
+#[must_use]
 pub fn circ(p: Pt, r: f64) -> Circle {
     Circle::new(p, r)
 }
 
+#[must_use]
 pub const fn line(st: Pt, en: Pt) -> Line {
     Line::new(st, en)
 }
 
+#[must_use]
 pub fn path(pts: &[Pt], r: f64) -> Path {
     Path::new(pts, r)
 }
 
+#[must_use]
 pub const fn pt(x: f64, y: f64) -> Pt {
     Pt::new(x, y)
 }
 
+#[must_use]
 pub const fn pti(x: i64, y: i64) -> PtI {
     PtI::new(x, y)
 }
 
+#[must_use]
 pub fn poly(pts: &[Pt]) -> Poly {
     Poly::new(pts)
 }
 
+#[must_use]
 pub const fn rt(l: f64, b: f64, r: f64, t: f64) -> Rt {
     Rt::new(l, b, r, t)
 }
 
+#[must_use]
 pub const fn seg(st: Pt, en: Pt) -> Segment {
     Segment::new(st, en)
 }
 
+#[must_use]
 pub fn tri(a: Pt, b: Pt, c: Pt) -> Tri {
     Tri::new([a, b, c])
 }

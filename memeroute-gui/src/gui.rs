@@ -33,31 +33,22 @@ pub struct MemerouteGui {
 impl MemerouteGui {
     pub fn new<P: AsRef<Path>>(pcb: Pcb, data_path: P) -> Self {
         let pcb_view = PcbView::new(pcb.clone(), pcb.bounds());
-        Self { s: Default::default(), pcb, pcb_view, data_path: data_path.as_ref().into() }
+        Self { s: State::default(), pcb, pcb_view, data_path: data_path.as_ref().into() }
+    }
+
+    pub fn init(&mut self, cc: &eframe::CreationContext<'_>) {
+        if let Some(storage) = cc.storage {
+            self.s = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
+        }
     }
 }
 
 impl epi::App for MemerouteGui {
-    fn name(&self) -> &str {
-        "Memeroute"
-    }
-
-    fn setup(
-        &mut self,
-        _ctx: &egui::CtxRef,
-        _frame: &epi::Frame,
-        storage: Option<&dyn epi::Storage>,
-    ) {
-        if let Some(storage) = storage {
-            self.s = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
-        }
-    }
-
     fn save(&mut self, storage: &mut dyn epi::Storage) {
         epi::set_value(storage, epi::APP_KEY, &self.s);
     }
 
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {

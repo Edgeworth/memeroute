@@ -6,5 +6,5 @@ use memeroute_gui::run;
 async fn main() -> Result<()> {
     pretty_env_logger::init_timed();
     color_eyre::install()?;
-    run().await
+    run()
 }

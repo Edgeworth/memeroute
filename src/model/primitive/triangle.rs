@@ -20,15 +20,18 @@ pub struct Tri {
 }
 
 impl Tri {
+    #[must_use]
     pub fn new(mut pts: [Pt; 3]) -> Self {
         ensure_ccw(&mut pts);
         Self { pts }
     }
 
+    #[must_use]
     pub fn pts(&self) -> &[Pt; 3] {
         &self.pts
     }
 
+    #[must_use]
     pub fn segs(&self) -> [Segment; 3] {
         [
             seg(self.pts[0], self.pts[1]),

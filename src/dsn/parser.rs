@@ -22,8 +22,9 @@ pub struct Parser {
 }
 
 impl Parser {
+    #[must_use]
     pub fn new(toks: &[Token]) -> Self {
-        Self { toks: toks.to_vec(), idx: 0, pcb: Default::default() }
+        Self { toks: toks.to_vec(), idx: 0, pcb: DsnPcb::default() }
     }
 
     pub fn parse(mut self) -> Result<DsnPcb> {
@@ -170,7 +171,7 @@ impl Parser {
                     self.expect(Tok::Rparen)?;
                 }
                 Tok::Keepout | Tok::ViaKeepout | Tok::WireKeepout => {
-                    v.keepouts.push(self.keepout()?)
+                    v.keepouts.push(self.keepout()?);
                 }
                 Tok::Layer => v.layers.push(self.layer()?),
                 Tok::Plane => v.planes.push(self.plane()?),
@@ -327,7 +328,7 @@ impl Parser {
                 }
                 Tok::Pin => v.pins.push(self.pin()?),
                 Tok::Keepout | Tok::ViaKeepout | Tok::WireKeepout => {
-                    v.keepouts.push(self.keepout()?)
+                    v.keepouts.push(self.keepout()?);
                 }
                 _ => return Err(eyre!("unrecognised token '{}'", t)),
             }
@@ -349,7 +350,7 @@ impl Parser {
             let t = self.peek(1)?;
             match t.tok {
                 Tok::Rect | Tok::Circle | Tok::Polygon | Tok::Path | Tok::Qarc => {
-                    v.shape = self.shape()?
+                    v.shape = self.shape()?;
                 }
                 _ => return Err(eyre!("unrecognised token '{}'", t)),
             }

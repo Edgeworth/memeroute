@@ -11,6 +11,7 @@ use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{cap, ShapeOps};
 
+#[must_use]
 pub fn cap_intersects_cap(a: &Capsule, b: &Capsule) -> bool {
     // Check bounding boxes.
     if !a.bounds().intersects(&b.bounds()) {
@@ -20,12 +21,14 @@ pub fn cap_intersects_cap(a: &Capsule, b: &Capsule) -> bool {
     le(seg_seg_dist(&a.seg(), &b.seg()), a.r() + b.r())
 }
 
+#[must_use]
 pub fn cap_intersects_circ(a: &Capsule, b: &Circle) -> bool {
     // Compute minkowski sum of |a| and |b| and check containment.
     let sum = cap(a.st(), a.en(), a.r() + b.r());
     cap_contains_pt(&sum, &b.p())
 }
 
+#[must_use]
 pub fn cap_intersects_path(a: &Capsule, b: &Path) -> bool {
     // Check if any cap in the path intersects this cap.
     for cap in b.caps() {
@@ -36,6 +39,7 @@ pub fn cap_intersects_path(a: &Capsule, b: &Path) -> bool {
     false
 }
 
+#[must_use]
 pub fn cap_intersects_poly(a: &Capsule, b: &Poly) -> bool {
     for tri in b.tri() {
         if cap_intersects_tri(a, tri) {
@@ -45,6 +49,7 @@ pub fn cap_intersects_poly(a: &Capsule, b: &Poly) -> bool {
     false
 }
 
+#[must_use]
 pub fn cap_intersects_rt(a: &Capsule, b: &Rt) -> bool {
     // Check bounding boxes.
     if !a.bounds().intersects(b) {
@@ -58,6 +63,7 @@ pub fn cap_intersects_rt(a: &Capsule, b: &Rt) -> bool {
     le(rt_seg_dist(b, &a.seg()), a.r())
 }
 
+#[must_use]
 pub fn cap_intersects_tri(a: &Capsule, b: &Tri) -> bool {
     // Check if the capsule is contained within the triangle:
     if tri_contains_pt(b, &a.st()) || tri_contains_pt(b, &a.en()) {
@@ -73,10 +79,12 @@ pub fn cap_intersects_tri(a: &Capsule, b: &Tri) -> bool {
     false
 }
 
+#[must_use]
 pub fn circ_intersects_circ(a: &Circle, b: &Circle) -> bool {
     le(a.p().dist(b.p()), a.r() + b.r())
 }
 
+#[must_use]
 pub fn circ_intersects_path(a: &Circle, b: &Path) -> bool {
     // Test all capsules in path against circle.
     for cap in b.caps() {
@@ -87,6 +95,7 @@ pub fn circ_intersects_path(a: &Circle, b: &Path) -> bool {
     false
 }
 
+#[must_use]
 pub fn circ_intersects_poly(a: &Circle, b: &Poly) -> bool {
     // Check bounding boxes.
     if !a.bounds().intersects(&b.bounds()) {
@@ -101,6 +110,7 @@ pub fn circ_intersects_poly(a: &Circle, b: &Poly) -> bool {
     false
 }
 
+#[must_use]
 pub fn circ_intersects_rt(a: &Circle, b: &Rt) -> bool {
     // Check bounding boxes.
     if !a.bounds().intersects(b) {
@@ -115,6 +125,7 @@ pub fn circ_intersects_rt(a: &Circle, b: &Rt) -> bool {
     b.contains(a.p()) || lt(d, 0.0)
 }
 
+#[must_use]
 pub fn circ_intersects_tri(a: &Circle, b: &Tri) -> bool {
     // Check bounding boxes.
     if !a.bounds().intersects(&b.bounds()) {
@@ -135,15 +146,18 @@ pub fn circ_intersects_tri(a: &Circle, b: &Tri) -> bool {
     false
 }
 
+#[must_use]
 pub fn line_intersects_line(a: &Line, b: &Line) -> bool {
     // Intersects if not parallel.
     ne(a.dir().cross(b.dir()), 0.0)
 }
 
+#[must_use]
 pub fn line_intersects_seg(_a: &Line, _b: &Segment) -> bool {
     todo!()
 }
 
+#[must_use]
 pub fn path_intersects_path(a: &Path, b: &Path) -> bool {
     // Try pairwise intersection of capsules.
     for i in 0..a.len() - 1 {
@@ -158,6 +172,7 @@ pub fn path_intersects_path(a: &Path, b: &Path) -> bool {
     false
 }
 
+#[must_use]
 pub fn path_intersects_rt(a: &Path, b: &Rt) -> bool {
     // Check whether each capsule in the path intersects the rectangle.
     for cap in a.caps() {
@@ -168,6 +183,7 @@ pub fn path_intersects_rt(a: &Path, b: &Rt) -> bool {
     false
 }
 
+#[must_use]
 pub fn path_intersects_poly(a: &Path, b: &Poly) -> bool {
     // Check path capsules.
     for cap in a.caps() {
@@ -178,6 +194,7 @@ pub fn path_intersects_poly(a: &Path, b: &Poly) -> bool {
     false
 }
 
+#[must_use]
 pub fn poly_intersects_rt(a: &Poly, b: &Rt) -> bool {
     for tri in a.tri() {
         if rt_intersects_tri(b, tri) {
@@ -187,10 +204,12 @@ pub fn poly_intersects_rt(a: &Poly, b: &Rt) -> bool {
     false
 }
 
+#[must_use]
 pub fn rt_intersects_rt(a: &Rt, b: &Rt) -> bool {
     a.intersects(b)
 }
 
+#[must_use]
 pub fn rt_intersects_tri(a: &Rt, b: &Tri) -> bool {
     let rt = &a.pts();
     let tri = b.pts();
@@ -209,6 +228,7 @@ pub fn rt_intersects_tri(a: &Rt, b: &Tri) -> bool {
     true
 }
 
+#[must_use]
 pub fn rt_intersects_seg(a: &Rt, b: &Segment) -> bool {
     if a.contains(b.st()) || a.contains(b.en()) {
         return true;
@@ -226,6 +246,7 @@ pub fn rt_intersects_seg(a: &Rt, b: &Segment) -> bool {
     true
 }
 
+#[must_use]
 pub fn seg_intersects_seg(a: &Segment, b: &Segment) -> bool {
     // Check if the segment endpoints are on opposite sides of the other segment.
     let a_st = orientation(&b.line(), a.st());

@@ -27,6 +27,7 @@ pub enum Shape {
 }
 
 impl Shape {
+    #[must_use]
     pub fn filled(self) -> Shape {
         match self {
             Shape::Path(s) => {

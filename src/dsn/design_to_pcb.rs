@@ -29,10 +29,11 @@ pub struct DesignToPcb {
 }
 
 impl DesignToPcb {
+    #[must_use]
     pub fn new(dsn: DsnPcb) -> Self {
         Self {
             dsn,
-            pcb: Default::default(),
+            pcb: Pcb::default(),
             padstacks: HashMap::new(),
             images: HashMap::new(),
             layers: HashMap::new(),
@@ -66,7 +67,7 @@ impl DesignToPcb {
         Pt { x: self.coord(v.x), y: self.coord(v.y) }
     }
 
-    fn rot(&self, r: f64) -> f64 {
+    fn rot(r: f64) -> f64 {
         r
     }
 
@@ -143,7 +144,7 @@ impl DesignToPcb {
                 .get(&self.pcb.to_id(&v.padstack_id))
                 .ok_or_else(|| eyre!("missing padstack with id {}", v.padstack_id))?
                 .clone(),
-            rotation: self.rot(v.rotation),
+            rotation: Self::rot(v.rotation),
             p: self.pt(v.p),
         })
     }
@@ -154,7 +155,7 @@ impl DesignToPcb {
         c.footprint_id = self.pcb.to_id(&v.image_id);
         c.outlines = v.outlines.iter().map(|p| self.shape(p)).collect::<Result<_>>()?;
         c.keepouts = v.keepouts.iter().map(|p| self.keepout(p)).collect::<Result<_>>()?;
-        for pin in v.pins.iter() {
+        for pin in &v.pins {
             c.add_pin(self.pin(pin)?);
         }
         Ok(c)
@@ -162,7 +163,7 @@ impl DesignToPcb {
 
     fn components(&self, v: &DsnComponent) -> Result<Vec<Component>> {
         let mut components = Vec::new();
-        for pl in v.refs.iter() {
+        for pl in &v.refs {
             let mut c = self
                 .images
                 .get(&self.pcb.to_id(&v.image_id))
@@ -170,7 +171,7 @@ impl DesignToPcb {
                 .clone();
             c.id = self.pcb.to_id(&pl.component_id);
             c.p = self.pt(pl.p);
-            c.rotation = self.rot(pl.rotation);
+            c.rotation = Self::rot(pl.rotation);
             match pl.side {
                 DsnSide::Front => {}
                 DsnSide::Back => c.flip(self.pcb.layers().len()),
@@ -195,7 +196,7 @@ impl DesignToPcb {
         }
     }
 
-    fn clearance_type(&self, v: &DsnClearanceType) -> Vec<(ObjectKind, ObjectKind)> {
+    fn clearance_type(v: &DsnClearanceType) -> Vec<(ObjectKind, ObjectKind)> {
         match v {
             DsnClearanceType::All | DsnClearanceType::DefaultSmd => {
                 ObjectKind::iter().cartesian_product(ObjectKind::iter()).collect()
@@ -206,7 +207,7 @@ impl DesignToPcb {
 
     fn clearance(&self, v: &DsnClearance) -> Clearance {
         let pairs = v.types.iter().fold(vec![], |mut a, b| {
-            a.extend(self.clearance_type(b));
+            a.extend(Self::clearance_type(b));
             a
         });
         Clearance::new(self.coord(v.amount), &pairs)
@@ -233,7 +234,7 @@ impl DesignToPcb {
     }
 
     fn convert_padstacks(&mut self) -> Result<()> {
-        for v in self.dsn.library.padstacks.iter() {
+        for v in &self.dsn.library.padstacks {
             if self.padstacks.insert(self.pcb.to_id(&v.padstack_id), self.padstack(v)?).is_some() {
                 return Err(eyre!("duplicate padstack with id {}", v.padstack_id));
             }
@@ -242,7 +243,7 @@ impl DesignToPcb {
     }
 
     fn convert_images(&mut self) -> Result<()> {
-        for v in self.dsn.library.images.iter() {
+        for v in &self.dsn.library.images {
             if self.images.insert(self.pcb.to_id(&v.image_id), self.image(v)?).is_some() {
                 return Err(eyre!("duplicate image with id {}", v.image_id));
             }
@@ -283,15 +284,15 @@ impl DesignToPcb {
         self.convert_images()?;
 
         // Physical structure:
-        for v in self.dsn.structure.boundaries.iter() {
+        for v in &self.dsn.structure.boundaries {
             // Convert boundaries to closed shapes.
             let LayerShape { layers, shape } = self.shape(v)?;
             self.pcb.add_boundary(LayerShape { layers, shape: shape.filled() });
         }
-        for v in self.dsn.structure.keepouts.iter() {
+        for v in &self.dsn.structure.keepouts {
             self.pcb.add_keepout(self.keepout(v)?);
         }
-        for v in self.dsn.structure.vias.iter() {
+        for v in &self.dsn.structure.vias {
             self.pcb.add_via_padstack(
                 self.padstacks
                     .get(&self.pcb.to_id(v))
@@ -299,25 +300,25 @@ impl DesignToPcb {
                     .clone(),
             );
         }
-        for v in self.dsn.placement.components.iter() {
-            for component in self.components(v)?.into_iter() {
+        for v in &self.dsn.placement.components {
+            for component in self.components(v)? {
                 self.pcb.add_component(component);
             }
         }
 
         // Routing:
-        for v in self.dsn.network.nets.iter() {
+        for v in &self.dsn.network.nets {
             self.pcb.add_net(self.net(v));
         }
-        for v in self.dsn.network.classes.iter() {
+        for v in &self.dsn.network.classes {
             let ruleset = self.ruleset(v)?;
             self.pcb.add_ruleset(ruleset.clone());
             // Check for default ruleset:
             if v.net_ids.is_empty() {
-                self.pcb.set_default_net_ruleset(ruleset.id)
+                self.pcb.set_default_net_ruleset(ruleset.id);
             } else {
-                for net in v.net_ids.iter() {
-                    self.pcb.set_net_ruleset(self.pcb.to_id(net), ruleset.id)
+                for net in &v.net_ids {
+                    self.pcb.set_net_ruleset(self.pcb.to_id(net), ruleset.id);
                 }
             }
         }

@@ -83,7 +83,7 @@ impl PlaceModel {
 
     // Adds all pins in the given net.
     pub fn add_net(&mut self, pcb: &Pcb, net: &Net) -> Result<()> {
-        for p in net.pins.iter() {
+        for p in &net.pins {
             let (component, pin) = pcb.pin_ref(p)?;
             self.add_pin(&component.tf(), p.clone(), pin, Tag(net.id));
         }
@@ -92,7 +92,7 @@ impl PlaceModel {
 
     // Removes all pins in the given net.
     pub fn remove_net(&mut self, net: &Net) {
-        for p in net.pins.iter() {
+        for p in &net.pins {
             self.remove_pin(p);
         }
     }
@@ -199,7 +199,7 @@ impl PlaceModel {
                 let tag = if let Some(tag) = pcb.pin_ref_net(&r) { Tag(tag) } else { NO_TAG };
                 self.add_pin(&tf, r, pin, tag);
             }
-            for keepout in c.keepouts.iter() {
+            for keepout in &c.keepouts {
                 Self::add_shape(
                     self.bounds,
                     &mut self.blocked,
@@ -256,7 +256,7 @@ impl PlaceModel {
     fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, tag: Tag) -> Vec<PlaceId> {
         let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, tag, ObjectKind::Pin.query());
         let e = self.pins.entry(pinref).or_insert_with(Vec::new);
-        for &id in ids.iter() {
+        for &id in &ids {
             e.push(id);
         }
         ids

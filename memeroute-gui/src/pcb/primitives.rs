@@ -2,6 +2,8 @@ use std::f64::consts::TAU;
 
 use eframe::egui::epaint::{Mesh, PathShape, Vertex};
 use eframe::egui::{epaint, Color32};
+use eframe::emath::Pos2;
+use eframe::epaint::{Stroke, TextureId};
 use memeroute::model::primitive::point::Pt;
 use memeroute::model::primitive::pt;
 use memeroute::model::primitive::rect::Rt;
@@ -28,22 +30,23 @@ pub fn fill_circle(tf: &Tf, p: Pt, r: f64, col: Color32) -> epaint::Shape {
         points: vert,
         closed: true,
         fill: col,
-        stroke: Default::default(),
+        stroke: Stroke::default(),
     })
 }
 
 pub fn fill_polygon(tf: &Tf, pts: &[Pt], tris: &[u32], col: Color32) -> epaint::Shape {
     let vert = pts
         .iter()
-        .map(|&v| Vertex { pos: to_pos2(tf.pt(v)), uv: Default::default(), color: col })
+        .map(|&v| Vertex { pos: to_pos2(tf.pt(v)), uv: Pos2::default(), color: col })
         .collect();
     epaint::Shape::Mesh(Mesh {
         indices: tris.to_owned(),
         vertices: vert,
-        texture_id: Default::default(),
+        texture_id: TextureId::default(),
     })
 }
 
+#[must_use]
 pub fn stroke_polygon(tf: &Tf, pts: &[Pt], width: f64, col: Color32) -> Vec<epaint::Shape> {
     let mut vert = pts.to_owned();
     if let Some(first) = vert.first().copied() {
@@ -52,6 +55,7 @@ pub fn stroke_polygon(tf: &Tf, pts: &[Pt], width: f64, col: Color32) -> Vec<epai
     stroke_path(tf, &vert, width, col)
 }
 
+#[must_use]
 pub fn stroke_path(tf: &Tf, pts: &[Pt], r: f64, col: Color32) -> Vec<epaint::Shape> {
     let mut shapes = Vec::new();
     for &[p0, p1] in pts.array_windows::<2>() {

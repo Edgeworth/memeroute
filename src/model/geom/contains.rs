@@ -10,6 +10,7 @@ use crate::model::primitive::segment::Segment;
 use crate::model::primitive::triangle::Tri;
 use crate::model::primitive::{line, ShapeOps};
 
+#[must_use]
 pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
     // Bounding box check.
     if !a.bounds().contains(*b) {
@@ -19,6 +20,7 @@ pub fn cap_contains_pt(a: &Capsule, b: &Pt) -> bool {
     le(pt_seg_dist(b, &a.seg()), a.r())
 }
 
+#[must_use]
 pub fn cap_contains_rt(a: &Capsule, b: &Rt) -> bool {
     // Bounding box check.
     if !a.bounds().contains_rt(b) {
@@ -33,6 +35,7 @@ pub fn cap_contains_rt(a: &Capsule, b: &Rt) -> bool {
     true
 }
 
+#[must_use]
 pub fn circ_contains_rt(a: &Circle, b: &Rt) -> bool {
     // Sufficient to check all rectangle points are within the circle.
     circ_contains_pt(a, &b.bl())
@@ -41,10 +44,12 @@ pub fn circ_contains_rt(a: &Circle, b: &Rt) -> bool {
         && circ_contains_pt(a, &b.tl())
 }
 
+#[must_use]
 pub fn circ_contains_pt(a: &Circle, b: &Pt) -> bool {
     le(a.p().dist(*b), a.r())
 }
 
+#[must_use]
 pub fn path_contains_rt(a: &Path, b: &Rt) -> bool {
     // Bounding box check.
     if !a.bounds().contains_rt(b) {
@@ -66,10 +71,12 @@ pub fn path_contains_rt(a: &Path, b: &Rt) -> bool {
     false
 }
 
+#[must_use]
 pub fn path_contains_seg(_a: &Path, _b: &Segment) -> bool {
     todo!()
 }
 
+#[must_use]
 pub fn poly_contains_cap(a: &Poly, b: &Capsule) -> bool {
     // Bounding box check.
     if !a.bounds().contains_rt(&b.bounds()) {
@@ -93,6 +100,7 @@ pub fn poly_contains_cap(a: &Poly, b: &Capsule) -> bool {
     true
 }
 
+#[must_use]
 pub fn poly_contains_circ(a: &Poly, b: &Circle) -> bool {
     // Test that the centre of the circle is in the polygon.
     if !poly_contains_pt(a, &b.p()) {
@@ -101,6 +109,7 @@ pub fn poly_contains_circ(a: &Poly, b: &Circle) -> bool {
     ge(polyline_pt_dist(a.pts(), &b.p()), b.r())
 }
 
+#[must_use]
 pub fn poly_contains_path(a: &Poly, b: &Path) -> bool {
     // Bounding box check.
     if !a.bounds().contains_rt(&b.bounds()) {
@@ -115,6 +124,7 @@ pub fn poly_contains_path(a: &Poly, b: &Path) -> bool {
     true
 }
 
+#[must_use]
 pub fn poly_contains_pt(a: &Poly, b: &Pt) -> bool {
     // Bounding box check.
     if !a.bounds().contains(*b) {
@@ -142,6 +152,7 @@ pub fn poly_contains_pt(a: &Poly, b: &Pt) -> bool {
     winding != 0
 }
 
+#[must_use]
 pub fn poly_contains_rt(a: &Poly, b: &Rt) -> bool {
     // Bounding box check.
     if !a.bounds().contains_rt(b) {
@@ -165,6 +176,7 @@ pub fn poly_contains_rt(a: &Poly, b: &Rt) -> bool {
     true
 }
 
+#[must_use]
 pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
     // Bounding box check.
     if !a.bounds().contains_rt(&b.bounds()) {
@@ -195,6 +207,7 @@ pub fn poly_contains_seg(a: &Poly, b: &Segment) -> bool {
     true
 }
 
+#[must_use]
 pub fn rt_contains_cap(a: &Rt, b: &Capsule) -> bool {
     // Bounding box check.
     if !a.contains_rt(&b.bounds()) {
@@ -218,6 +231,7 @@ pub fn rt_contains_cap(a: &Rt, b: &Capsule) -> bool {
     true
 }
 
+#[must_use]
 pub fn rt_contains_circ(a: &Rt, b: &Circle) -> bool {
     // Check the centre is in the rectangle:
     if !a.contains(b.p()) {
@@ -236,6 +250,7 @@ pub fn rt_contains_circ(a: &Rt, b: &Circle) -> bool {
     true
 }
 
+#[must_use]
 pub fn rt_contains_path(a: &Rt, b: &Path) -> bool {
     // Bounding box check.
     if !a.contains_rt(&b.bounds()) {
@@ -251,6 +266,7 @@ pub fn rt_contains_path(a: &Rt, b: &Path) -> bool {
     true
 }
 
+#[must_use]
 pub fn rt_contains_poly(a: &Rt, b: &Poly) -> bool {
     // Bounding box check.
     if !a.contains_rt(&b.bounds()) {
@@ -266,11 +282,13 @@ pub fn rt_contains_poly(a: &Rt, b: &Poly) -> bool {
     true
 }
 
+#[must_use]
 pub fn rt_contains_seg(a: &Rt, b: &Segment) -> bool {
     // Just need to check containment of both endpoints.
     a.contains(b.st()) && a.contains(b.en())
 }
 
+#[must_use]
 pub fn rt_contains_tri(a: &Rt, b: &Tri) -> bool {
     // Just check all points in |b| are in |a|.
     for p in b.pts() {
@@ -281,6 +299,7 @@ pub fn rt_contains_tri(a: &Rt, b: &Tri) -> bool {
     true
 }
 
+#[must_use]
 pub fn tri_contains_pt(a: &Tri, b: &Pt) -> bool {
     let orientation0 = orientation(&line(a[0], a[1]), *b);
     let orientation1 = orientation(&line(a[1], a[2]), *b);

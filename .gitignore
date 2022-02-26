@@ -6,3 +6,4 @@
 /data
 *.cpp
 *.h
+.mypy_cache/

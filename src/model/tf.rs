@@ -22,26 +22,32 @@ pub struct Tf {
 }
 
 impl Tf {
+    #[must_use]
     pub fn new() -> Self {
         Self::identity()
     }
 
+    #[must_use]
     pub fn identity() -> Self {
         Self { m: Matrix3::identity() }
     }
 
+    #[must_use]
     pub fn scale(p: Pt) -> Self {
         Self { m: Matrix3::new_nonuniform_scaling(&p.into()) }
     }
 
+    #[must_use]
     pub fn translate(p: Pt) -> Self {
         Self { m: Matrix3::new_translation(&p.into()) }
     }
 
+    #[must_use]
     pub fn rotate(deg: f64) -> Self {
         Self { m: Matrix3::new_rotation(deg / 180.0 * PI) }
     }
 
+    #[must_use]
     pub fn affine(from: &Rt, to: &Rt) -> Self {
         let xscale = to.w() / from.w();
         let yscale = to.h() / from.h();
@@ -50,16 +56,19 @@ impl Tf {
         Self::translate(offset) * scale
     }
 
+    #[must_use]
     pub fn inv(&self) -> Tf {
         Tf { m: self.m.try_inverse().unwrap() }
     }
 
+    #[must_use]
     pub fn pt(&self, p: Pt) -> Pt {
         let v = self.m * vector![p.x, p.y, 1.0];
         pt(v.x, v.y)
     }
 
     // If there's a rotation, output will be a polygon not a Rt.
+    #[must_use]
     pub fn rt(&self, r: &Rt) -> Shape {
         if eq(self.m[(1, 0)], 0.0) && eq(self.m[(0, 1)], 0.0) {
             let a = self.pt(r.bl());
@@ -80,37 +89,45 @@ impl Tf {
         assert!(eq(self.m[(0, 1)], -self.m[(1, 0)]));
     }
 
+    #[must_use]
     pub fn length(&self, l: f64) -> f64 {
         self.check_similarity();
         l * pt(self.m[(0, 0)], self.m[(1, 0)]).mag()
     }
 
+    #[must_use]
     pub fn cap(&self, c: &Capsule) -> Capsule {
         cap(self.pt(c.st()), self.pt(c.en()), self.length(c.r()))
     }
 
+    #[must_use]
     pub fn circ(&self, c: &Circle) -> Circle {
         circ(self.pt(c.p()), self.length(c.r()))
     }
 
+    #[must_use]
     pub fn line(&self, l: &Line) -> Line {
         line(self.pt(l.st()), self.pt(l.en()))
     }
 
+    #[must_use]
     pub fn path(&self, p: &Path) -> Path {
         let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
         path(&pts, self.length(p.r()))
     }
 
+    #[must_use]
     pub fn poly(&self, p: &Poly) -> Poly {
         let pts = p.pts().iter().map(|&v| self.pt(v)).collect::<Vec<_>>();
         poly(&pts)
     }
 
+    #[must_use]
     pub fn seg(&self, s: &Segment) -> Segment {
         seg(self.pt(s.st()), self.pt(s.en()))
     }
 
+    #[must_use]
     pub fn tri(&self, t: &Tri) -> Tri {
         let pts = t.pts();
         tri(self.pt(pts[0]), self.pt(pts[1]), self.pt(pts[2]))
@@ -131,6 +148,7 @@ impl Tf {
         }
     }
 
+    #[must_use]
     pub fn pts(&self, p: &[Pt]) -> Vec<Pt> {
         p.iter().map(|&v| self.pt(v)).collect()
     }

@@ -20,57 +20,70 @@ pub struct Pt {
 }
 
 impl Pt {
+    #[must_use]
     pub const fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
 
+    #[must_use]
     pub fn zero() -> Self {
         Self::new(0.0, 0.0)
     }
 
+    #[must_use]
     pub fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
 
+    #[must_use]
     pub fn as_array(&self) -> [f64; 2] {
         [self.x, self.y]
     }
 
+    #[must_use]
     pub fn offset(&self, dx: f64, dy: f64) -> Pt {
         pt(self.x + dx, self.y + dy)
     }
 
+    #[must_use]
     pub fn cross(&self, p: Pt) -> f64 {
         self.x * p.y - self.y * p.x
     }
 
     // Gets the normal facing outwards (to the right).
+    #[must_use]
     pub fn perp(&self) -> Pt {
         pt(-self.y, self.x).norm()
     }
 
+    #[must_use]
     pub fn dist(&self, b: Pt) -> f64 {
         (b - *self).mag()
     }
 
+    #[must_use]
     pub fn mag(&self) -> f64 {
         self.mag2().sqrt()
     }
 
+    #[must_use]
     pub fn mag2(&self) -> f64 {
         self.x * self.x + self.y * self.y
     }
 
+    #[must_use]
     pub fn dot(&self, p: Pt) -> f64 {
         self.x * p.x + self.y * p.y
     }
 
+    #[must_use]
     pub fn norm(&self) -> Pt {
         let mag = self.mag();
         pt(self.x / mag, self.y / mag)
     }
 
     // Clamps the point to be in the range defined by |r|.
+    #[must_use]
     pub fn clamp(&self, r: &Rt) -> Pt {
         pt(self.x.clamp(r.l(), r.r()), self.y.clamp(r.b(), r.t()))
     }
@@ -178,26 +191,32 @@ pub struct PtI {
 }
 
 impl PtI {
+    #[must_use]
     pub const fn new(x: i64, y: i64) -> Self {
         Self { x, y }
     }
 
+    #[must_use]
     pub const fn zero() -> Self {
         Self::new(0, 0)
     }
 
+    #[must_use]
     pub fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
 
+    #[must_use]
     pub fn dist(&self, b: PtI) -> f64 {
         (b - *self).mag()
     }
 
+    #[must_use]
     pub fn mag(&self) -> f64 {
         (self.mag2() as f64).sqrt()
     }
 
+    #[must_use]
     pub fn mag2(&self) -> i64 {
         self.x * self.x + self.y * self.y
     }

@@ -33,6 +33,7 @@ pub struct Poly {
 }
 
 impl Poly {
+    #[must_use]
     pub fn new(pts: &[Pt]) -> Self {
         let mut pts = remove_collinear(pts);
         ensure_ccw(&mut pts);
@@ -46,22 +47,27 @@ impl Poly {
         Self { pts, tri, tri_idx, is_convex }
     }
 
+    #[must_use]
     pub fn pts(&self) -> &[Pt] {
         &self.pts
     }
 
+    #[must_use]
     pub fn edges(&self) -> EdgeIterator<'_> {
         edges(&self.pts)
     }
 
+    #[must_use]
     pub fn tri(&self) -> &[Tri] {
         &self.tri
     }
 
+    #[must_use]
     pub fn tri_idx(&self) -> &[u32] {
         &self.tri_idx
     }
 
+    #[must_use]
     pub fn is_convex(&self) -> bool {
         self.is_convex
     }
@@ -136,6 +142,7 @@ pub struct EdgeIterator<'a> {
 }
 
 impl<'a> EdgeIterator<'a> {
+    #[must_use]
     pub fn new(pts: &'a [Pt]) -> Self {
         Self { pts, idx: 0 }
     }
@@ -155,6 +162,7 @@ impl<'a> Iterator for EdgeIterator<'a> {
     }
 }
 
+#[must_use]
 pub fn edges(pts: &[Pt]) -> EdgeIterator<'_> {
     EdgeIterator::new(pts)
 }

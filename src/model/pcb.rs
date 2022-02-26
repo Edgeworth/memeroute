@@ -47,38 +47,47 @@ impl_op_ex!(&|a: &LayerSet, b: &LayerSet| -> LayerSet { LayerSet { l: a.l & b.l 
 impl_op_ex!(&= |a: &mut LayerSet, b: &LayerSet| {a.l &= b.l;});
 
 impl LayerSet {
+    #[must_use]
     pub fn empty() -> Self {
         Self { l: DenseBitSet::new() }
     }
 
+    #[must_use]
     pub fn one(id: LayerId) -> Self {
         Self { l: DenseBitSet::from_integer(1 << (id as u64)) }
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.l.get_weight() as usize
     }
 
+    #[must_use]
     pub fn id(&self) -> Option<LayerId> {
         if self.len() == 1 { Some(self.l.first_set() as LayerId) } else { None }
     }
 
+    #[must_use]
     pub fn first(&self) -> Option<LayerId> {
-        if !self.is_empty() { Some(self.l.first_set() as LayerId) } else { None }
+        if self.is_empty() { None } else { Some(self.l.first_set() as LayerId) }
     }
 
+    #[must_use]
     pub fn contains(&self, layer: LayerId) -> bool {
         self.l.get_bit(layer as usize)
     }
 
+    #[must_use]
     pub fn contains_set(&self, layers: LayerSet) -> bool {
         (self.l | layers.l) == self.l
     }
 
+    #[must_use]
     pub fn iter(&self) -> BitSetIterator {
         BitSetIterator::new(self.l)
     }
@@ -112,6 +121,7 @@ pub struct BitSetIterator {
 }
 
 impl BitSetIterator {
+    #[must_use]
     pub fn new(l: DenseBitSet) -> Self {
         Self { l }
     }
@@ -185,6 +195,7 @@ pub struct Pin {
 }
 
 impl Pin {
+    #[must_use]
     pub fn tf(&self) -> Tf {
         Tf::translate(self.p) * Tf::rotate(self.rotation)
     }
@@ -213,14 +224,17 @@ impl Component {
         self.pins.insert(p.id, p);
     }
 
+    #[must_use]
     pub fn pins(&self) -> Values<'_, Id, Pin> {
         self.pins.values()
     }
 
+    #[must_use]
     pub fn pin(&self, id: Id) -> Option<&Pin> {
         self.pins.get(&id)
     }
 
+    #[must_use]
     pub fn tf(&self) -> Tf {
         // Being on the back mirrors, i.e. horizontal flip.
         let side_tf = if self.flipped { Tf::scale(pt(-1.0, 1.0)) } else { Tf::identity() };
@@ -229,10 +243,10 @@ impl Component {
 
     pub fn flip(&mut self, num_layers: usize) {
         self.flipped = !self.flipped;
-        for v in self.outlines.iter_mut() {
+        for v in &mut self.outlines {
             v.flip(num_layers);
         }
-        for v in self.keepouts.iter_mut() {
+        for v in &mut self.keepouts {
             v.flip(num_layers);
         }
         for v in self.pins.values_mut() {
@@ -240,6 +254,7 @@ impl Component {
         }
     }
 
+    #[must_use]
     pub fn flipped(&self) -> bool {
         self.flipped
     }
@@ -254,12 +269,13 @@ pub struct Padstack {
 }
 
 impl Padstack {
+    #[must_use]
     pub fn layers(&self) -> LayerSet {
         self.shapes.iter().map(|s| s.layers).collect()
     }
 
     pub fn flip(&mut self, num_layers: usize) {
-        for v in self.shapes.iter_mut() {
+        for v in &mut self.shapes {
             v.flip(num_layers);
         }
     }
@@ -272,6 +288,7 @@ pub struct PinRef {
 }
 
 impl PinRef {
+    #[must_use]
     pub fn new(component: &Component, pin: &Pin) -> Self {
         Self { component: component.id, pin: pin.id }
     }
@@ -299,6 +316,7 @@ pub struct Via {
 }
 
 impl Via {
+    #[must_use]
     pub fn tf(&self) -> Tf {
         Tf::translate(self.p)
     }
@@ -315,6 +333,7 @@ pub enum ObjectKind {
 }
 
 impl ObjectKind {
+    #[must_use]
     pub fn query(&self) -> Kinds {
         Kinds(DenseBitSet::from_integer(enum_set!(self).as_u64()))
     }
@@ -333,6 +352,7 @@ pub struct Clearance {
 }
 
 impl Clearance {
+    #[must_use]
     pub fn new(amount: f64, pairs: &[(ObjectKind, ObjectKind)]) -> Self {
         let mut c = Self { amount, ..Self::default() };
         for &(a, b) in pairs {
@@ -343,6 +363,7 @@ impl Clearance {
     }
 
     // Returns set of ObjectKind that |kind| has a clearance rule with.
+    #[must_use]
     pub fn subset_for(&self, kind: ObjectKind) -> Kinds {
         match kind {
             ObjectKind::Area => Kinds(DenseBitSet::from_integer(self.area_kinds.as_u64())),
@@ -363,6 +384,7 @@ impl Clearance {
         }
     }
 
+    #[must_use]
     pub fn amount(&self) -> f64 {
         self.amount
     }
@@ -389,22 +411,20 @@ impl RuleSet {
     pub fn new(id: Id, rules: Vec<Rule>) -> Result<Self> {
         let mut rs = Self { id, radius: None, clearances: Vec::new(), use_via: None };
         // Check for consistency:
-        for rule in rules.into_iter() {
+        for rule in rules {
             match rule {
                 Rule::Radius(r) => {
                     if rs.radius.is_some() {
                         return Err(eyre!("Multple width rules"));
-                    } else {
-                        rs.radius = Some(r);
                     }
+                    rs.radius = Some(r);
                 }
                 Rule::Clearance(c) => rs.clearances.push(c),
                 Rule::UseVia(v) => {
                     if rs.use_via.is_some() {
                         return Err(eyre!("Multple use_via rules"));
-                    } else {
-                        rs.use_via = Some(v);
                     }
+                    rs.use_via = Some(v);
                 }
             }
         }
@@ -412,14 +432,17 @@ impl RuleSet {
         Ok(rs)
     }
 
+    #[must_use]
     pub fn radius(&self) -> f64 {
         self.radius.unwrap()
     }
 
+    #[must_use]
     pub fn clearances(&self) -> &[Clearance] {
         &self.clearances
     }
 
+    #[must_use]
     pub fn use_via(&self) -> Option<Id> {
         self.use_via
     }
@@ -604,7 +627,7 @@ impl Pcb {
     }
 
     pub fn add_net(&mut self, n: Net) {
-        for p in n.pins.iter() {
+        for p in &n.pins {
             self.pin_ref_to_net.insert(p.clone(), n.id);
         }
         self.nets.insert(n.id, n);

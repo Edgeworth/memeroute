@@ -17,26 +17,32 @@ pub struct Segment {
 }
 
 impl Segment {
+    #[must_use]
     pub const fn new(st: Pt, en: Pt) -> Self {
         Self { st, en }
     }
 
+    #[must_use]
     pub const fn st(&self) -> Pt {
         self.st
     }
 
+    #[must_use]
     pub const fn en(&self) -> Pt {
         self.en
     }
 
+    #[must_use]
     pub fn dir(&self) -> Pt {
         self.en - self.st
     }
 
+    #[must_use]
     pub const fn line(&self) -> Line {
         line(self.st, self.en)
     }
 
+    #[must_use]
     pub fn contains(&self, p: Pt) -> bool {
         Rt::enclosing(self.st, self.en).contains(p) && is_collinear(self.st, self.en, p)
     }
