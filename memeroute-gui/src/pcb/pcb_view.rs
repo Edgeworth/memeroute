@@ -1,6 +1,7 @@
+use std::lazy::SyncLazy;
+
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
-use lazy_static::lazy_static;
 use memeroute::model::pcb::{
     Component, Keepout, LayerId, LayerSet, LayerShape, Padstack, Pcb, Pin,
 };
@@ -15,30 +16,39 @@ use crate::pcb::{to_pos2, to_pt, to_rt};
 
 // Index 0 is front, index 1 is back.
 // TODO!! This
-lazy_static! {
-    static ref KEEPOUT: Color32 = Color32::from_rgba_unmultiplied(155, 27, 0, 180);
 
-    static ref OUTLINE: [Color32; 2] = [
+static KEEPOUT: SyncLazy<Color32> =
+    SyncLazy::new(|| Color32::from_rgba_unmultiplied(155, 27, 0, 180));
+
+static OUTLINE: SyncLazy<[Color32; 2]> = SyncLazy::new(|| {
+    [
         Color32::from_rgba_unmultiplied(89, 113, 193, 180),
-        Color32::from_rgba_unmultiplied(168, 0, 186, 180)
-    ];
+        Color32::from_rgba_unmultiplied(168, 0, 186, 180),
+    ]
+});
 
-    static ref BOUNDARY: Color32 = Color32::from_rgba_unmultiplied(255, 199, 46, 180);
+static BOUNDARY: SyncLazy<Color32> =
+    SyncLazy::new(|| Color32::from_rgba_unmultiplied(255, 199, 46, 180));
 
-    static ref PIN: [Color32; 2] = [
+static PIN: SyncLazy<[Color32; 2]> = SyncLazy::new(|| {
+    [
         Color32::from_rgba_unmultiplied(0, 27, 161, 180),
         Color32::from_rgba_unmultiplied(0, 27, 161, 180),
-    ];
+    ]
+});
 
-    static ref WIRE: [Color32; 2] = [
+static WIRE: SyncLazy<[Color32; 2]> = SyncLazy::new(|| {
+    [
         Color32::from_rgba_unmultiplied(252, 3, 182, 180),
-        Color32::from_rgba_unmultiplied(0, 166, 52, 180)
-    ];
+        Color32::from_rgba_unmultiplied(0, 166, 52, 180),
+    ]
+});
 
-    static ref VIA: Color32 = Color32::from_rgba_unmultiplied(100, 100, 100, 180);
+static VIA: SyncLazy<Color32> =
+    SyncLazy::new(|| Color32::from_rgba_unmultiplied(100, 100, 100, 180));
 
-    static ref DEBUG: Color32 = Color32::from_rgba_unmultiplied(123, 0, 255, 180);
-}
+static DEBUG: SyncLazy<Color32> =
+    SyncLazy::new(|| Color32::from_rgba_unmultiplied(123, 0, 255, 180));
 
 #[derive(Debug, Clone)]
 pub struct PcbView {
@@ -85,7 +95,7 @@ impl PcbView {
             dirty: true,
             offset: Pt::zero(),
             zoom: 1.0,
-            screen_area: Default::default(),
+            screen_area: Rt::default(),
             mesh: Mesh::default(),
         }
     }
@@ -102,11 +112,11 @@ impl PcbView {
         self.dirty = true;
     }
 
-    fn layer_id_to_color_idx(&self, id: LayerId) -> usize {
+    fn layer_id_to_color_idx(id: LayerId) -> usize {
         id as usize
     }
 
-    fn draw_shape(&self, tf: &Tf, v: &LayerShape, col: Color32) -> Vec<epaint::Shape> {
+    fn draw_shape(tf: &Tf, v: &LayerShape, col: Color32) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
         match &v.shape {
             Shape::Rect(s) => shapes.push(fill_rt(tf, s, col)),
@@ -115,43 +125,43 @@ impl PcbView {
             Shape::Path(s) => {
                 // Treat paths with a radius of 0 as having a radius of 0.1 mm (arbitrary).
                 let r = if s.r() == 0.0 { 0.1 } else { s.r() };
-                shapes.extend(stroke_path(tf, s.pts(), r, col))
+                shapes.extend(stroke_path(tf, s.pts(), r, col));
             }
             _ => todo!(),
         }
         shapes
     }
 
-    fn draw_keepout(&self, tf: &Tf, v: &Keepout, col: Color32) -> Vec<epaint::Shape> {
-        self.draw_shape(tf, &v.shape, col)
+    fn draw_keepout(tf: &Tf, v: &Keepout, col: Color32) -> Vec<epaint::Shape> {
+        Self::draw_shape(tf, &v.shape, col)
     }
 
-    fn draw_padstack(&self, tf: &Tf, v: &Padstack, col: Color32) -> Vec<epaint::Shape> {
+    fn draw_padstack(tf: &Tf, v: &Padstack, col: Color32) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
-        for shape in v.shapes.iter() {
-            shapes.extend(self.draw_shape(tf, shape, col));
+        for shape in &v.shapes {
+            shapes.extend(Self::draw_shape(tf, shape, col));
         }
         shapes
     }
 
-    fn draw_pin(&self, tf: &Tf, v: &Pin, col: Color32) -> Vec<epaint::Shape> {
-        self.draw_padstack(&(tf * v.tf()), &v.padstack, col)
+    fn draw_pin(tf: &Tf, v: &Pin, col: Color32) -> Vec<epaint::Shape> {
+        Self::draw_padstack(&(tf * v.tf()), &v.padstack, col)
     }
 
-    fn draw_component(&self, tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
+    fn draw_component(tf: &Tf, v: &Component) -> Vec<epaint::Shape> {
         let mut shapes = Vec::new();
         let tf = tf * v.tf();
         // TODO: Push this colour handling down, just do per layer colours.
-        for outline in v.outlines.iter() {
+        for outline in &v.outlines {
             let idx = outline.layers.first().unwrap();
-            shapes.extend(self.draw_shape(&tf, outline, OUTLINE[idx]));
+            shapes.extend(Self::draw_shape(&tf, outline, OUTLINE[idx]));
         }
-        for keepout in v.keepouts.iter() {
-            shapes.extend(self.draw_keepout(&tf, keepout, *KEEPOUT));
+        for keepout in &v.keepouts {
+            shapes.extend(Self::draw_keepout(&tf, keepout, *KEEPOUT));
         }
         for pin in v.pins() {
             let idx = pin.padstack.layers().first().unwrap();
-            shapes.extend(self.draw_pin(&tf, pin, PIN[idx]))
+            shapes.extend(Self::draw_pin(&tf, pin, PIN[idx]));
         }
         shapes
     }
@@ -162,8 +172,8 @@ impl PcbView {
         mesh: &mut Mesh,
         shapes: Vec<epaint::Shape>,
     ) {
-        for s in shapes.into_iter() {
-            tess.tessellate_shape(ctx.fonts().font_image().size(), s, mesh);
+        for s in shapes {
+            tess.tessellate_shape(ctx.fonts().font_image_size(), s, mesh);
         }
     }
 
@@ -178,25 +188,25 @@ impl PcbView {
                 ..Default::default()
             });
             for boundary in self.pcb.boundaries() {
-                let shapes = self.draw_shape(&tf, boundary, *BOUNDARY);
+                let shapes = Self::draw_shape(&tf, boundary, *BOUNDARY);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for keepout in self.pcb.keepouts() {
-                let shapes = self.draw_keepout(&tf, keepout, *KEEPOUT);
+                let shapes = Self::draw_keepout(&tf, keepout, *KEEPOUT);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for component in self.pcb.components() {
-                let shapes = self.draw_component(&tf, component);
+                let shapes = Self::draw_component(&tf, component);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for wire in self.pcb.wires() {
                 // TODO!!: Fix up layerset to color mapping.
-                let col = WIRE[self.layer_id_to_color_idx(wire.shape.layers.id().unwrap())];
-                let shapes = self.draw_shape(&tf, &wire.shape, col);
+                let col = WIRE[Self::layer_id_to_color_idx(wire.shape.layers.id().unwrap())];
+                let shapes = Self::draw_shape(&tf, &wire.shape, col);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for via in self.pcb.vias() {
-                let shapes = self.draw_padstack(&via.tf(), &via.padstack, *VIA);
+                let shapes = Self::draw_padstack(&via.tf(), &via.padstack, *VIA);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             for rt in self.pcb.debug_rts() {
@@ -204,7 +214,7 @@ impl PcbView {
                 pts.push(rt.pts()[0]);
                 let shape = path(&pts, 0.05).shape();
                 let shapes =
-                    self.draw_shape(&tf, &LayerShape { shape, layers: LayerSet::empty() }, *DEBUG);
+                    Self::draw_shape(&tf, &LayerShape { shape, layers: LayerSet::empty() }, *DEBUG);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
             }
             self.mesh = mesh;
@@ -217,7 +227,7 @@ impl PcbView {
                 * Tf::scale(pt(self.zoom, self.zoom))
                 * Tf::affine(&local_area, &self.screen_area)
                 * inv;
-            for vert in mesh.vertices.iter_mut() {
+            for vert in &mut mesh.vertices {
                 vert.pos = to_pos2(tf.pt(to_pt(vert.pos)));
             }
             self.dirty = false;

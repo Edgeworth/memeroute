@@ -14,10 +14,12 @@ pub struct Compound {
 }
 
 impl Compound {
+    #[must_use]
     pub fn empty() -> Self {
         Self { qt: RefCell::new(QuadTree::empty()) }
     }
 
+    #[must_use]
     pub fn with_bounds(r: &Rt) -> Self {
         Self { qt: RefCell::new(QuadTree::with_bounds(r)) }
     }
@@ -27,7 +29,7 @@ impl Compound {
     }
 
     pub fn remove_shape(&mut self, s: ShapeIdx) {
-        self.qt.borrow_mut().remove_shape(s)
+        self.qt.borrow_mut().remove_shape(s);
     }
 
     pub fn intersects(&self, s: &Shape, q: Query) -> bool {

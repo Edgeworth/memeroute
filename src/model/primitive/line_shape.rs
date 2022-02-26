@@ -12,23 +12,28 @@ pub struct Line {
 }
 
 impl Line {
+    #[must_use]
     pub const fn new(st: Pt, en: Pt) -> Self {
         Self { st, en }
     }
 
+    #[must_use]
     pub const fn st(&self) -> Pt {
         self.st
     }
 
+    #[must_use]
     pub const fn en(&self) -> Pt {
         self.en
     }
 
+    #[must_use]
     pub fn dir(&self) -> Pt {
         self.en - self.st
     }
 
     // Projects |p| onto this line.
+    #[must_use]
     pub fn project(&self, p: Pt) -> Pt {
         let dir = self.dir();
         let k = dir.dot(p - self.st) / dir.mag2();

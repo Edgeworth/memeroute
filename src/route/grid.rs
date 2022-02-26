@@ -45,7 +45,7 @@ struct NodeData {
 
 impl Default for NodeData {
     fn default() -> Self {
-        Self { seen: false, cost: f64::MAX / 10.0, prev: Default::default() }
+        Self { seen: false, cost: f64::MAX / 10.0, prev: State::default() }
     }
 }
 
@@ -146,7 +146,7 @@ impl GridRouter {
             for layer in src.layers.iter() {
                 let s = State { layers: LayerSet::one(layer), ..*src };
                 q.push(s, OrderedFloat(0.0));
-                node_data.insert(s, NodeData { prev: Default::default(), cost: 0.0, seen: true });
+                node_data.insert(s, NodeData { prev: State::default(), cost: 0.0, seen: true });
             }
         }
 
@@ -226,7 +226,7 @@ impl GridRouter {
                 cur = data.prev;
             }
             // Should reach the end of the path.
-            assert_eq!(cur, Default::default());
+            assert_eq!(cur, State::default());
             path.reverse();
             path
         } else {
@@ -235,23 +235,23 @@ impl GridRouter {
     }
 
     // Connect the given states together and return a route result doing that.
-    fn connect(&mut self, mut srcs: Vec<State>) -> Result<RouteResult> {
+    fn connect(&mut self, mut srcs: Vec<State>) -> RouteResult {
         let mut res = RouteResult::default();
         if srcs.len() <= 1 {
-            return Ok(res);
+            return res;
         }
         let mut dsts = srcs.split_off(1);
         while !dsts.is_empty() {
             let path = self.dijkstra(&srcs, &dsts);
             if path.is_empty() {
                 res.failed = true;
-                return Ok(res);
+                return res;
             }
             let (wires, vias) = self.create_path(&path);
-            for wire in wires.iter() {
+            for wire in &wires {
                 self.place.add_wire(wire);
             }
-            for via in vias.iter() {
+            for via in &vias {
                 self.place.add_via(via);
             }
             res.wires.extend(wires);
@@ -265,7 +265,7 @@ impl GridRouter {
             srcs.push(dsts.swap_remove(idx));
         }
 
-        Ok(res)
+        res
     }
 
     fn _draw_debug(&mut self, res: &mut RouteResult) {
@@ -303,7 +303,7 @@ impl GridRouter {
 impl RouteStrategy for GridRouter {
     fn route(&mut self) -> Result<RouteResult> {
         let mut res = RouteResult::default();
-        for net_id in self.net_order.clone().into_iter() {
+        for net_id in self.net_order.clone() {
             let net = self
                 .place
                 .pcb()
@@ -312,13 +312,13 @@ impl RouteStrategy for GridRouter {
                 .clone();
             let states = net.pins.iter().map(|p| self.pin_ref_state(p)).collect::<Result<_>>()?;
 
-            let sub_result = self.connect(states)?;
+            let sub_result = self.connect(states);
             println!("done {}, failed {}", self.place.pcb().to_name(net_id), sub_result.failed);
             // Mark wires and vias.
-            for wire in sub_result.wires.iter() {
+            for wire in &sub_result.wires {
                 self.place.add_wire(wire);
             }
-            for via in sub_result.vias.iter() {
+            for via in &sub_result.vias {
                 self.place.add_via(via);
             }
             res.merge(sub_result);

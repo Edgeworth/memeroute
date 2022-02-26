@@ -63,6 +63,7 @@ pub struct QuadTree {
 }
 
 impl QuadTree {
+    #[must_use]
     pub fn new(shapes: Vec<ShapeInfo>) -> Self {
         let bounds = rt_cloud_bounds(shapes.iter().map(|s| s.shape().bounds()));
         let nodes = vec![
@@ -77,10 +78,12 @@ impl QuadTree {
         Self { shapes, nodes, bounds, ..Default::default() }
     }
 
+    #[must_use]
     pub fn with_bounds(r: &Rt) -> Self {
         Self { nodes: vec![Node::default(), Node::default()], bounds: *r, ..Default::default() }
     }
 
+    #[must_use]
     pub fn empty() -> Self {
         Self {
             nodes: vec![Node::default(), Node::default()],
@@ -90,12 +93,14 @@ impl QuadTree {
     }
 
     // Gets the current rectangles of the quad tree.
+    #[must_use]
     pub fn rts(&self) -> Vec<Rt> {
         let mut rts = Vec::new();
         self.rts_internal(1, self.bounds(), &mut rts);
         rts
     }
 
+    #[must_use]
     pub fn shapes(&self) -> &[ShapeInfo] {
         &self.shapes
     }
@@ -117,15 +122,7 @@ impl QuadTree {
         // TODO: Don't rebuild the tree?
         let s = decompose_shape(s);
         let mut shape_idxs = Vec::new();
-        if bounds != self.bounds() {
-            let mut shapes = Vec::new();
-            swap(&mut shapes, &mut self.shapes);
-            for shape in s {
-                shape_idxs.push(shapes.len());
-                shapes.push(shape);
-            }
-            *self = Self::new(shapes);
-        } else {
+        if bounds == self.bounds() {
             for shape in s {
                 let shape_idx = if let Some(shape_idx) = self.free_shapes.pop() {
                     self.shapes[shape_idx] = shape;
@@ -137,19 +134,28 @@ impl QuadTree {
                 shape_idxs.push(shape_idx);
                 self.nodes[1].intersect.push(IntersectData { shape_idx, tests: 0 });
             }
+        } else {
+            let mut shapes = Vec::new();
+            swap(&mut shapes, &mut self.shapes);
+            for shape in s {
+                shape_idxs.push(shapes.len());
+                shapes.push(shape);
+            }
+            *self = Self::new(shapes);
         }
         shape_idxs
     }
 
     pub fn remove_shape(&mut self, s: ShapeIdx) {
         // Remove everything referencing this shape.
-        for node in self.nodes.iter_mut() {
+        for node in &mut self.nodes {
             node.intersect.retain(|v| v.shape_idx != s);
             node.contain.retain(|&v| v != s);
         }
         self.free_shapes.push(s);
     }
 
+    #[must_use]
     pub fn bounds(&self) -> Rt {
         self.bounds
     }
@@ -183,7 +189,7 @@ impl QuadTree {
 
         // If there are any shapes containing this node they must intersect with
         // |s| since it intersects |bounds|.
-        for &contain in self.nodes[idx].contain.iter() {
+        for &contain in &self.nodes[idx].contain {
             if matches_query(&self.shapes[contain], q) {
                 return true;
             }
@@ -218,7 +224,7 @@ impl QuadTree {
 
         // Check shapes that intersect this node:
         let mut had_intersection = false;
-        for inter in self.nodes[idx].intersect.iter_mut() {
+        for inter in &mut self.nodes[idx].intersect {
             inter.tests += 1;
             if cached_intersects(&self.shapes, &mut self.intersect_cache, inter.shape_idx, s, q) {
                 had_intersection = true;
@@ -239,7 +245,7 @@ impl QuadTree {
         // If bounds contains |s| and there is something that contains the
         // bounds, then that contains |s|.
         if r.contains_shape(s) {
-            for &contain in self.nodes[idx].contain.iter() {
+            for &contain in &self.nodes[idx].contain {
                 if matches_query(&self.shapes[contain], q) {
                     return true;
                 }
@@ -272,7 +278,7 @@ impl QuadTree {
 
         // Check shapes that intersect this node:
         let mut had_containment = false;
-        for inter in self.nodes[idx].intersect.iter_mut() {
+        for inter in &mut self.nodes[idx].intersect {
             inter.tests += 1;
             if cached_contains(&self.shapes, &mut self.contain_cache, inter.shape_idx, s, q) {
                 had_containment = true;
@@ -297,7 +303,7 @@ impl QuadTree {
         // bounds, then the distance is zero (intersecting a shape).
         let b = s.bounds();
         if r.contains_rt(&b) {
-            for &contain in self.nodes[idx].contain.iter() {
+            for &contain in &self.nodes[idx].contain {
                 if matches_query(&self.shapes[contain], q) {
                     return 0.0;
                 }
@@ -336,7 +342,7 @@ impl QuadTree {
         }
 
         // Check shapes that intersect this node:
-        for inter in self.nodes[idx].intersect.iter_mut() {
+        for inter in &mut self.nodes[idx].intersect {
             inter.tests += 1;
             let d = cached_dist(&self.shapes, &mut self.dist_cache, inter.shape_idx, s, q);
             best = best.min(d);
@@ -397,6 +403,7 @@ impl QuadTree {
 
 #[cfg(test)]
 mod tests {
+    use approx::assert_relative_eq;
     use rand::prelude::SmallRng;
     use rand::{Rng, SeedableRng};
 
@@ -430,9 +437,9 @@ mod tests {
         assert!(qt.intersects(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL));
         assert!(qt.contains(&pt(3.0, 3.0).shape(), ALL));
         assert!(!qt.contains(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL));
-        assert_eq!(qt.dist(&pt(3.0, 3.0).shape(), ALL), 0.0);
-        assert_eq!(qt.dist(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL), 0.0);
-        assert_eq!(qt.dist(&pt(5.0, 1.0).shape(), ALL), 1.0);
+        assert_relative_eq!(qt.dist(&pt(3.0, 3.0).shape(), ALL), 0.0);
+        assert_relative_eq!(qt.dist(&rt(3.0, 3.0, 4.0, 4.0).shape(), ALL), 0.0);
+        assert_relative_eq!(qt.dist(&pt(5.0, 1.0).shape(), ALL), 1.0);
     }
 
     #[test]

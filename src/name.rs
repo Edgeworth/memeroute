@@ -13,6 +13,7 @@ pub struct NameMap {
 }
 
 impl NameMap {
+    #[must_use]
     pub fn name(&self, id: Id) -> &str {
         self.id_to_name.get(&id).unwrap()
     }

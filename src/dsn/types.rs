@@ -147,7 +147,7 @@ pub struct DsnPadstack {
 
 impl Default for DsnPadstack {
     fn default() -> Self {
-        Self { padstack_id: Default::default(), shapes: Default::default(), attach: true }
+        Self { padstack_id: String::new(), shapes: Vec::new(), attach: true }
     }
 }
 

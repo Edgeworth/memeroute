@@ -37,111 +37,137 @@ impl Default for Rt {
 // Note that a rectangle with l == r and b == t may not be empty although have
 // a width and height of zero.
 impl Rt {
+    #[must_use]
     pub const fn new(l: f64, b: f64, r: f64, t: f64) -> Self {
         Self { l, b, r, t }
     }
 
+    #[must_use]
     pub const fn empty() -> Self {
         rt(0.0, 0.0, -1.0, -1.0)
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         lt(self.r, self.l) || lt(self.t, self.b)
     }
 
+    #[must_use]
     pub fn w(&self) -> f64 {
         self.r - self.l
     }
 
+    #[must_use]
     pub fn h(&self) -> f64 {
         self.t - self.b
     }
 
+    #[must_use]
     pub const fn l(&self) -> f64 {
         self.l
     }
 
+    #[must_use]
     pub const fn t(&self) -> f64 {
         self.t
     }
 
+    #[must_use]
     pub const fn r(&self) -> f64 {
         self.r
     }
 
+    #[must_use]
     pub const fn b(&self) -> f64 {
         self.b
     }
 
+    #[must_use]
     pub const fn bl(&self) -> Pt {
         pt(self.l(), self.b())
     }
 
+    #[must_use]
     pub fn bl_quadrant(&self) -> Rt {
         rt(self.l(), self.b(), self.center().x, self.center().y)
     }
 
+    #[must_use]
     pub const fn br(&self) -> Pt {
         pt(self.r(), self.b())
     }
 
+    #[must_use]
     pub fn br_quadrant(&self) -> Rt {
         rt(self.center().x, self.b(), self.r(), self.center().y)
     }
 
+    #[must_use]
     pub const fn tl(&self) -> Pt {
         pt(self.l(), self.t())
     }
 
+    #[must_use]
     pub fn tl_quadrant(&self) -> Rt {
         rt(self.l(), self.center().y, self.center().x, self.t())
     }
 
+    #[must_use]
     pub const fn tr(&self) -> Pt {
         pt(self.r(), self.t())
     }
 
+    #[must_use]
     pub fn tr_quadrant(&self) -> Rt {
         rt(self.center().x, self.center().y, self.r(), self.t())
     }
 
+    #[must_use]
     pub const fn pts(&self) -> [Pt; 4] {
         [self.bl(), self.br(), self.tr(), self.tl()]
     }
 
+    #[must_use]
     pub fn segs(&self) -> [Segment; 4] {
         let pts = self.pts();
         [seg(pts[0], pts[1]), seg(pts[1], pts[2]), seg(pts[2], pts[3]), seg(pts[3], pts[0])]
     }
 
+    #[must_use]
     pub fn center(&self) -> Pt {
         pt((self.l + self.r) / 2.0, (self.b + self.t) / 2.0)
     }
 
+    #[must_use]
     pub fn area(&self) -> f64 {
         self.w() * self.h()
     }
 
     // Insetting a rectangle more than its size will produce a rectangle
     // containing the single center point.
+    #[must_use]
     pub fn inset(&self, dx: f64, dy: f64) -> Rt {
         let wsub = self.w().min(2.0 * dx) / 2.0;
         let hsub = self.h().min(2.0 * dy) / 2.0;
         rt(self.l + wsub, self.b + hsub, self.r - wsub, self.t - hsub)
     }
 
+    #[must_use]
     pub fn contains(&self, p: Pt) -> bool {
         ge(p.x, self.l()) && ge(p.y, self.b()) && le(p.x, self.r()) && le(p.y, self.t())
     }
 
+    #[must_use]
     pub fn contains_rt(&self, r: &Rt) -> bool {
         ge(r.l(), self.l()) && le(r.r(), self.r()) && ge(r.b(), self.b()) && le(r.t(), self.t())
     }
 
+    #[must_use]
     pub fn intersects(&self, r: &Rt) -> bool {
         le(self.l(), r.r()) && ge(self.r(), r.l()) && gt(self.t(), r.b()) && le(self.b(), r.t())
     }
 
+    #[must_use]
     pub fn united(&self, rect: &Rt) -> Rt {
         if rect.is_empty() {
             *self
@@ -156,6 +182,7 @@ impl Rt {
         }
     }
 
+    #[must_use]
     pub fn enclosing(pa: Pt, pb: Pt) -> Rt {
         let l = pa.x.min(pb.x);
         let b = pa.y.min(pb.y);
@@ -165,6 +192,7 @@ impl Rt {
     }
 
     // Returns a rectangle with the same area that matches the aspect ratio of |r|.
+    #[must_use]
     pub fn match_aspect(&self, r: &Rt) -> Rt {
         if eq(r.w(), 0.0) {
             rt(self.l, self.b, self.l, self.t)
@@ -260,57 +288,70 @@ pub struct RtI {
 }
 
 impl RtI {
+    #[must_use]
     pub const fn new(x: i64, y: i64, w: i64, h: i64) -> Self {
         Self { x, y, w, h }
     }
 
 
+    #[must_use]
     pub const fn w(&self) -> i64 {
         self.w
     }
 
+    #[must_use]
     pub const fn h(&self) -> i64 {
         self.h
     }
 
+    #[must_use]
     pub const fn l(&self) -> i64 {
         self.x
     }
 
+    #[must_use]
     pub const fn t(&self) -> i64 {
         self.y + self.h
     }
 
+    #[must_use]
     pub const fn r(&self) -> i64 {
         self.x + self.w
     }
 
+    #[must_use]
     pub const fn b(&self) -> i64 {
         self.y
     }
 
+    #[must_use]
     pub const fn bl(&self) -> PtI {
         pti(self.l(), self.b())
     }
 
+    #[must_use]
     pub const fn br(&self) -> PtI {
         pti(self.r(), self.b())
     }
 
+    #[must_use]
     pub const fn tl(&self) -> PtI {
         pti(self.l(), self.t())
     }
 
+    #[must_use]
     pub const fn tr(&self) -> PtI {
         pti(self.r(), self.t())
     }
 
+    #[must_use]
     pub fn inset(&self, dx: i64, dy: i64) -> RtI {
         let wsub = if 2 * dx < self.w { 2 * dx } else { self.w };
         let hsub = if 2 * dy < self.h { 2 * dy } else { self.h };
         RtI::new(self.x + wsub / 2, self.y + hsub / 2, self.w - wsub, self.h - hsub)
     }
 
+    #[must_use]
     pub fn enclosing(pa: PtI, pb: PtI) -> RtI {
         let x = pa.x.min(pb.x);
         let y = pa.y.min(pb.y);

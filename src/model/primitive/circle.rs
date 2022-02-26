@@ -18,14 +18,17 @@ pub struct Circle {
 }
 
 impl Circle {
+    #[must_use]
     pub const fn new(p: Pt, r: f64) -> Self {
         Self { p, r }
     }
 
+    #[must_use]
     pub const fn r(&self) -> f64 {
         self.r
     }
 
+    #[must_use]
     pub const fn p(&self) -> Pt {
         self.p
     }

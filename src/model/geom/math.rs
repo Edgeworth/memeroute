@@ -7,44 +7,54 @@ use crate::model::primitive::point::Pt;
 
 pub const EP: f64 = 1e-6;
 
+#[must_use]
 pub fn f64_cmp(a: &f64, b: &f64) -> Ordering {
     a.partial_cmp(b).unwrap()
 }
 
+#[must_use]
 pub fn pt_eq(a: Pt, b: Pt) -> bool {
     relative_eq!(a, b, epsilon = EP)
 }
 
+#[must_use]
 pub fn eq(a: f64, b: f64) -> bool {
     relative_eq!(a, b, epsilon = EP)
 }
 
+#[must_use]
 pub fn ne(a: f64, b: f64) -> bool {
     relative_ne!(a, b, epsilon = EP)
 }
 
+#[must_use]
 pub fn gt(a: f64, b: f64) -> bool {
     ne(a, b) && a > b
 }
 
+#[must_use]
 pub fn ge(a: f64, b: f64) -> bool {
     eq(a, b) || a > b
 }
 
+#[must_use]
 pub fn le(a: f64, b: f64) -> bool {
     eq(a, b) || a < b
 }
 
+#[must_use]
 pub fn lt(a: f64, b: f64) -> bool {
     ne(a, b) && a < b
 }
 
 // Return cross-product of OA and OB.
+#[must_use]
 pub fn cross_at(o: Pt, a: Pt, b: Pt) -> f64 {
     (o - a).cross(o - b)
 }
 
 // -1 for CW (right of), 0 for collinear, 1 for CCW (left of)
+#[must_use]
 pub fn orientation(l: &Line, p: Pt) -> i32 {
     let v = cross_at(l.st(), l.en(), p);
     if eq(v, 0.0) {
@@ -57,26 +67,32 @@ pub fn orientation(l: &Line, p: Pt) -> i32 {
 }
 
 // Returns true iff p is strictly left of line.
+#[must_use]
 pub fn is_strictly_left_of(l: &Line, p: Pt) -> bool {
     gt(cross_at(l.st(), l.en(), p), 0.0)
 }
 
+#[must_use]
 pub fn is_left_of(l: &Line, p: Pt) -> bool {
     ge(cross_at(l.st(), l.en(), p), 0.0)
 }
 
+#[must_use]
 pub fn is_strictly_right_of(l: &Line, p: Pt) -> bool {
     lt(cross_at(l.st(), l.en(), p), 0.0)
 }
 
+#[must_use]
 pub fn is_right_of(l: &Line, p: Pt) -> bool {
     le(cross_at(l.st(), l.en(), p), 0.0)
 }
 
+#[must_use]
 pub fn is_collinear(a: Pt, b: Pt, c: Pt) -> bool {
     eq(cross_at(a, b, c), 0.0)
 }
 
+#[must_use]
 pub fn pts_strictly_right_of(l: &Line, pts: &[Pt]) -> bool {
     for p in pts {
         if !is_strictly_right_of(l, *p) {
@@ -87,6 +103,7 @@ pub fn pts_strictly_right_of(l: &Line, pts: &[Pt]) -> bool {
 }
 
 // Returns true iff all points |p| are on the same side of |l|.
+#[must_use]
 pub fn pts_same_side(l: &Line, pts: &[Pt]) -> bool {
     let mut had_one = false;
     let mut had_neg_one = false;
@@ -101,6 +118,7 @@ pub fn pts_same_side(l: &Line, pts: &[Pt]) -> bool {
 }
 
 // Returns true iff all points |p| are on the same side of |l| and not collinear.
+#[must_use]
 pub fn pts_strictly_same_side(l: &Line, pts: &[Pt]) -> bool {
     if pts.is_empty() {
         return true;

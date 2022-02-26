@@ -24,46 +24,56 @@ pub struct Capsule {
 }
 
 impl Capsule {
+    #[must_use]
     pub const fn new(st: Pt, en: Pt, r: f64) -> Self {
         Self { st, en, r }
     }
 
+    #[must_use]
     pub const fn r(&self) -> f64 {
         self.r
     }
 
+    #[must_use]
     pub const fn st(&self) -> Pt {
         self.st
     }
 
+    #[must_use]
     pub const fn en(&self) -> Pt {
         self.en
     }
 
+    #[must_use]
     pub fn dir(&self) -> Pt {
         self.en - self.st
     }
 
+    #[must_use]
     pub fn st_cap(&self) -> Circle {
         circ(self.st(), self.r())
     }
 
+    #[must_use]
     pub fn en_cap(&self) -> Circle {
         circ(self.en(), self.r())
     }
 
     // Left wall of the capsule.
+    #[must_use]
     pub fn left_seg(&self) -> Segment {
         let perp = -self.dir().perp() * self.r();
         seg(self.st + perp, self.en + perp)
     }
 
     // Right wall of the capsule.
+    #[must_use]
     pub fn right_seg(&self) -> Segment {
         let perp = self.dir().perp() * self.r();
         seg(self.st + perp, self.en + perp)
     }
 
+    #[must_use]
     pub fn seg(&self) -> Segment {
         seg(self.st, self.en)
     }
