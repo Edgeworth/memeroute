@@ -21,6 +21,7 @@ enumset = "1.0.8"
 eyre = "0.6.7"
 itertools = "0.10.3"
 memega = {path = "../memega"}
+memegeom = {path = "../memegeom"}
 nalgebra = "0.30.1"
 ordered-float = "2.10.0"
 priority-queue = "1.2.1"

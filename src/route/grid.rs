@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
 use eyre::{eyre, Result};
+use memegeom::geom::math::f64_cmp;
+use memegeom::geom::qt::query::TagQuery;
+use memegeom::primitive::point::{Pt, PtI};
+use memegeom::primitive::rect::{Rt, RtI};
+use memegeom::primitive::{circ, pt, pti, ShapeOps};
+use memegeom::tf::Tf;
 use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
 
-use crate::model::geom::math::f64_cmp;
-use crate::model::geom::qt::query::TagQuery;
 use crate::model::pcb::{LayerSet, LayerShape, ObjectKind, Pcb, PinRef, Via, Wire};
-use crate::model::primitive::point::{Pt, PtI};
-use crate::model::primitive::rect::{Rt, RtI};
-use crate::model::primitive::{circ, pt, pti, ShapeOps};
-use crate::model::tf::Tf;
 use crate::name::{Id, NO_ID};
 use crate::route::place_model::PlaceModel;
 use crate::route::router::{RouteResult, RouteStrategy};

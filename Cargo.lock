@@ -1446,6 +1446,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "memegeom"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "auto_ops",
+ "derive_more",
+ "earcutr",
+ "itertools",
+ "nalgebra",
+ "ordered-float",
+ "rand",
+ "rust-dense-bitset",
+ "serde",
+ "smallvec",
+]
+
+[[package]]
 name = "memeroute"
 version = "0.1.0"
 dependencies = [
@@ -1457,6 +1474,7 @@ dependencies = [
  "eyre",
  "itertools",
  "memega",
+ "memegeom",
  "nalgebra",
  "ordered-float",
  "priority-queue",
@@ -1478,6 +1496,7 @@ dependencies = [
  "eframe",
  "eyre",
  "log",
+ "memegeom",
  "memeroute",
  "num-traits",
  "pretty_env_logger",

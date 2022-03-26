@@ -4,10 +4,10 @@ use eframe::egui::epaint::{Mesh, PathShape, Vertex};
 use eframe::egui::{epaint, Color32};
 use eframe::emath::Pos2;
 use eframe::epaint::{Stroke, TextureId};
-use memeroute::model::primitive::point::Pt;
-use memeroute::model::primitive::pt;
-use memeroute::model::primitive::rect::Rt;
-use memeroute::model::tf::Tf;
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::pt;
+use memegeom::primitive::rect::Rt;
+use memegeom::tf::Tf;
 
 use crate::pcb::to_pos2;
 

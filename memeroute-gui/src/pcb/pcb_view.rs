@@ -2,14 +2,14 @@ use std::lazy::SyncLazy;
 
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::rect::Rt;
+use memegeom::primitive::shape::Shape;
+use memegeom::primitive::{path, pt, ShapeOps};
+use memegeom::tf::Tf;
 use memeroute::model::pcb::{
     Component, Keepout, LayerId, LayerSet, LayerShape, Padstack, Pcb, Pin,
 };
-use memeroute::model::primitive::point::Pt;
-use memeroute::model::primitive::rect::Rt;
-use memeroute::model::primitive::shape::Shape;
-use memeroute::model::primitive::{path, pt, ShapeOps};
-use memeroute::model::tf::Tf;
 
 use crate::pcb::primitives::{fill_circle, fill_polygon, fill_rt, stroke_path};
 use crate::pcb::{to_pos2, to_pt, to_rt};
