@@ -183,7 +183,6 @@ impl PcbView {
             let tf = Tf::new();
             let mut tess = Tessellator::from_options(TessellationOptions {
                 pixels_per_point: ctx.pixels_per_point(),
-                aa_size: 1.0 / ctx.pixels_per_point(),
                 anti_alias: false,
                 ..Default::default()
             });
