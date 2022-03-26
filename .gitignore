@@ -3,7 +3,3 @@
 *.dsn
 *.ses
 /pdfs
-/data
-*.cpp
-*.h
-.mypy_cache/

@@ -48,7 +48,7 @@ impl epi::App for MemerouteGui {
         epi::set_value(storage, epi::APP_KEY, &self.s);
     }
 
-    fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut epi::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {

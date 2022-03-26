@@ -2,17 +2,17 @@ use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 use itertools::Itertools;
+use memedsn::types::{
+    DsnCircuit, DsnClass, DsnClearance, DsnClearanceType, DsnComponent, DsnDimensionUnit, DsnImage,
+    DsnKeepout, DsnKeepoutType, DsnLayerType, DsnNet, DsnPadstack, DsnPcb, DsnPin, DsnRect,
+    DsnRule, DsnShape, DsnSide,
+};
 use memegeom::geom::math::{eq, pt_eq};
 use memegeom::primitive::point::Pt;
 use memegeom::primitive::rect::Rt;
 use memegeom::primitive::{circ, path, poly, rt, ShapeOps};
 use strum::IntoEnumIterator;
 
-use crate::dsn::types::{
-    DsnCircuit, DsnClass, DsnClearance, DsnClearanceType, DsnComponent, DsnDimensionUnit, DsnImage,
-    DsnKeepout, DsnKeepoutType, DsnLayerType, DsnNet, DsnPadstack, DsnPcb, DsnPin, DsnRect,
-    DsnRule, DsnShape, DsnSide,
-};
 use crate::model::pcb::{
     Clearance, Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet, LayerShape,
     Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Rule, RuleSet,

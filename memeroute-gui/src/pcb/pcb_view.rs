@@ -181,12 +181,10 @@ impl PcbView {
         if self.mesh.is_empty() {
             let mut mesh = Mesh::default();
             let tf = Tf::new();
-            let mut tess = Tessellator::from_options(TessellationOptions {
-                pixels_per_point: ctx.pixels_per_point(),
-                aa_size: 1.0 / ctx.pixels_per_point(),
-                anti_alias: false,
-                ..Default::default()
-            });
+            let mut tess = Tessellator::new(
+                ctx.pixels_per_point(),
+                TessellationOptions { feathering: false, ..Default::default() },
+            );
             for boundary in self.pcb.boundaries() {
                 let shapes = Self::draw_shape(&tf, boundary, *BOUNDARY);
                 Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
