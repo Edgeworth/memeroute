@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
 use eyre::{eyre, Result};
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::pt;
+use memegeom::primitive::rect::Rt;
 
 use crate::dsn::token::{Tok, Token};
 use crate::dsn::types::{
@@ -10,9 +13,6 @@ use crate::dsn::types::{
     DsnPinRef, DsnPlacement, DsnPlacementRef, DsnPlane, DsnPolygon, DsnQArc, DsnRect,
     DsnResolution, DsnRule, DsnShape, DsnSide, DsnStructure, DsnVia, DsnWindow, DsnWire, DsnWiring,
 };
-use crate::model::primitive::point::Pt;
-use crate::model::primitive::pt;
-use crate::model::primitive::rect::Rt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parser {

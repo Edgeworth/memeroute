@@ -2,6 +2,10 @@ use std::collections::HashMap;
 
 use eyre::{eyre, Result};
 use itertools::Itertools;
+use memegeom::geom::math::{eq, pt_eq};
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::rect::Rt;
+use memegeom::primitive::{circ, path, poly, rt, ShapeOps};
 use strum::IntoEnumIterator;
 
 use crate::dsn::types::{
@@ -9,14 +13,10 @@ use crate::dsn::types::{
     DsnKeepout, DsnKeepoutType, DsnLayerType, DsnNet, DsnPadstack, DsnPcb, DsnPin, DsnRect,
     DsnRule, DsnShape, DsnSide,
 };
-use crate::model::geom::math::{eq, pt_eq};
 use crate::model::pcb::{
     Clearance, Component, Keepout, KeepoutType, Layer, LayerId, LayerKind, LayerSet, LayerShape,
     Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Rule, RuleSet,
 };
-use crate::model::primitive::point::Pt;
-use crate::model::primitive::rect::Rt;
-use crate::model::primitive::{circ, path, poly, rt, ShapeOps};
 use crate::name::Id;
 
 #[derive(Debug, Clone)]

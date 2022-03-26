@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
 use eyre::{eyre, Result};
+use memegeom::primitive::circle::Circle;
+use memegeom::primitive::path_shape::Path;
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::polygon::Poly;
+use memegeom::primitive::rect::Rt;
+use memegeom::primitive::shape::Shape;
 use strum::IntoEnumIterator;
 
 use crate::model::pcb::{
     Component, LayerKind, LayerSet, LayerShape, Net, Padstack, Pcb, Via, Wire,
 };
-use crate::model::primitive::circle::Circle;
-use crate::model::primitive::path_shape::Path;
-use crate::model::primitive::point::Pt;
-use crate::model::primitive::polygon::Poly;
-use crate::model::primitive::rect::Rt;
-use crate::model::primitive::shape::Shape;
 use crate::name::Id;
 
 const MAX_COL: usize = 120;

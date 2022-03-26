@@ -1,7 +1,7 @@
 use eframe::egui::{Pos2, Rect};
-use memeroute::model::primitive::point::Pt;
-use memeroute::model::primitive::rect::Rt;
-use memeroute::model::primitive::{pt, rt};
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::rect::Rt;
+use memegeom::primitive::{pt, rt};
 
 pub mod pcb_view;
 pub mod primitives;

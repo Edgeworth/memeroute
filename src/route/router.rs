@@ -10,11 +10,11 @@ use memega::ops::distance::kendall_tau;
 use memega::ops::mutation::{mutate_insert, mutate_inversion, mutate_scramble, mutate_swap};
 use memega::run::runner::Runner;
 use memega::util::run::run_evolve_debug;
+use memegeom::primitive::rect::Rt;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 
 use crate::model::pcb::{Pcb, Via, Wire};
-use crate::model::primitive::rect::Rt;
 use crate::name::Id;
 use crate::route::grid::GridRouter;
 

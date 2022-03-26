@@ -1,7 +1,6 @@
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::rect::Rt;
 use strum::{Display as EnumDisplay, EnumString};
-
-use crate::model::primitive::point::Pt;
-use crate::model::primitive::rect::Rt;
 
 // Types defined in DSN specification.
 

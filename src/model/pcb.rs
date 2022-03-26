@@ -6,16 +6,16 @@ use std::sync::RwLock;
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use enumset::{enum_set, EnumSet, EnumSetType};
 use eyre::{eyre, Result};
+use memegeom::geom::bounds::rt_cloud_bounds;
+use memegeom::geom::qt::query::Kinds;
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::rect::Rt;
+use memegeom::primitive::shape::Shape;
+use memegeom::primitive::{pt, ShapeOps};
+use memegeom::tf::Tf;
 use rust_dense_bitset::{BitSet, DenseBitSet};
 use strum::EnumIter;
 
-use crate::model::geom::bounds::rt_cloud_bounds;
-use crate::model::geom::qt::query::Kinds;
-use crate::model::primitive::point::Pt;
-use crate::model::primitive::rect::Rt;
-use crate::model::primitive::shape::Shape;
-use crate::model::primitive::{pt, ShapeOps};
-use crate::model::tf::Tf;
 use crate::name::{Id, NameMap};
 
 // File-format independent representation of a PCB.

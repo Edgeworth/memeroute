@@ -1,19 +1,19 @@
 use std::collections::HashMap;
 
 use eyre::Result;
+use memegeom::geom::math::le;
+use memegeom::geom::qt::quadtree::ShapeIdx;
+use memegeom::geom::qt::query::{Kinds, KindsQuery, Query, ShapeInfo, Tag, TagQuery, NO_TAG};
+use memegeom::primitive::compound::Compound;
+use memegeom::primitive::point::Pt;
+use memegeom::primitive::rect::Rt;
+use memegeom::primitive::{path, ShapeOps};
+use memegeom::tf::Tf;
 
-use crate::model::geom::math::le;
-use crate::model::geom::qt::quadtree::ShapeIdx;
-use crate::model::geom::qt::query::{Kinds, KindsQuery, Query, ShapeInfo, Tag, TagQuery, NO_TAG};
 use crate::model::pcb::{
     Clearance, LayerId, LayerSet, LayerShape, Net, ObjectKind, Padstack, Pcb, Pin, PinRef, Via,
     Wire,
 };
-use crate::model::primitive::compound::Compound;
-use crate::model::primitive::point::Pt;
-use crate::model::primitive::rect::Rt;
-use crate::model::primitive::{path, ShapeOps};
-use crate::model::tf::Tf;
 use crate::name::Id;
 
 pub type PlaceId = (LayerId, ShapeIdx);
