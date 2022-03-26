@@ -35,12 +35,6 @@ impl MemerouteGui {
         let pcb_view = PcbView::new(pcb.clone(), pcb.bounds());
         Self { s: State::default(), pcb, pcb_view, data_path: data_path.as_ref().into() }
     }
-
-    pub fn init(&mut self, cc: &eframe::CreationContext<'_>) {
-        if let Some(storage) = cc.storage {
-            self.s = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
-        }
-    }
 }
 
 impl epi::App for MemerouteGui {
@@ -89,5 +83,20 @@ impl epi::App for MemerouteGui {
         egui::CentralPanel::default().show(ctx, |ui| {
             self.pcb_view.ui(ui);
         });
+    }
+
+    fn name(&self) -> &str {
+        "memeroute gui"
+    }
+
+    fn setup(
+        &mut self,
+        _ctx: &egui::Context,
+        _frame: &epi::Frame,
+        storage: Option<&dyn epi::Storage>,
+    ) {
+        if let Some(storage) = storage {
+            self.s = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
+        }
     }
 }

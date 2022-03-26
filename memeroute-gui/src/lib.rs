@@ -5,7 +5,6 @@
     macro_use_extern_crate,
     meta_variable_misuse,
     missing_abi,
-    must_not_suspend,
     nonstandard_style,
     noop_method_call,
     rust_2018_compatibility,
@@ -37,23 +36,7 @@
     clippy::too_many_lines,
     clippy::unreadable_literal
 )]
-#![feature(
-    array_chunks,
-    array_windows,
-    bool_to_option,
-    const_discriminant,
-    const_for,
-    const_mut_refs,
-    const_trait_impl,
-    drain_filter,
-    is_sorted,
-    map_first_last,
-    must_not_suspend,
-    once_cell,
-    option_result_contains,
-    stmt_expr_attributes,
-    trait_alias
-)]
+#![feature(array_windows, once_cell)]
 
 use std::fmt::Debug;
 use std::fs::read_to_string;
@@ -61,9 +44,9 @@ use std::path::{Path, PathBuf};
 
 use clap::StructOpt;
 use eyre::Result;
+use memedsn::lexer::Lexer;
+use memedsn::parser::Parser;
 use memeroute::dsn::design_to_pcb::DesignToPcb;
-use memeroute::dsn::lexer::Lexer;
-use memeroute::dsn::parser::Parser;
 use memeroute::model::pcb::Pcb;
 
 use crate::gui::MemerouteGui;
@@ -93,14 +76,7 @@ fn load_pcb<P: AsRef<Path>>(path: P) -> Result<Pcb> {
 pub fn run() -> Result<()> {
     let args = Args::parse();
     let pcb = load_pcb(&args.data_path)?;
-    let mut app = MemerouteGui::new(pcb, args.data_path);
+    let app = MemerouteGui::new(pcb, args.data_path);
     let options = eframe::NativeOptions::default();
-    eframe::run_native(
-        "memeroute gui",
-        options,
-        Box::new(|cc| {
-            app.init(cc);
-            Box::new(app)
-        }),
-    );
+    eframe::run_native(Box::new(app), options);
 }

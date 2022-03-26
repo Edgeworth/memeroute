@@ -5,7 +5,6 @@
     macro_use_extern_crate,
     meta_variable_misuse,
     missing_abi,
-    must_not_suspend,
     nonstandard_style,
     noop_method_call,
     rust_2018_compatibility,
@@ -37,23 +36,6 @@
     clippy::struct_excessive_bools,
     clippy::too_many_lines,
     clippy::unreadable_literal
-)]
-#![feature(
-    array_chunks,
-    array_windows,
-    bool_to_option,
-    const_discriminant,
-    const_for,
-    const_mut_refs,
-    const_trait_impl,
-    drain_filter,
-    is_sorted,
-    map_first_last,
-    must_not_suspend,
-    once_cell,
-    option_result_contains,
-    stmt_expr_attributes,
-    trait_alias
 )]
 
 pub mod dsn;
