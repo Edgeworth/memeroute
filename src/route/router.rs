@@ -1,15 +1,18 @@
 use std::sync::Mutex;
 
+use derive_more::{Deref, DerefMut, Display};
 use eyre::Result;
-use memega::cfg::{
-    Cfg, Crossover, Duplicates, Mutation, Niching, Replacement, Stagnation, Survival,
-};
 use memega::eval::Evaluator;
+use memega::evolve::cfg::{
+    Crossover, Duplicates, EvolveCfg, Mutation, Niching, Replacement, Stagnation, Survival,
+};
+use memega::evolve::evolver::Evolver;
 use memega::ops::crossover::{crossover_cycle, crossover_order, crossover_pmx};
 use memega::ops::distance::kendall_tau;
 use memega::ops::mutation::{mutate_insert, mutate_inversion, mutate_scramble, mutate_swap};
-use memega::run::runner::Runner;
-use memega::util::run::run_evolve_debug;
+use memega::train::cfg::{Termination, TrainerCfg};
+use memega::train::sampler::EmptyDataSampler;
+use memega::train::trainer::Trainer;
 use memegeom::primitive::rect::Rt;
 use rand::prelude::SliceRandom;
 use rand::Rng;
@@ -68,38 +71,43 @@ impl Router {
     }
 
     pub fn run_ga(&self) -> Result<RouteResult> {
-        let cfg = Cfg::new(32)
-            .with_mutation(Mutation::Adaptive)
-            .with_crossover(Crossover::Adaptive)
-            .with_survival(Survival::SpeciesTopProportion(0.1))
-            // .with_species(Species::TargetNumber(100))
-            .with_niching(Niching::None)
-            .with_stagnation(Stagnation::ContinuousAfter(200))
-            .with_replacement(Replacement::ReplaceChildren(0.5))
-            .with_duplicates(Duplicates::DisallowDuplicates)
-            .with_par_fitness(true)
-            .with_par_dist(true);
+        let cfg = EvolveCfg::new(32)
+            .set_mutation(Mutation::Adaptive)
+            .set_crossover(Crossover::Adaptive)
+            .set_survival(Survival::TopProportion(0.1))
+            .set_niching(Niching::None)
+            .set_stagnation(Stagnation::ContinuousAfter(200))
+            .set_replacement(Replacement::ReplaceChildren(0.5))
+            .set_duplicates(Duplicates::DisallowDuplicates)
+            .set_par_fitness(true)
+            .set_par_dist(true);
 
         let net_order: Vec<_> = self.pcb.lock().unwrap().nets().map(|v| v.id).collect();
         let genfn = move || {
             let mut rand_order = net_order.clone();
             rand_order.shuffle(&mut rand::thread_rng());
-            rand_order
+            RouteState(rand_order)
         };
 
-        let runner = Runner::new(self.clone(), cfg, genfn);
-        let order = run_evolve_debug(runner, 1, 1, 1)?.nth(0).genome.clone();
+        let evolver = Evolver::new(self.clone(), cfg, genfn);
+        let mut trainer = Trainer::new(
+            TrainerCfg::new("memeroute").set_termination(Termination::FixedGenerations(1)),
+        );
+        let order = trainer.train(evolver, &EmptyDataSampler {})?.nth(0).state.0.clone();
         self.route(order)
     }
 }
 
+#[derive(Debug, Display, Deref, DerefMut, Hash, Clone, PartialEq, Eq, PartialOrd)]
+#[display(fmt = "{:?}", _0)]
+pub struct RouteState(pub Vec<Id>);
+
 impl Evaluator for Router {
-    type Genome = Vec<Id>;
+    type State = RouteState;
     const NUM_CROSSOVER: usize = 4;
     const NUM_MUTATION: usize = 4;
 
-
-    fn crossover(&self, s1: &mut Self::Genome, s2: &mut Self::Genome, idx: usize) {
+    fn crossover(&self, s1: &mut Self::State, s2: &mut Self::State, idx: usize) {
         match idx {
             0 => {} // Do nothing.
             1 => crossover_pmx(s1, s2),
@@ -109,7 +117,7 @@ impl Evaluator for Router {
         };
     }
 
-    fn mutate(&self, s: &mut Self::Genome, rate: f64, idx: usize) {
+    fn mutate(&self, s: &mut Self::State, rate: f64, idx: usize) {
         let mut r = rand::thread_rng();
         if r.gen::<f64>() > rate {
             return;
@@ -123,19 +131,19 @@ impl Evaluator for Router {
         }
     }
 
-    fn fitness(&self, s: &Self::Genome, _: usize) -> f64 {
-        let res = self.route(s.clone()).unwrap();
+    fn fitness(&self, s: &Self::State, _data: &Self::Data) -> Result<f64> {
+        let res = self.route(s.0.clone()).unwrap();
         let mut cost = 0.0;
         if res.failed {
             cost += 1000.0;
         }
         cost += res.vias.len() as f64 * 10.0;
         // TODO: Count wire lengths
-        1.0 / (1.0 + cost)
+        Ok(1.0 / (1.0 + cost))
     }
 
-    fn distance(&self, s1: &Self::Genome, s2: &Self::Genome) -> f64 {
-        kendall_tau(s1, s2).unwrap() as f64
+    fn distance(&self, s1: &Self::State, s2: &Self::State) -> Result<f64> {
+        Ok(kendall_tau(s1, s2)? as f64)
     }
 }
 

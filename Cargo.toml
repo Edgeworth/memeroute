@@ -15,23 +15,15 @@ members = ["memeroute-gui"]
 [dependencies]
 auto_ops = "0.3.0"
 derive_more = "0.99.17"
-enumset = "1.0.8"
-eyre = "0.6.7"
+enumset = "1.0.11"
+eyre = "0.6.8"
 itertools = "0.10.3"
 memedsn = {version = "0.1.0", git = "https://github.com/Edgeworth/memedsn"}
 memega = {version = "0.1.0", git = "https://github.com/Edgeworth/memega"}
 memegeom = {version = "0.1.0", git = "https://github.com/Edgeworth/memegeom"}
-ordered-float = "2.10.0"
+ordered-float = "3.0.0"
 priority-queue = "1.2.1"
-rand = {version = "0.8.5", features = ["small_rng"]}
+rand = { version = "0.8.5", features = ["small_rng"] }
 rust-dense-bitset = "0.1.1"
-serde = {version = "1.0.136", features = ["derive"]}
-strum = {version = "0.24.0", features = ["derive"]}
-
-# Build dependencies with optimisations - debug builds will run faster
-# but dependencies don't change often.
-[profile.dev.package."*"]
-opt-level = 3
-
-[profile.release]
-lto = true
+serde = { version = "1.0.137", features = ["derive"] }
+strum = { version = "0.24.0", features = ["derive"] }

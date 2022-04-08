@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+use eframe::egui;
 use eframe::egui::Widget;
-use eframe::{egui, epi};
 use memeroute::dsn::pcb_to_session::PcbToSession;
 use memeroute::model::pcb::Pcb;
 use memeroute::route::router::{apply_route_result, Router};
@@ -31,18 +31,23 @@ pub struct MemerouteGui {
 }
 
 impl MemerouteGui {
-    pub fn new<P: AsRef<Path>>(pcb: Pcb, data_path: P) -> Self {
+    pub fn new<P: AsRef<Path>>(pcb: Pcb, data_path: P, cc: &eframe::CreationContext<'_>) -> Self {
+        let s: State = if let Some(storage) = cc.storage {
+            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+        } else {
+            State::default()
+        };
         let pcb_view = PcbView::new(pcb.clone(), pcb.bounds());
-        Self { s: State::default(), pcb, pcb_view, data_path: data_path.as_ref().into() }
+        Self { s, pcb, pcb_view, data_path: data_path.as_ref().into() }
     }
 }
 
-impl epi::App for MemerouteGui {
-    fn save(&mut self, storage: &mut dyn epi::Storage) {
-        epi::set_value(storage, epi::APP_KEY, &self.s);
+impl eframe::App for MemerouteGui {
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, &self.s);
     }
 
-    fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
@@ -55,7 +60,6 @@ impl epi::App for MemerouteGui {
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
-
 
             if ui.button("Route").clicked() {
                 let router = Router::new(self.pcb.clone());
@@ -83,20 +87,5 @@ impl epi::App for MemerouteGui {
         egui::CentralPanel::default().show(ctx, |ui| {
             self.pcb_view.ui(ui);
         });
-    }
-
-    fn name(&self) -> &str {
-        "memeroute gui"
-    }
-
-    fn setup(
-        &mut self,
-        _ctx: &egui::Context,
-        _frame: &epi::Frame,
-        storage: Option<&dyn epi::Storage>,
-    ) {
-        if let Some(storage) = storage {
-            self.s = epi::get_value(storage, epi::APP_KEY).unwrap_or_default();
-        }
     }
 }
