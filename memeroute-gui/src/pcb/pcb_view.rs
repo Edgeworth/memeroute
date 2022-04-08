@@ -166,14 +166,9 @@ impl PcbView {
         shapes
     }
 
-    fn tessellate(
-        ctx: &Context,
-        tess: &mut Tessellator,
-        mesh: &mut Mesh,
-        shapes: Vec<epaint::Shape>,
-    ) {
+    fn tessellate(tess: &mut Tessellator, mesh: &mut Mesh, shapes: Vec<epaint::Shape>) {
         for s in shapes {
-            tess.tessellate_shape(ctx.fonts().font_image_size(), s, mesh);
+            tess.tessellate_shape(s, mesh);
         }
     }
 
@@ -181,32 +176,32 @@ impl PcbView {
         if self.mesh.is_empty() {
             let mut mesh = Mesh::default();
             let tf = Tf::new();
-            let mut tess = Tessellator::from_options(TessellationOptions {
-                pixels_per_point: ctx.pixels_per_point(),
-                anti_alias: false,
-                ..Default::default()
-            });
+            let mut tess = Tessellator::new(
+                ctx.pixels_per_point(),
+                TessellationOptions { feathering: false, ..Default::default() },
+                ctx.fonts().font_image_size(),
+            );
             for boundary in self.pcb.boundaries() {
                 let shapes = Self::draw_shape(&tf, boundary, *BOUNDARY);
-                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
+                Self::tessellate(&mut tess, &mut mesh, shapes);
             }
             for keepout in self.pcb.keepouts() {
                 let shapes = Self::draw_keepout(&tf, keepout, *KEEPOUT);
-                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
+                Self::tessellate(&mut tess, &mut mesh, shapes);
             }
             for component in self.pcb.components() {
                 let shapes = Self::draw_component(&tf, component);
-                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
+                Self::tessellate(&mut tess, &mut mesh, shapes);
             }
             for wire in self.pcb.wires() {
                 // TODO!!: Fix up layerset to color mapping.
                 let col = WIRE[Self::layer_id_to_color_idx(wire.shape.layers.id().unwrap())];
                 let shapes = Self::draw_shape(&tf, &wire.shape, col);
-                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
+                Self::tessellate(&mut tess, &mut mesh, shapes);
             }
             for via in self.pcb.vias() {
                 let shapes = Self::draw_padstack(&via.tf(), &via.padstack, *VIA);
-                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
+                Self::tessellate(&mut tess, &mut mesh, shapes);
             }
             for rt in self.pcb.debug_rts() {
                 let mut pts = rt.pts().to_vec();
@@ -214,7 +209,7 @@ impl PcbView {
                 let shape = path(&pts, 0.05).shape();
                 let shapes =
                     Self::draw_shape(&tf, &LayerShape { shape, layers: LayerSet::empty() }, *DEBUG);
-                Self::tessellate(ctx, &mut tess, &mut mesh, shapes);
+                Self::tessellate(&mut tess, &mut mesh, shapes);
             }
             self.mesh = mesh;
         }

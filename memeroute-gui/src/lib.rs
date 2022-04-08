@@ -76,7 +76,10 @@ fn load_pcb<P: AsRef<Path>>(path: P) -> Result<Pcb> {
 pub fn run() -> Result<()> {
     let args = Args::parse();
     let pcb = load_pcb(&args.data_path)?;
-    let app = MemerouteGui::new(pcb, args.data_path);
     let options = eframe::NativeOptions::default();
-    eframe::run_native(Box::new(app), options);
+    eframe::run_native(
+        "memeroute",
+        options,
+        Box::new(|cc| Box::new(MemerouteGui::new(pcb, args.data_path, cc))),
+    );
 }
