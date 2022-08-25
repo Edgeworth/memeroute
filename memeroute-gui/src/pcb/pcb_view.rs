@@ -50,6 +50,7 @@ static VIA: LazyLock<Color32> =
 static DEBUG: LazyLock<Color32> =
     LazyLock::new(|| Color32::from_rgba_unmultiplied(123, 0, 255, 180));
 
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct PcbView {
     pcb: Pcb,
@@ -113,7 +114,7 @@ impl PcbView {
     }
 
     fn layer_id_to_color_idx(id: LayerId) -> usize {
-        id as usize
+        id
     }
 
     fn draw_shape(tf: &Tf, v: &LayerShape, col: Color32) -> Vec<epaint::Shape> {
@@ -180,6 +181,7 @@ impl PcbView {
                 ctx.pixels_per_point(),
                 TessellationOptions { feathering: false, ..Default::default() },
                 ctx.fonts().font_image_size(),
+                vec![],
             );
             for boundary in self.pcb.boundaries() {
                 let shapes = Self::draw_shape(&tf, boundary, *BOUNDARY);

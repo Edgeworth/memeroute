@@ -19,6 +19,7 @@ use crate::model::pcb::{
 };
 use crate::name::Id;
 
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct DesignToPcb {
     dsn: DsnPcb,
@@ -29,7 +30,6 @@ pub struct DesignToPcb {
 }
 
 impl DesignToPcb {
-    #[must_use]
     pub fn new(dsn: DsnPcb) -> Self {
         Self {
             dsn,
@@ -148,7 +148,6 @@ impl DesignToPcb {
             p: self.pt(v.p),
         })
     }
-
 
     fn image(&self, v: &DsnImage) -> Result<Component> {
         let mut c = Component::default();

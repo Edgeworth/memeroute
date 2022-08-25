@@ -20,6 +20,7 @@ pub type PlaceId = (LayerId, ShapeIdx);
 
 // Need to handle:
 // but also keeping them for hole drils
+#[must_use]
 #[derive(Debug, Default, Clone)]
 pub struct PlaceModel {
     pcb: Pcb,

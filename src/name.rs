@@ -5,6 +5,7 @@ use std::collections::HashMap;
 pub type Id = usize;
 pub const NO_ID: Id = Id::MAX;
 
+#[must_use]
 #[derive(Debug, Default, Clone)]
 pub struct NameMap {
     name_to_id: HashMap<String, Id>, // Name to ID.
@@ -19,7 +20,11 @@ impl NameMap {
     }
 
     pub fn name_to_id(&mut self, name: &str) -> Id {
-        if let Some(id) = self.name_to_id.get(name) { *id } else { self.add_name(name) }
+        if let Some(id) = self.name_to_id.get(name) {
+            *id
+        } else {
+            self.add_name(name)
+        }
     }
 
     fn add_name(&mut self, name: &str) -> Id {

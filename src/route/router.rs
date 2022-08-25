@@ -25,6 +25,7 @@ pub trait RouteStrategy {
     fn route(&mut self) -> Result<RouteResult>;
 }
 
+#[must_use]
 #[derive(Debug, Default, Clone)]
 pub struct RouteResult {
     pub wires: Vec<Wire>,
@@ -42,6 +43,7 @@ impl RouteResult {
     }
 }
 
+#[must_use]
 #[derive(Debug)]
 pub struct Router {
     pcb: Mutex<Pcb>,
@@ -98,8 +100,9 @@ impl Router {
     }
 }
 
+#[must_use]
 #[derive(Debug, Display, Deref, DerefMut, Hash, Clone, PartialEq, Eq, PartialOrd)]
-#[display(fmt = "{:?}", _0)]
+#[display(fmt = "{_0:?}")]
 pub struct RouteState(pub Vec<Id>);
 
 impl Evaluator for Router {

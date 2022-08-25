@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::pcb::pcb_view::PcbView;
 
+#[must_use]
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(default)]
 struct State {
@@ -22,6 +23,7 @@ impl Default for State {
     }
 }
 
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct MemerouteGui {
     s: State,
@@ -52,7 +54,7 @@ impl eframe::App for MemerouteGui {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Quit").clicked() {
-                        frame.quit();
+                        frame.close();
                     }
                 });
             });

@@ -19,6 +19,7 @@ const INDENT: usize = 2;
 const NEWLINE_MAX_INDENT: usize = 8;
 const MM_RESOLUTION: usize = 100000;
 
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct PcbToSession {
     pcb: Pcb,
@@ -66,7 +67,7 @@ impl PcbToSession {
 
     fn rot(&mut self, v: f64) {
         // Can have up to two decimal places according to spec.
-        self.token(&format!("{:.2}", v));
+        self.token(&format!("{v:.2}"));
     }
 
     fn side(&mut self, back: bool) {

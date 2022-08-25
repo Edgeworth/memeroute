@@ -56,6 +56,7 @@ pub mod pcb;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
+#[must_use]
 #[derive(Debug, clap::Parser)]
 #[clap(name = "memeroute", about = "Memeroute GUI")]
 struct Args {
@@ -82,4 +83,5 @@ pub fn run() -> Result<()> {
         options,
         Box::new(|cc| Box::new(MemerouteGui::new(pcb, args.data_path, cc))),
     );
+    Ok(())
 }

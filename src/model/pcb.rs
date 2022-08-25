@@ -24,6 +24,7 @@ use crate::name::{Id, NameMap};
 
 pub type LayerId = usize;
 
+#[must_use]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, EnumIter)]
 pub enum LayerKind {
     All,
@@ -34,6 +35,7 @@ pub enum LayerKind {
 }
 
 // Support up to 64 layers.
+#[must_use]
 #[derive(Debug, Default, Hash, PartialEq, Eq, Copy, Clone)]
 pub struct LayerSet {
     l: DenseBitSet,
@@ -42,17 +44,15 @@ pub struct LayerSet {
 impl_op_ex!(| |a: &LayerSet, b: &LayerSet| -> LayerSet {LayerSet {l: a.l | b.l}});
 impl_op_ex_commutative!(| |a: &LayerSet, b: &LayerId| -> LayerSet {let mut copy = *a; copy |= b; copy});
 impl_op_ex!(|= |a: &mut LayerSet, b: &LayerSet| {a.l |= b.l;});
-impl_op_ex!(|= |a: &mut LayerSet, b: &LayerId| {a.l.set_bit(*b as usize, true);});
+impl_op_ex!(|= |a: &mut LayerSet, b: &LayerId| {a.l.set_bit(*b, true);});
 impl_op_ex!(&|a: &LayerSet, b: &LayerSet| -> LayerSet { LayerSet { l: a.l & b.l } });
 impl_op_ex!(&= |a: &mut LayerSet, b: &LayerSet| {a.l &= b.l;});
 
 impl LayerSet {
-    #[must_use]
     pub fn empty() -> Self {
         Self { l: DenseBitSet::new() }
     }
 
-    #[must_use]
     pub fn one(id: LayerId) -> Self {
         Self { l: DenseBitSet::from_integer(1 << (id as u64)) }
     }
@@ -69,17 +69,25 @@ impl LayerSet {
 
     #[must_use]
     pub fn id(&self) -> Option<LayerId> {
-        if self.len() == 1 { Some(self.l.first_set() as LayerId) } else { None }
+        if self.len() == 1 {
+            Some(self.l.first_set() as LayerId)
+        } else {
+            None
+        }
     }
 
     #[must_use]
     pub fn first(&self) -> Option<LayerId> {
-        if self.is_empty() { None } else { Some(self.l.first_set() as LayerId) }
+        if self.is_empty() {
+            None
+        } else {
+            Some(self.l.first_set() as LayerId)
+        }
     }
 
     #[must_use]
     pub fn contains(&self, layer: LayerId) -> bool {
-        self.l.get_bit(layer as usize)
+        self.l.get_bit(layer)
     }
 
     #[must_use]
@@ -93,7 +101,7 @@ impl LayerSet {
     }
 
     pub fn remove(&mut self, layer: LayerId) {
-        self.l.set_bit(layer as usize, false);
+        self.l.set_bit(layer, false);
     }
 
     // Flips layers, e.g. moving a component from front to back.
@@ -143,6 +151,7 @@ impl Iterator for BitSetIterator {
 
 // Describes a layer in a PCB. Layers should be numbered from 0 up, contiguously.
 // Layers should be in order of physical stackup.
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct Layer {
     pub name_id: Id,
@@ -150,6 +159,7 @@ pub struct Layer {
     pub kind: LayerKind,
 }
 
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct LayerShape {
     pub layers: LayerSet,
@@ -165,6 +175,7 @@ impl LayerShape {
 // Keepout: No routing whatsoever.
 // ViaKeepout: No vias.
 // WireKeepout: No wires.
+#[must_use]
 #[derive(Debug, Clone)]
 pub enum KeepoutType {
     Keepout,
@@ -173,6 +184,7 @@ pub enum KeepoutType {
 }
 
 // Describes a keepout area.
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct Keepout {
     pub kind: KeepoutType,
@@ -186,6 +198,7 @@ impl Keepout {
 }
 
 // Describes a pin.
+#[must_use]
 #[derive(Debug, Default, Clone)]
 pub struct Pin {
     pub id: Id,
@@ -206,6 +219,7 @@ impl Pin {
 }
 
 // Describes a component at a location.
+#[must_use]
 #[derive(Debug, Default, Clone)]
 pub struct Component {
     pub id: Id,
@@ -261,6 +275,7 @@ impl Component {
 }
 
 // Describes a padstack.
+#[must_use]
 #[derive(Debug, Default, Clone)]
 pub struct Padstack {
     pub id: Id,
@@ -269,7 +284,6 @@ pub struct Padstack {
 }
 
 impl Padstack {
-    #[must_use]
     pub fn layers(&self) -> LayerSet {
         self.shapes.iter().map(|s| s.layers).collect()
     }
@@ -281,6 +295,7 @@ impl Padstack {
     }
 }
 
+#[must_use]
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
 pub struct PinRef {
     pub component: Id,
@@ -288,12 +303,12 @@ pub struct PinRef {
 }
 
 impl PinRef {
-    #[must_use]
     pub fn new(component: &Component, pin: &Pin) -> Self {
         Self { component: component.id, pin: pin.id }
     }
 }
 
+#[must_use]
 #[derive(Debug, Default, Clone)]
 pub struct Net {
     pub id: Id,
@@ -301,6 +316,7 @@ pub struct Net {
 }
 
 // Describes a route.
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct Wire {
     pub shape: LayerShape,
@@ -308,6 +324,7 @@ pub struct Wire {
 }
 
 // Describes a via.
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct Via {
     pub p: Pt,
@@ -323,6 +340,7 @@ impl Via {
 }
 
 // Object kinds
+#[must_use]
 #[derive(Debug, EnumSetType, EnumIter)]
 pub enum ObjectKind {
     Area, // Keepout, boundary, or conducting shapes (fills)
@@ -341,6 +359,7 @@ impl ObjectKind {
 
 // TODO: If multiple clearances with overlapping object kinds, which one select?
 // Or apply all of them?
+#[must_use]
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Clearance {
     amount: f64,
@@ -352,7 +371,6 @@ pub struct Clearance {
 }
 
 impl Clearance {
-    #[must_use]
     pub fn new(amount: f64, pairs: &[(ObjectKind, ObjectKind)]) -> Self {
         let mut c = Self { amount, ..Self::default() };
         for &(a, b) in pairs {
@@ -391,6 +409,7 @@ impl Clearance {
 }
 
 // Describes various rules for layout of tracks.
+#[must_use]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Rule {
     Radius(f64),          // e.g. Half-width of track
@@ -399,6 +418,7 @@ pub enum Rule {
 }
 
 // Collection of rules that e.g. may apply to a given net.
+#[must_use]
 #[derive(Debug, Clone, PartialEq)]
 pub struct RuleSet {
     pub id: Id,
@@ -437,7 +457,6 @@ impl RuleSet {
         self.radius.unwrap()
     }
 
-    #[must_use]
     pub fn clearances(&self) -> &[Clearance] {
         &self.clearances
     }
@@ -449,6 +468,7 @@ impl RuleSet {
 }
 
 // Describes an overall PCB.
+#[must_use]
 #[derive(Debug, Default)]
 pub struct Pcb {
     id: Id,

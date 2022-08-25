@@ -29,6 +29,7 @@ const DIR: [(PtI, f64); 9] = [
     (pti(0, 0), VIA_COST),
 ];
 
+#[must_use]
 #[derive(Debug, Default, Hash, Copy, Clone, PartialEq, Eq)]
 pub struct State {
     pub p: PtI,
@@ -36,6 +37,7 @@ pub struct State {
     pub net_id: Id,
 }
 
+#[must_use]
 #[derive(Debug, Clone, PartialEq)]
 struct NodeData {
     prev: State,
@@ -51,6 +53,7 @@ impl Default for NodeData {
 
 pub type BlockMap = HashMap<State, i64>;
 
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct GridRouter {
     resolution: f64,

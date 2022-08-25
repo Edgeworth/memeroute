@@ -10,14 +10,14 @@ repository = "https://github.com/Edgeworth/memeroute"
 version = "0.1.0"
 
 [dependencies]
-clap = { version = "3.1.15", features = ["derive", "unicode", "wrap_help"] }
-color-eyre = "0.6.1"
-eframe = { version = "0.18.0", features = ["persistence", "default_fonts"] }
+clap = { version = "3.2.23", features = ["derive", "unicode", "wrap_help"] }
+color-eyre = "0.6.2"
+eframe = { version = "0.19.0", features = ["persistence", "default_fonts"] }
 eyre = "0.6.8"
 log = "0.4.17"
 memedsn = {version = "0.1.0", git = "https://github.com/Edgeworth/memedsn"}
 memegeom = {version = "0.1.0", git = "https://github.com/Edgeworth/memegeom"}
 memeroute = {version = "0.1.0", path = ".."}
 pretty_env_logger = "0.4.0"
-serde = { version = "1.0.137", features = ["derive"] }
-tokio = { version = "1.18.1", features = ["full"] }
+serde = { version = "1.0.147", features = ["derive"] }
+tokio = { version = "1.21.2", features = ["full"] }

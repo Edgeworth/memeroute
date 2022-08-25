@@ -15,15 +15,15 @@ members = ["memeroute-gui"]
 [dependencies]
 auto_ops = "0.3.0"
 derive_more = "0.99.17"
-enumset = "1.0.11"
+enumset = "1.0.12"
 eyre = "0.6.8"
-itertools = "0.10.3"
+itertools = "0.10.5"
 memedsn = {version = "0.1.0", git = "https://github.com/Edgeworth/memedsn"}
 memega = {version = "0.1.0", git = "https://github.com/Edgeworth/memega"}
 memegeom = {version = "0.1.0", git = "https://github.com/Edgeworth/memegeom"}
-ordered-float = "3.0.0"
-priority-queue = "1.2.1"
+ordered-float = "3.3.0"
+priority-queue = "1.2.3"
 rand = { version = "0.8.5", features = ["small_rng"] }
 rust-dense-bitset = "0.1.1"
-serde = { version = "1.0.137", features = ["derive"] }
-strum = { version = "0.24.0", features = ["derive"] }
+serde = { version = "1.0.147", features = ["derive"] }
+strum = { version = "0.24.1", features = ["derive"] }
