@@ -1,4 +1,4 @@
-use std::lazy::SyncLazy;
+use std::sync::LazyLock;
 
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
@@ -17,38 +17,38 @@ use crate::pcb::{to_pos2, to_pt, to_rt};
 // Index 0 is front, index 1 is back.
 // TODO!! This
 
-static KEEPOUT: SyncLazy<Color32> =
-    SyncLazy::new(|| Color32::from_rgba_unmultiplied(155, 27, 0, 180));
+static KEEPOUT: LazyLock<Color32> =
+    LazyLock::new(|| Color32::from_rgba_unmultiplied(155, 27, 0, 180));
 
-static OUTLINE: SyncLazy<[Color32; 2]> = SyncLazy::new(|| {
+static OUTLINE: LazyLock<[Color32; 2]> = LazyLock::new(|| {
     [
         Color32::from_rgba_unmultiplied(89, 113, 193, 180),
         Color32::from_rgba_unmultiplied(168, 0, 186, 180),
     ]
 });
 
-static BOUNDARY: SyncLazy<Color32> =
-    SyncLazy::new(|| Color32::from_rgba_unmultiplied(255, 199, 46, 180));
+static BOUNDARY: LazyLock<Color32> =
+    LazyLock::new(|| Color32::from_rgba_unmultiplied(255, 199, 46, 180));
 
-static PIN: SyncLazy<[Color32; 2]> = SyncLazy::new(|| {
+static PIN: LazyLock<[Color32; 2]> = LazyLock::new(|| {
     [
         Color32::from_rgba_unmultiplied(0, 27, 161, 180),
         Color32::from_rgba_unmultiplied(0, 27, 161, 180),
     ]
 });
 
-static WIRE: SyncLazy<[Color32; 2]> = SyncLazy::new(|| {
+static WIRE: LazyLock<[Color32; 2]> = LazyLock::new(|| {
     [
         Color32::from_rgba_unmultiplied(252, 3, 182, 180),
         Color32::from_rgba_unmultiplied(0, 166, 52, 180),
     ]
 });
 
-static VIA: SyncLazy<Color32> =
-    SyncLazy::new(|| Color32::from_rgba_unmultiplied(100, 100, 100, 180));
+static VIA: LazyLock<Color32> =
+    LazyLock::new(|| Color32::from_rgba_unmultiplied(100, 100, 100, 180));
 
-static DEBUG: SyncLazy<Color32> =
-    SyncLazy::new(|| Color32::from_rgba_unmultiplied(123, 0, 255, 180));
+static DEBUG: LazyLock<Color32> =
+    LazyLock::new(|| Color32::from_rgba_unmultiplied(123, 0, 255, 180));
 
 #[derive(Debug, Clone)]
 pub struct PcbView {
