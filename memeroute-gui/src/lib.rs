@@ -42,10 +42,10 @@ use std::fmt::Debug;
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
-use clap::StructOpt;
+use clap::Parser;
 use eyre::Result;
 use memedsn::lexer::Lexer;
-use memedsn::parser::Parser;
+use memedsn::parser;
 use memeroute::dsn::design_to_pcb::DesignToPcb;
 use memeroute::model::pcb::Pcb;
 
@@ -57,18 +57,18 @@ pub mod pcb;
 pub mod wasm;
 
 #[must_use]
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, Parser)]
 #[clap(name = "memeroute", about = "Memeroute GUI")]
 struct Args {
     /// Path to data
-    #[clap(short, long, parse(from_os_str))]
+    #[clap(short, long, value_name = "FILE", value_hint = clap::ValueHint::FilePath)]
     data_path: PathBuf,
 }
 
 fn load_pcb<P: AsRef<Path>>(path: P) -> Result<Pcb> {
     let data = read_to_string(path)?;
     let lexer = Lexer::new(&data)?;
-    let parser = Parser::new(&lexer.lex()?);
+    let parser = parser::Parser::new(&lexer.lex()?);
     let pcb = parser.parse()?;
     let pcb = DesignToPcb::new(pcb).convert()?;
     Ok(pcb)
