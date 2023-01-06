@@ -208,7 +208,6 @@ pub struct Pin {
 }
 
 impl Pin {
-    #[must_use]
     pub fn tf(&self) -> Tf {
         Tf::translate(self.p) * Tf::rotate(self.rotation)
     }
@@ -248,7 +247,6 @@ impl Component {
         self.pins.get(&id)
     }
 
-    #[must_use]
     pub fn tf(&self) -> Tf {
         // Being on the back mirrors, i.e. horizontal flip.
         let side_tf = if self.flipped { Tf::scale(pt(-1.0, 1.0)) } else { Tf::identity() };
@@ -333,7 +331,6 @@ pub struct Via {
 }
 
 impl Via {
-    #[must_use]
     pub fn tf(&self) -> Tf {
         Tf::translate(self.p)
     }
@@ -351,7 +348,6 @@ pub enum ObjectKind {
 }
 
 impl ObjectKind {
-    #[must_use]
     pub fn query(&self) -> Kinds {
         Kinds(DenseBitSet::from_integer(enum_set!(self).as_u64()))
     }
@@ -381,7 +377,6 @@ impl Clearance {
     }
 
     // Returns set of ObjectKind that |kind| has a clearance rule with.
-    #[must_use]
     pub fn subset_for(&self, kind: ObjectKind) -> Kinds {
         match kind {
             ObjectKind::Area => Kinds(DenseBitSet::from_integer(self.area_kinds.as_u64())),
