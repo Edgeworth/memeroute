@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
+use eframe::epaint::Fonts;
 use memegeom::primitive::point::Pt;
 use memegeom::primitive::rect::Rt;
 use memegeom::primitive::shape::Shape;
@@ -73,8 +74,8 @@ impl Widget for &mut PcbView {
         }
 
         if ui.rect_contains_pointer(response.rect) {
-            let pos = to_pt(ui.ctx().input().pointer.interact_pos().unwrap());
-            let delta = ui.ctx().input().scroll_delta.y as f64;
+            let pos = to_pt(ui.ctx().input(|i| i.pointer.interact_pos().unwrap()));
+            let delta = ui.ctx().input(|i| i.scroll_delta.y as f64);
             let fac = 10.0 * delta / response.rect.height() as f64;
             self.offset = self.offset + (self.offset - pos) * fac;
             self.zoom *= 1.0 + fac;
@@ -180,7 +181,7 @@ impl PcbView {
             let mut tess = Tessellator::new(
                 ctx.pixels_per_point(),
                 TessellationOptions { feathering: false, ..Default::default() },
-                ctx.fonts().font_image_size(),
+                ctx.fonts(Fonts::font_image_size),
                 vec![],
             );
             for boundary in self.pcb.boundaries() {

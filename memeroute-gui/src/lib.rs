@@ -36,7 +36,7 @@
     clippy::too_many_lines,
     clippy::unreadable_literal
 )]
-#![feature(array_windows, once_cell)]
+#![feature(array_windows, lazy_cell)]
 
 use std::fmt::Debug;
 use std::fs::read_to_string;
@@ -82,6 +82,7 @@ pub fn run() -> Result<()> {
         "memeroute",
         options,
         Box::new(|cc| Box::new(MemerouteGui::new(pcb, args.data_path, cc))),
-    );
+    )
+    .unwrap();
     Ok(())
 }

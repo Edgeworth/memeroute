@@ -1,7 +1,8 @@
+set positional-arguments
 export RUST_BACKTRACE := "1"
-export RUST_LOG := "info"
-kind := "debug"
-profile_flag := if kind == "release" { "--release "} else { "" }
+
+kind := "dev"
+profile_flag := "--profile " + kind
 
 alias b := build
 alias r := run
@@ -15,11 +16,11 @@ default:
 build:
   cargo build {{profile_flag}} --workspace
 
-run target *args="":
-  cargo run {{profile_flag}} -p {{target}} -- {{args}}
+@run target *args="":
+  shift; cargo run {{profile_flag}} -p {{target}} -- {{ if args == "" { "" } else {"$@"} }}
 
-test:
-  cargo test --workspace --all-features --all-targets  -- --nocapture
+@test *args="":
+  cargo test --workspace --all-features --all-targets  -- --nocapture {{ if args == "" { "" } else {"$@"} }}
 
 fix:
   __CARGO_FIX_YOLO=1 cargo fix --workspace --all-features --all-targets --edition-idioms --broken-code
