@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use ahash::HashMap;
 use eyre::{eyre, Result};
 use itertools::Itertools;
 use memedsn::types::{
@@ -34,9 +33,9 @@ impl DesignToPcb {
         Self {
             dsn,
             pcb: Pcb::default(),
-            padstacks: HashMap::new(),
-            images: HashMap::new(),
-            layers: HashMap::new(),
+            padstacks: HashMap::default(),
+            images: HashMap::default(),
+            layers: HashMap::default(),
         }
     }
 

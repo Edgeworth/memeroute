@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use ahash::HashMap;
 use eyre::Result;
 use memegeom::geom::math::le;
 use memegeom::geom::qt::quadtree::ShapeIdx;
@@ -35,9 +34,9 @@ impl PlaceModel {
     pub fn new(pcb: Pcb) -> Self {
         let mut m = Self {
             pcb: Pcb::default(), // Initially set as empty since we will initialise.
-            boundary: HashMap::new(),
-            blocked: HashMap::new(),
-            pins: HashMap::new(),
+            boundary: HashMap::default(),
+            blocked: HashMap::default(),
+            pins: HashMap::default(),
             bounds: Rt::empty(),
         };
         m.init(pcb);

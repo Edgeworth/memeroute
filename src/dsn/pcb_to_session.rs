@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use ahash::HashMap;
 use eyre::{eyre, Result};
 use memegeom::primitive::circle::Circle;
 use memegeom::primitive::path_shape::Path;
@@ -250,7 +249,7 @@ impl PcbToSession {
 
         self.resolution();
 
-        let mut footprints: HashMap<String, Vec<Component>> = HashMap::new();
+        let mut footprints: HashMap<String, Vec<Component>> = HashMap::default();
         for c in pcb.components() {
             footprints.entry(pcb.to_name(c.footprint_id)).or_insert_with(Vec::new).push(c.clone());
         }
@@ -271,7 +270,7 @@ impl PcbToSession {
         self.end();
 
         self.begin("network_out");
-        let mut nets: HashMap<Id, (Net, Vec<Wire>, Vec<Via>)> = HashMap::new();
+        let mut nets: HashMap<Id, (Net, Vec<Wire>, Vec<Via>)> = HashMap::default();
         for net in pcb.nets() {
             nets.insert(net.id, (net.clone(), Vec::new(), Vec::new()));
         }

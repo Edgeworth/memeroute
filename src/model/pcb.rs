@@ -1,8 +1,8 @@
 use std::collections::hash_map::Values;
-use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::sync::RwLock;
 
+use ahash::HashMap;
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use enumset::{enum_set, EnumSet, EnumSetType};
 use eyre::{eyre, Result};

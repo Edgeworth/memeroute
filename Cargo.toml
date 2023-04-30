@@ -13,6 +13,7 @@ version = "0.1.0"
 members = ["memeroute-gui"]
 
 [dependencies]
+ahash = "0.8.3"
 auto_ops = "0.3.0"
 derive_more = "0.99.17"
 enumset = "1.0.12"

@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use ahash::HashMap;
 use eyre::{eyre, Result};
 use memegeom::geom::math::f64_cmp;
 use memegeom::geom::qt::query::TagQuery;
@@ -142,7 +141,7 @@ impl GridRouter {
 
     fn dijkstra(&self, srcs: &[State], dsts: &[State]) -> Vec<State> {
         let mut q: PriorityQueue<State, OrderedFloat<f64>> = PriorityQueue::new();
-        let mut node_data: HashMap<State, NodeData> = HashMap::new();
+        let mut node_data: HashMap<State, NodeData> = HashMap::default();
 
         for src in srcs {
             // Try going from each of the valid layers in this state.
