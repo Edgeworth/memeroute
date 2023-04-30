@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use ahash::HashMap;
 
 // Integer IDs representing names. Readable names used in PCB.
 // Note that IDs represent strings, not objects. They don't uniquely identify an object.
