@@ -20,11 +20,7 @@ impl NameMap {
     }
 
     pub fn name_to_id(&mut self, name: &str) -> Id {
-        if let Some(id) = self.name_to_id.get(name) {
-            *id
-        } else {
-            self.add_name(name)
-        }
+        if let Some(id) = self.name_to_id.get(name) { *id } else { self.add_name(name) }
     }
 
     fn add_name(&mut self, name: &str) -> Id {

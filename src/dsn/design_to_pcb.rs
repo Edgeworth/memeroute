@@ -1,5 +1,5 @@
 use ahash::HashMap;
-use eyre::{eyre, Result};
+use eyre::{Result, eyre};
 use itertools::Itertools;
 use memedsn::types::{
     DsnCircuit, DsnClass, DsnClearance, DsnClearanceType, DsnComponent, DsnDimensionUnit, DsnImage,
@@ -9,7 +9,7 @@ use memedsn::types::{
 use memegeom::geom::math::{eq, pt_eq};
 use memegeom::primitive::point::Pt;
 use memegeom::primitive::rect::Rt;
-use memegeom::primitive::{circ, path, poly, rt, ShapeOps};
+use memegeom::primitive::{ShapeOps, circ, path, poly, rt};
 use strum::IntoEnumIterator;
 
 use crate::model::pcb::{
@@ -174,7 +174,7 @@ impl DesignToPcb {
                 DsnSide::Front => {}
                 DsnSide::Back => c.flip(self.pcb.layers().len()),
                 DsnSide::Both => return Err(eyre!("invalid side specification")),
-            };
+            }
             components.push(c);
         }
         Ok(components)

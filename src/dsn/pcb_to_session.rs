@@ -1,5 +1,5 @@
 use ahash::HashMap;
-use eyre::{eyre, Result};
+use eyre::{Result, eyre};
 use memegeom::primitive::circle::Circle;
 use memegeom::primitive::path_shape::Path;
 use memegeom::primitive::point::Pt;
@@ -251,7 +251,7 @@ impl PcbToSession {
 
         let mut footprints: HashMap<String, Vec<Component>> = HashMap::default();
         for c in pcb.components() {
-            footprints.entry(pcb.to_name(c.footprint_id)).or_insert_with(Vec::new).push(c.clone());
+            footprints.entry(pcb.to_name(c.footprint_id)).or_default().push(c.clone());
         }
         for (name, cs) in footprints {
             self.component(&name, cs);

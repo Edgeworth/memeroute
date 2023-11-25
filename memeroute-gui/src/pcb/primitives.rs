@@ -1,9 +1,9 @@
 use std::f64::consts::TAU;
 
 use eframe::egui::epaint::{Mesh, PathShape, Vertex};
-use eframe::egui::{epaint, Color32};
+use eframe::egui::{Color32, epaint};
 use eframe::emath::Pos2;
-use eframe::epaint::{Stroke, TextureId};
+use eframe::epaint::{PathStroke, TextureId};
 use memegeom::primitive::point::Pt;
 use memegeom::primitive::pt;
 use memegeom::primitive::rect::Rt;
@@ -30,7 +30,7 @@ pub fn fill_circle(tf: &Tf, p: Pt, r: f64, col: Color32) -> epaint::Shape {
         points: vert,
         closed: true,
         fill: col,
-        stroke: Stroke::default(),
+        stroke: PathStroke::default(),
     })
 }
 
@@ -39,11 +39,9 @@ pub fn fill_polygon(tf: &Tf, pts: &[Pt], tris: &[u32], col: Color32) -> epaint::
         .iter()
         .map(|&v| Vertex { pos: to_pos2(tf.pt(v)), uv: Pos2::default(), color: col })
         .collect();
-    epaint::Shape::Mesh(Mesh {
-        indices: tris.to_owned(),
-        vertices: vert,
-        texture_id: TextureId::default(),
-    })
+    epaint::Shape::Mesh(
+        Mesh { indices: tris.to_owned(), vertices: vert, texture_id: TextureId::default() }.into(),
+    )
 }
 
 #[must_use]
