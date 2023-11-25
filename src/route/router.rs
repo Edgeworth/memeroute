@@ -14,8 +14,8 @@ use memega::train::cfg::{Termination, TrainerCfg};
 use memega::train::sampler::EmptyDataSampler;
 use memega::train::trainer::Trainer;
 use memegeom::primitive::rect::Rt;
-use rand::prelude::SliceRandom;
 use rand::Rng;
+use rand::prelude::SliceRandom;
 
 use crate::model::pcb::{Pcb, Via, Wire};
 use crate::name::Id;
@@ -87,7 +87,7 @@ impl Router {
         let net_order: Vec<_> = self.pcb.lock().unwrap().nets().map(|v| v.id).collect();
         let genfn = move || {
             let mut rand_order = net_order.clone();
-            rand_order.shuffle(&mut rand::thread_rng());
+            rand_order.shuffle(&mut rand::rng());
             RouteState(rand_order)
         };
 
@@ -102,7 +102,7 @@ impl Router {
 
 #[must_use]
 #[derive(Debug, Display, Deref, DerefMut, Hash, Clone, PartialEq, Eq, PartialOrd)]
-#[display(fmt = "{_0:?}")]
+#[display("{_0:?}")]
 pub struct RouteState(pub Vec<Id>);
 
 impl Evaluator for Router {
@@ -117,12 +117,12 @@ impl Evaluator for Router {
             2 => crossover_order(s1, s2),
             3 => crossover_cycle(s1, s2),
             _ => panic!("unknown crossover strategy"),
-        };
+        }
     }
 
     fn mutate(&self, s: &mut Self::State, rate: f64, idx: usize) {
-        let mut r = rand::thread_rng();
-        if r.gen::<f64>() > rate {
+        let mut r = rand::rng();
+        if r.random::<f64>() > rate {
             return;
         }
         match idx {

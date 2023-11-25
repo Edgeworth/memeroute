@@ -2,11 +2,11 @@ use ahash::HashMap;
 use eyre::Result;
 use memegeom::geom::math::le;
 use memegeom::geom::qt::quadtree::ShapeIdx;
-use memegeom::geom::qt::query::{Kinds, KindsQuery, Query, ShapeInfo, Tag, TagQuery, NO_TAG};
+use memegeom::geom::qt::query::{Kinds, KindsQuery, NO_TAG, Query, ShapeInfo, Tag, TagQuery};
 use memegeom::primitive::compound::Compound;
 use memegeom::primitive::point::Pt;
 use memegeom::primitive::rect::Rt;
-use memegeom::primitive::{path, ShapeOps};
+use memegeom::primitive::{ShapeOps, path};
 use memegeom::tf::Tf;
 
 use crate::model::pcb::{
@@ -127,7 +127,7 @@ impl PlaceModel {
     ) -> bool {
         let s = tf.shape(&ls.shape);
 
-        for layer in ls.layers.iter() {
+        for layer in &ls.layers {
             if let Some(boundary) = self.boundary.get(&layer) {
                 // TODO: Convert boundary to path and compute distance to it for clearance.
                 if !boundary.contains(&s, Query(q, KindsQuery::All)) {
@@ -137,7 +137,7 @@ impl PlaceModel {
         }
 
         // Check for intersection first, it's generally cheaper than checking distance.
-        for layer in ls.layers.iter() {
+        for layer in &ls.layers {
             if let Some(blocked) = self.blocked.get(&layer) {
                 if blocked.intersects(&s, Query(q, KindsQuery::All)) {
                     return true;
@@ -146,7 +146,7 @@ impl PlaceModel {
         }
 
         // Check for clearance.
-        for layer in ls.layers.iter() {
+        for layer in &ls.layers {
             if let Some(blocked) = self.blocked.get(&layer) {
                 for c in clearances {
                     let d = blocked.dist(&s, Query(q, KindsQuery::HasCommon(c.subset_for(kind))));
@@ -224,7 +224,7 @@ impl PlaceModel {
         let s = tf.shape(&ls.shape);
         let mut idxs = Vec::new();
 
-        for layer in ls.layers.iter() {
+        for layer in &ls.layers {
             idxs.extend(
                 map.entry(layer)
                     .or_insert_with(|| Compound::with_bounds(&bounds))
@@ -255,7 +255,7 @@ impl PlaceModel {
 
     fn add_pin(&mut self, tf: &Tf, pinref: PinRef, pin: &Pin, tag: Tag) -> Vec<PlaceId> {
         let ids = self.add_padstack(&(tf * pin.tf()), &pin.padstack, tag, ObjectKind::Pin.query());
-        let e = self.pins.entry(pinref).or_insert_with(Vec::new);
+        let e = self.pins.entry(pinref).or_default();
         for &id in &ids {
             e.push(id);
         }

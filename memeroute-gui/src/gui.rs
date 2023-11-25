@@ -1,11 +1,10 @@
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use eframe::egui;
-use eframe::egui::Widget;
+use eframe::egui::{self, ViewportCommand, Widget};
 use memeroute::dsn::pcb_to_session::PcbToSession;
 use memeroute::model::pcb::Pcb;
-use memeroute::route::router::{apply_route_result, Router};
+use memeroute::route::router::{Router, apply_route_result};
 use serde::{Deserialize, Serialize};
 
 use crate::pcb::pcb_view::PcbView;
@@ -49,12 +48,12 @@ impl eframe::App for MemerouteGui {
         eframe::set_value(storage, eframe::APP_KEY, &self.s);
     }
 
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Quit").clicked() {
-                        frame.close();
+                        ctx.send_viewport_cmd(ViewportCommand::Close);
                     }
                 });
             });

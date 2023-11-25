@@ -1,8 +1,7 @@
 [package]
 authors = ["Eliot Courtney <edgeworth.dev@gmail.com>"]
-category = ["algorithms"]
 description = "pcb autorouter"
-edition = "2021"
+edition = "2024"
 keywords = ["autoroute", "pcb", "autorouter", "dsn"]
 license = "MIT OR Apache-2.0"
 name = "memeroute-gui"
@@ -10,14 +9,14 @@ repository = "https://github.com/Edgeworth/memeroute"
 version = "0.1.0"
 
 [dependencies]
-clap = { version = "4.2.5", features = ["derive", "unicode", "wrap_help"] }
-color-eyre = "0.6.2"
-eframe = { version = "0.21.3", features = ["persistence", "default_fonts"] }
-eyre = "0.6.8"
-log = "0.4.17"
+clap = {version = "4.5.30", features = ["derive", "unicode", "wrap_help"]}
+color-eyre = "0.6.3"
+eframe = {version = "0.31.0", features = ["persistence", "default_fonts"]}
+eyre = "0.6.12"
+log = "0.4.26"
 memedsn = {version = "0.1.0", git = "https://github.com/Edgeworth/memedsn"}
 memegeom = {version = "0.1.0", git = "https://github.com/Edgeworth/memegeom"}
 memeroute = {version = "0.1.0", path = ".."}
-pretty_env_logger = "0.4.0"
-serde = { version = "1.0.160", features = ["derive"] }
-tokio = { version = "1.28.0", features = ["full"] }
+pretty_env_logger = "0.5.0"
+serde = {version = "1.0.218", features = ["derive"]}
+tokio = {version = "1.43.0", features = ["full"]}

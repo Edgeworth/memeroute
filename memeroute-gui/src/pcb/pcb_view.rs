@@ -1,12 +1,12 @@
 use std::sync::LazyLock;
 
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
-use eframe::egui::{epaint, Color32, Context, PointerButton, Response, Sense, Ui, Widget};
+use eframe::egui::{Color32, Context, PointerButton, Response, Sense, Ui, Widget, epaint};
 use eframe::epaint::Fonts;
 use memegeom::primitive::point::Pt;
 use memegeom::primitive::rect::Rt;
 use memegeom::primitive::shape::Shape;
-use memegeom::primitive::{path, pt, ShapeOps};
+use memegeom::primitive::{ShapeOps, path, pt};
 use memegeom::tf::Tf;
 use memeroute::model::pcb::{
     Component, Keepout, LayerId, LayerSet, LayerShape, Padstack, Pcb, Pin,
@@ -75,7 +75,7 @@ impl Widget for &mut PcbView {
 
         if ui.rect_contains_pointer(response.rect) {
             let pos = to_pt(ui.ctx().input(|i| i.pointer.interact_pos().unwrap()));
-            let delta = ui.ctx().input(|i| i.scroll_delta.y as f64);
+            let delta = ui.ctx().input(|i| i.raw_scroll_delta.y as f64);
             let fac = 10.0 * delta / response.rect.height() as f64;
             self.offset = self.offset + (self.offset - pos) * fac;
             self.zoom *= 1.0 + fac;
@@ -84,7 +84,7 @@ impl Widget for &mut PcbView {
         self.set_screen_area(to_rt(response.rect));
         let mesh = self.render(ui.ctx());
         painter.rect_filled(response.rect, 0.0, Color32::WHITE);
-        painter.add(epaint::Shape::Mesh(mesh));
+        painter.add(epaint::Shape::Mesh(mesh.into()));
         response
     }
 }

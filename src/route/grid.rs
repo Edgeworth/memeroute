@@ -1,10 +1,10 @@
 use ahash::HashMap;
-use eyre::{eyre, Result};
+use eyre::{Result, eyre};
 use memegeom::geom::math::f64_cmp;
 use memegeom::geom::qt::query::TagQuery;
 use memegeom::primitive::point::{Pt, PtI};
 use memegeom::primitive::rect::{Rt, RtI};
-use memegeom::primitive::{circ, pt, pti, ShapeOps};
+use memegeom::primitive::{ShapeOps, circ, pt, pti};
 use memegeom::tf::Tf;
 use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
@@ -145,7 +145,7 @@ impl GridRouter {
 
         for src in srcs {
             // Try going from each of the valid layers in this state.
-            for layer in src.layers.iter() {
+            for layer in &src.layers {
                 let s = State { layers: LayerSet::one(layer), ..*src };
                 q.push(s, OrderedFloat(0.0));
                 node_data.insert(s, NodeData { prev: State::default(), cost: 0.0, seen: true });
@@ -167,14 +167,14 @@ impl GridRouter {
                 } else {
                     LayerSet::one(cur_layer)
                 };
-                for layer in layers.iter() {
+                for layer in &layers {
                     let next = State {
                         p: cur.p + dp,
                         layers: LayerSet::one(layer),
                         net_id: srcs[0].net_id,
                     };
                     let cost = cur_cost + edge_cost;
-                    let data = node_data.entry(next).or_insert_with(Default::default);
+                    let data = node_data.entry(next).or_default();
 
                     if data.seen {
                         continue;

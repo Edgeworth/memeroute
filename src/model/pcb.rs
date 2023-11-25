@@ -1,17 +1,16 @@
 use std::collections::hash_map::Values;
-use std::iter::FromIterator;
 use std::sync::RwLock;
 
 use ahash::HashMap;
 use auto_ops::{impl_op_ex, impl_op_ex_commutative};
-use enumset::{enum_set, EnumSet, EnumSetType};
-use eyre::{eyre, Result};
+use enumset::{EnumSet, EnumSetType, enum_set};
+use eyre::{Result, eyre};
 use memegeom::geom::bounds::rt_cloud_bounds;
 use memegeom::geom::qt::query::Kinds;
 use memegeom::primitive::point::Pt;
 use memegeom::primitive::rect::Rt;
 use memegeom::primitive::shape::Shape;
-use memegeom::primitive::{pt, ShapeOps};
+use memegeom::primitive::{ShapeOps, pt};
 use memegeom::tf::Tf;
 use rust_dense_bitset::{BitSet, DenseBitSet};
 use strum::EnumIter;
@@ -69,20 +68,12 @@ impl LayerSet {
 
     #[must_use]
     pub fn id(&self) -> Option<LayerId> {
-        if self.len() == 1 {
-            Some(self.l.first_set() as LayerId)
-        } else {
-            None
-        }
+        if self.len() == 1 { Some(self.l.first_set() as LayerId) } else { None }
     }
 
     #[must_use]
     pub fn first(&self) -> Option<LayerId> {
-        if self.is_empty() {
-            None
-        } else {
-            Some(self.l.first_set() as LayerId)
-        }
+        if self.is_empty() { None } else { Some(self.l.first_set() as LayerId) }
     }
 
     #[must_use]
@@ -121,6 +112,15 @@ impl FromIterator<LayerId> for LayerSet {
 impl FromIterator<LayerSet> for LayerSet {
     fn from_iter<T: IntoIterator<Item = LayerSet>>(iter: T) -> Self {
         iter.into_iter().fold(LayerSet::empty(), |a, b| a | b)
+    }
+}
+
+impl IntoIterator for &LayerSet {
+    type Item = LayerId;
+    type IntoIter = BitSetIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 

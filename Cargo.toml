@@ -2,7 +2,7 @@
 authors = ["Eliot Courtney <edgeworth.dev@gmail.com>"]
 categories = ["algorithms"]
 description = "pcb autorouter library"
-edition = "2021"
+edition = "2024"
 keywords = ["autoroute", "pcb", "autorouter", "dsn"]
 license = "MIT OR Apache-2.0"
 name = "memeroute"
@@ -13,18 +13,18 @@ version = "0.1.0"
 members = ["memeroute-gui"]
 
 [dependencies]
-ahash = "0.8.3"
+ahash = "0.8.11"
 auto_ops = "0.3.0"
-derive_more = "0.99.17"
-enumset = "1.0.12"
-eyre = "0.6.8"
-itertools = "0.10.5"
+derive_more = {version = "2.0.1", features = ["display", "deref", "deref_mut"]}
+enumset = "1.1.5"
+eyre = "0.6.12"
+itertools = "0.14.0"
 memedsn = {version = "0.1.0", git = "https://github.com/Edgeworth/memedsn"}
 memega = {version = "0.1.0", git = "https://github.com/Edgeworth/memega"}
 memegeom = {version = "0.1.0", git = "https://github.com/Edgeworth/memegeom"}
-ordered-float = "3.7.0"
-priority-queue = "1.3.1"
-rand = {version = "0.8.5", features = ["small_rng"]}
+ordered-float = "5.0.0"
+priority-queue = "2.1.2"
+rand = {version = "0.9.0", features = ["small_rng"]}
 rust-dense-bitset = "0.1.1"
-serde = {version = "1.0.160", features = ["derive"]}
-strum = {version = "0.24.1", features = ["derive"]}
+serde = {version = "1.0.218", features = ["derive"]}
+strum = {version = "0.27.1", features = ["derive"]}
