@@ -138,10 +138,10 @@ impl PlaceModel {
 
         // Check for intersection first, it's generally cheaper than checking distance.
         for layer in &ls.layers {
-            if let Some(blocked) = self.blocked.get(&layer) {
-                if blocked.intersects(&s, Query(q, KindsQuery::All)) {
-                    return true;
-                }
+            if let Some(blocked) = self.blocked.get(&layer)
+                && blocked.intersects(&s, Query(q, KindsQuery::All))
+            {
+                return true;
             }
         }
 

@@ -28,7 +28,6 @@
     clippy::expl_impl_clone_on_copy,
     clippy::items_after_statements,
     clippy::many_single_char_names,
-    clippy::match_on_vec_items,
     clippy::missing_errors_doc,
     clippy::missing_panics_doc,
     clippy::module_name_repetitions,

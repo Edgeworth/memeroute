@@ -16,15 +16,15 @@ members = ["memeroute-gui"]
 ahash = "0.8.12"
 auto_ops = "0.3.0"
 derive_more = {version = "2.0.1", features = ["display", "deref", "deref_mut"]}
-enumset = "1.1.6"
+enumset = "1.1.10"
 eyre = "0.6.12"
 itertools = "0.14.0"
 memedsn = {version = "0.1.0", git = "https://github.com/Edgeworth/memedsn"}
 memega = {version = "0.1.0", git = "https://github.com/Edgeworth/memega"}
 memegeom = {version = "0.1.0", git = "https://github.com/Edgeworth/memegeom"}
 ordered-float = "5.0.0"
-priority-queue = "2.3.1"
-rand = {version = "0.9.1", features = ["small_rng"]}
+priority-queue = "2.5.0"
+rand = {version = "0.9.2", features = ["small_rng"]}
 rust-dense-bitset = "0.1.1"
 serde = {version = "1.0.219", features = ["derive"]}
-strum = {version = "0.27.1", features = ["derive"]}
+strum = {version = "0.27.2", features = ["derive"]}

@@ -348,7 +348,7 @@ pub enum ObjectKind {
 }
 
 impl ObjectKind {
-    pub fn query(&self) -> Kinds {
+    pub fn query(self) -> Kinds {
         Kinds(DenseBitSet::from_integer(enum_set!(self).as_u64()))
     }
 }

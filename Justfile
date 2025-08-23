@@ -26,7 +26,7 @@ fix:
   __CARGO_FIX_YOLO=1 cargo fix --workspace --all-features --all-targets --edition-idioms --broken-code
   __CARGO_FIX_YOLO=1 cargo clippy --workspace --all-targets --all-features --fix -Z unstable-options --broken-code
   cargo fmt --all
-  cargo udeps --all-features --all-targets --workspace
+  pre-commit run --all-files
 
 update:
   rustup update
@@ -37,4 +37,9 @@ update:
   cargo update
   cargo build --workspace --all-features --all-targets
   pre-commit autoupdate
+
+check:
+  cargo check --workspace --all-features --all-targets
+  cargo clippy --workspace --all-features --all-targets -- -D warnings
+  cargo udeps --all-features --all-targets --workspace
   pre-commit run --all-files
