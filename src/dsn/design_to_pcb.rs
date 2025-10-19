@@ -6,10 +6,8 @@ use memedsn::types::{
     DsnKeepout, DsnKeepoutType, DsnLayerType, DsnNet, DsnPadstack, DsnPcb, DsnPin, DsnRect,
     DsnRule, DsnShape, DsnSide,
 };
-use memegeom::geom::math::{eq, pt_eq};
-use memegeom::primitive::point::Pt;
-use memegeom::primitive::rect::Rt;
-use memegeom::primitive::{ShapeOps, circ, path, poly, rt};
+use memegeom::geom::math::eq;
+use memegeom::primitive::{Pt, Rt, ShapeOps, circ, path, poly, rt};
 use strum::IntoEnumIterator;
 
 use crate::model::pcb::{
@@ -98,7 +96,7 @@ impl DesignToPcb {
             DsnShape::Polygon(v) => {
                 let mut pts: Vec<Pt> = v.pts.iter().map(|&v| self.pt(v)).collect();
                 // Polygons seem to have the first vertex repeated.
-                if pts.len() >= 2 && pt_eq(*pts.first().unwrap(), *pts.last().unwrap()) {
+                if pts.len() >= 2 && pts.first().unwrap().rel_eq(pts.last().unwrap()) {
                     pts.pop();
                 }
                 assert!(eq(v.aperture_width, 0.0), "aperture width for polygons is unsupported");

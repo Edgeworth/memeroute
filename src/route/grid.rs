@@ -1,10 +1,7 @@
 use ahash::HashMap;
 use eyre::{Result, eyre};
-use memegeom::geom::math::f64_cmp;
 use memegeom::geom::qt::query::TagQuery;
-use memegeom::primitive::point::{Pt, PtI};
-use memegeom::primitive::rect::{Rt, RtI};
-use memegeom::primitive::{ShapeOps, circ, pt, pti};
+use memegeom::primitive::{Pt, PtI, Rt, RtI, ShapeOps, circ, pt, pti};
 use memegeom::tf::Tf;
 use ordered_float::OrderedFloat;
 use priority_queue::PriorityQueue;
@@ -199,7 +196,7 @@ impl GridRouter {
                         // A* heuristic. Minimum distance to a destination.
                         let dist_fn =
                             |d: &State| self.world_pt_mid(d.p).dist(self.world_pt_mid(next.p));
-                        let heuristic = dsts.iter().map(dist_fn).min_by(f64_cmp).unwrap();
+                        let heuristic = dsts.iter().map(dist_fn).min_by(f64::total_cmp).unwrap();
                         q.push(next, OrderedFloat(-(cost + heuristic)));
                     }
                 }
@@ -271,7 +268,7 @@ impl GridRouter {
     }
 
     fn _draw_debug(&mut self, res: &mut RouteResult) {
-        let bounds = self.place.pcb().bounds();
+        let bounds = self.place.pcb().bounds().unwrap_or_default();
         // let bounds = rt(77.0495, -125.1745, 79.099, -120.75);
         let bounds =
             RtI::enclosing(self.grid_pt(bounds.bl()), self.grid_pt(bounds.tr()) + pti(1, 1));

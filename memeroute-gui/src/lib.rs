@@ -35,8 +35,6 @@
     clippy::too_many_lines,
     clippy::unreadable_literal
 )]
-#![feature(array_windows)]
-
 use std::fmt::Debug;
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};

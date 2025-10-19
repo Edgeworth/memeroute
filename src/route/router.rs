@@ -1,3 +1,4 @@
+use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
 use derive_more::{Deref, DerefMut, Display};
@@ -13,7 +14,7 @@ use memega::ops::mutation::{mutate_insert, mutate_inversion, mutate_scramble, mu
 use memega::train::cfg::{Termination, TrainerCfg};
 use memega::train::sampler::EmptyDataSampler;
 use memega::train::trainer::Trainer;
-use memegeom::primitive::rect::Rt;
+use memegeom::primitive::Rt;
 use rand::Rng;
 use rand::prelude::SliceRandom;
 
@@ -78,7 +79,7 @@ impl Router {
             .set_crossover(Crossover::Adaptive)
             .set_survival(Survival::TopProportion(0.1))
             .set_niching(Niching::None)
-            .set_stagnation(Stagnation::ContinuousAfter(200))
+            .set_stagnation(Stagnation::ContinuousAfter(NonZeroUsize::new(200).unwrap()))
             .set_replacement(Replacement::ReplaceChildren(0.5))
             .set_duplicates(Duplicates::DisallowDuplicates)
             .set_par_fitness(true)
@@ -93,7 +94,8 @@ impl Router {
 
         let evolver = Evolver::new(self.clone(), cfg, genfn);
         let mut trainer = Trainer::new(
-            TrainerCfg::new("memeroute").set_termination(Termination::FixedGenerations(1)),
+            TrainerCfg::new("memeroute")
+                .set_termination(Termination::FixedGenerations(NonZeroUsize::new(1).unwrap())),
         );
         let order = trainer.train(evolver, &EmptyDataSampler {})?.nth(0).state.0.clone();
         self.route(order)
@@ -134,7 +136,7 @@ impl Evaluator for Router {
         }
     }
 
-    fn fitness(&self, s: &Self::State, _data: &Self::Data) -> Result<f64> {
+    fn fitness(&self, s: &Self::State, _data: &Self::Data) -> memega::Result<f64> {
         let res = self.route(s.0.clone()).unwrap();
         let mut cost = 0.0;
         if res.failed {
@@ -145,7 +147,7 @@ impl Evaluator for Router {
         Ok(1.0 / (1.0 + cost))
     }
 
-    fn distance(&self, s1: &Self::State, s2: &Self::State) -> Result<f64> {
+    fn distance(&self, s1: &Self::State, s2: &Self::State) -> memega::Result<f64> {
         Ok(kendall_tau(s1, s2)? as f64)
     }
 }

@@ -4,27 +4,22 @@ use eframe::egui::epaint::{Mesh, PathShape, Vertex};
 use eframe::egui::{Color32, epaint};
 use eframe::emath::Pos2;
 use eframe::epaint::{PathStroke, TextureId};
-use memegeom::primitive::point::Pt;
-use memegeom::primitive::pt;
-use memegeom::primitive::rect::Rt;
+use memegeom::primitive::{Pt, Rt, pt};
 use memegeom::tf::Tf;
 
 use crate::pcb::to_pos2;
 
 const NUM_POINTS: usize = 16;
-const EP: f64 = 1.0e-5;
 
 pub fn fill_rt(tf: &Tf, rt: &Rt, col: Color32) -> epaint::Shape {
     fill_polygon(tf, &rt.pts(), &[0, 1, 2, 0, 2, 3], col)
 }
 
 pub fn fill_circle(tf: &Tf, p: Pt, r: f64, col: Color32) -> epaint::Shape {
-    let mut vert = Vec::new();
+    let mut vert = Vec::with_capacity(NUM_POINTS);
     for i in 0..NUM_POINTS {
         let rad = TAU * i as f64 / NUM_POINTS as f64;
-        let rad_next = TAU * (i + 1) as f64 / NUM_POINTS as f64;
         vert.push(to_pos2(tf.pt(pt(p.x + rad.cos() * r, p.y + rad.sin() * r))));
-        vert.push(to_pos2(tf.pt(pt(p.x + rad_next.cos() * r, p.y + rad_next.sin() * r))));
     }
     epaint::Shape::Path(PathShape {
         points: vert,
@@ -59,8 +54,7 @@ pub fn stroke_path(tf: &Tf, pts: &[Pt], r: f64, col: Color32) -> Vec<epaint::Sha
     for &[p0, p1] in pts.array_windows::<2>() {
         shapes.push(fill_circle(tf, p0, r, col));
 
-        if p0.dist(p1) > EP {
-            let perp = (p1 - p0).perp();
+        if let Some(perp) = (p1 - p0).perp() {
             let vert = [p0 - r * perp, p0 + r * perp, p1 + r * perp, p1 - r * perp];
             shapes.push(fill_polygon(tf, &vert, &[0, 1, 2, 0, 2, 3], col));
         }

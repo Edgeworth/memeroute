@@ -7,10 +7,7 @@ use enumset::{EnumSet, EnumSetType, enum_set};
 use eyre::{Result, eyre};
 use memegeom::geom::bounds::rt_cloud_bounds;
 use memegeom::geom::qt::query::Kinds;
-use memegeom::primitive::point::Pt;
-use memegeom::primitive::rect::Rt;
-use memegeom::primitive::shape::Shape;
-use memegeom::primitive::{ShapeOps, pt};
+use memegeom::primitive::{Pt, Rt, Shape, ShapeOps, pt};
 use memegeom::tf::Tf;
 use rust_dense_bitset::{BitSet, DenseBitSet};
 use strum::EnumIter;
@@ -548,9 +545,8 @@ impl Pcb {
         self.pin_ref_to_net.get(p).copied()
     }
 
-    pub fn bounds(&self) -> Rt {
-        // Assumes boundaries are valid.
-        rt_cloud_bounds(self.boundaries().iter().map(|v| v.shape.bounds()))
+    pub fn bounds(&self) -> Option<Rt> {
+        rt_cloud_bounds(self.boundaries().iter().filter_map(|v| v.shape.bounds()))
     }
 }
 

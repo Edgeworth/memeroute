@@ -1,11 +1,7 @@
-use ahash::HashMap;
+use std::collections::BTreeMap;
+
 use eyre::{Result, eyre};
-use memegeom::primitive::circle::Circle;
-use memegeom::primitive::path_shape::Path;
-use memegeom::primitive::point::Pt;
-use memegeom::primitive::polygon::Poly;
-use memegeom::primitive::rect::Rt;
-use memegeom::primitive::shape::Shape;
+use memegeom::primitive::{Circle, Path, Poly, Pt, Rt, Shape};
 use strum::IntoEnumIterator;
 
 use crate::model::pcb::{
@@ -33,8 +29,12 @@ impl PcbToSession {
     }
 
     fn newline(&mut self) {
-        self.s += "\n";
-        self.s += &" ".repeat((self.indent - 1) * INDENT);
+        self.s.push('\n');
+        self.col = 0;
+
+        let spaces = self.indent.saturating_sub(1) * INDENT;
+        self.s.push_str(&" ".repeat(spaces));
+        self.col = spaces;
     }
 
     fn append(&mut self, s: &str) {
@@ -43,6 +43,7 @@ impl PcbToSession {
             self.newline();
         }
         self.s += s;
+        self.col += s.len();
     }
 
     fn token(&mut self, tok: &str) {
@@ -182,7 +183,7 @@ impl PcbToSession {
         match &shape.shape {
             Shape::Circle(s) => self.circle(&l, s),
             Shape::Path(s) => self.path(&l, s),
-            Shape::Polygon(s) => self.polygon(&l, s),
+            Shape::Poly(s) => self.polygon(&l, s),
             Shape::Rect(s) => self.rect(&l, s),
             _ => unimplemented!(), // TODO: Transform these shapes.
         }
@@ -249,9 +250,12 @@ impl PcbToSession {
 
         self.resolution();
 
-        let mut footprints: HashMap<String, Vec<Component>> = HashMap::default();
+        let mut footprints: BTreeMap<String, Vec<Component>> = BTreeMap::new();
         for c in pcb.components() {
             footprints.entry(pcb.to_name(c.footprint_id)).or_default().push(c.clone());
+        }
+        for cs in footprints.values_mut() {
+            cs.sort_by_key(|c| c.id);
         }
         for (name, cs) in footprints {
             self.component(&name, cs);
@@ -270,7 +274,7 @@ impl PcbToSession {
         self.end();
 
         self.begin("network_out");
-        let mut nets: HashMap<Id, (Net, Vec<Wire>, Vec<Via>)> = HashMap::default();
+        let mut nets: BTreeMap<Id, (Net, Vec<Wire>, Vec<Via>)> = BTreeMap::new();
         for net in pcb.nets() {
             nets.insert(net.id, (net.clone(), Vec::new(), Vec::new()));
         }

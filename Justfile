@@ -17,10 +17,12 @@ build:
   cargo build {{profile_flag}} --workspace
 
 @run target *args="":
-  shift; cargo run {{profile_flag}} -p {{target}} -- {{ if args == "" { "" } else {"$@"} }}
+  #!/usr/bin/env sh
+  shift; cargo run {{profile_flag}} -p {{target}} -- "$@"
 
 @test *args="":
-  cargo test --workspace --all-features --all-targets  -- --nocapture {{ if args == "" { "" } else {"$@"} }}
+  #!/usr/bin/env sh
+  cargo test --workspace --all-features --all-targets  -- --nocapture "$@"
 
 fix:
   __CARGO_FIX_YOLO=1 cargo fix --workspace --all-features --all-targets --edition-idioms --broken-code

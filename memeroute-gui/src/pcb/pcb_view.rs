@@ -2,11 +2,7 @@ use std::sync::LazyLock;
 
 use eframe::egui::epaint::{Mesh, TessellationOptions, Tessellator};
 use eframe::egui::{Color32, Context, PointerButton, Response, Sense, Ui, Widget, epaint};
-use eframe::epaint::Fonts;
-use memegeom::primitive::point::Pt;
-use memegeom::primitive::rect::Rt;
-use memegeom::primitive::shape::Shape;
-use memegeom::primitive::{ShapeOps, path, pt};
+use memegeom::primitive::{Pt, Rt, Shape, ShapeOps, path, pt};
 use memegeom::tf::Tf;
 use memeroute::model::pcb::{
     Component, Keepout, LayerId, LayerSet, LayerShape, Padstack, Pcb, Pin,
@@ -56,6 +52,7 @@ static DEBUG: LazyLock<Color32> =
 pub struct PcbView {
     pcb: Pcb,
     screen_area: Rt,
+    base_local_area: Rt,
     local_area: Rt,
     offset: Pt,
     zoom: f64,
@@ -71,14 +68,18 @@ impl Widget for &mut PcbView {
         if response.dragged_by(PointerButton::Middle) {
             let p = response.drag_delta();
             self.offset += pt(p.x as f64, p.y as f64);
+            self.dirty = true;
         }
 
         if ui.rect_contains_pointer(response.rect) {
-            let pos = to_pt(ui.ctx().input(|i| i.pointer.interact_pos().unwrap()));
             let delta = ui.ctx().input(|i| i.raw_scroll_delta.y as f64);
-            let fac = 10.0 * delta / response.rect.height() as f64;
-            self.offset = self.offset + (self.offset - pos) * fac;
-            self.zoom *= 1.0 + fac;
+            if delta != 0.0 {
+                let pos = to_pt(ui.ctx().input(|i| i.pointer.interact_pos().unwrap()));
+                let fac = 10.0 * delta / response.rect.height() as f64;
+                self.offset = self.offset + (self.offset - pos) * fac;
+                self.zoom *= 1.0 + fac;
+                self.dirty = true;
+            }
         }
 
         self.set_screen_area(to_rt(response.rect));
@@ -90,9 +91,11 @@ impl Widget for &mut PcbView {
 }
 
 impl PcbView {
-    pub fn new(pcb: Pcb, local_area: Rt) -> Self {
+    pub fn new(pcb: Pcb, local_area: Option<Rt>) -> Self {
+        let local_area = local_area.unwrap_or_default();
         Self {
             pcb,
+            base_local_area: local_area,
             local_area,
             dirty: true,
             offset: Pt::zero(),
@@ -106,11 +109,16 @@ impl PcbView {
         self.pcb = pcb;
         self.dirty = true;
         self.mesh.clear(); // Regenerate mesh.
+        self.base_local_area = self.pcb.bounds().unwrap_or_default();
+        self.local_area = self.base_local_area.match_aspect(&self.screen_area);
     }
 
     fn set_screen_area(&mut self, screen_area: Rt) {
+        if screen_area == self.screen_area {
+            return;
+        }
         self.screen_area = screen_area;
-        self.local_area = self.local_area.match_aspect(&self.screen_area);
+        self.local_area = self.base_local_area.match_aspect(&self.screen_area);
         self.dirty = true;
     }
 
@@ -123,7 +131,7 @@ impl PcbView {
         match &v.shape {
             Shape::Rect(s) => shapes.push(fill_rt(tf, s, col)),
             Shape::Circle(s) => shapes.push(fill_circle(tf, s.p(), s.r(), col)),
-            Shape::Polygon(s) => shapes.push(fill_polygon(tf, s.pts(), s.tri_idx(), col)),
+            Shape::Poly(s) => shapes.push(fill_polygon(tf, s.pts(), s.tri_idx(), col)),
             Shape::Path(s) => {
                 // Treat paths with a radius of 0 as having a radius of 0.1 mm (arbitrary).
                 let r = if s.r() == 0.0 { 0.1 } else { s.r() };
@@ -181,7 +189,8 @@ impl PcbView {
             let mut tess = Tessellator::new(
                 ctx.pixels_per_point(),
                 TessellationOptions { feathering: false, ..Default::default() },
-                ctx.fonts(Fonts::font_image_size),
+                #[allow(clippy::redundant_closure_for_method_calls)]
+                ctx.fonts(|f| f.font_image_size()),
                 vec![],
             );
             for boundary in self.pcb.boundaries() {
@@ -219,13 +228,14 @@ impl PcbView {
         let mut mesh = self.mesh.clone();
         if self.dirty {
             let inv = Tf::scale(pt(1.0, -1.0)); // Invert y axis
-            let local_area = inv.rt(&self.local_area).bounds();
-            let tf = Tf::translate(self.offset)
-                * Tf::scale(pt(self.zoom, self.zoom))
-                * Tf::affine(&local_area, &self.screen_area)
-                * inv;
-            for vert in &mut mesh.vertices {
-                vert.pos = to_pos2(tf.pt(to_pt(vert.pos)));
+            if let Some(local_area) = inv.rt(&self.local_area).bounds()
+                && let Some(affine) = Tf::affine(&local_area, &self.screen_area)
+            {
+                let tf =
+                    Tf::translate(self.offset) * Tf::scale(pt(self.zoom, self.zoom)) * affine * inv;
+                for vert in &mut mesh.vertices {
+                    vert.pos = to_pos2(tf.pt(to_pt(vert.pos)));
+                }
             }
             self.dirty = false;
         }

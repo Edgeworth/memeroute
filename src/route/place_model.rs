@@ -3,10 +3,7 @@ use eyre::Result;
 use memegeom::geom::math::le;
 use memegeom::geom::qt::quadtree::ShapeIdx;
 use memegeom::geom::qt::query::{Kinds, KindsQuery, NO_TAG, Query, ShapeInfo, Tag, TagQuery};
-use memegeom::primitive::compound::Compound;
-use memegeom::primitive::point::Pt;
-use memegeom::primitive::rect::Rt;
-use memegeom::primitive::{ShapeOps, path};
+use memegeom::primitive::{Compound, Pt, Rt, ShapeOps, path};
 use memegeom::tf::Tf;
 
 use crate::model::pcb::{
@@ -37,7 +34,7 @@ impl PlaceModel {
             boundary: HashMap::default(),
             blocked: HashMap::default(),
             pins: HashMap::default(),
-            bounds: Rt::empty(),
+            bounds: Rt::default(),
         };
         m.init(pcb);
         m
@@ -125,7 +122,7 @@ impl PlaceModel {
         kind: ObjectKind,
         clearances: &[Clearance],
     ) -> bool {
-        let s = tf.shape(&ls.shape);
+        let s = tf.shape(&ls.shape).unwrap();
 
         for layer in &ls.layers {
             if let Some(boundary) = self.boundary.get(&layer) {
@@ -149,8 +146,10 @@ impl PlaceModel {
         for layer in &ls.layers {
             if let Some(blocked) = self.blocked.get(&layer) {
                 for c in clearances {
-                    let d = blocked.dist(&s, Query(q, KindsQuery::HasCommon(c.subset_for(kind))));
-                    if le(d, c.amount()) {
+                    if let Some(d) =
+                        blocked.dist(&s, Query(q, KindsQuery::HasCommon(c.subset_for(kind))))
+                        && le(d, c.amount())
+                    {
                         return true;
                     }
                 }
@@ -163,7 +162,7 @@ impl PlaceModel {
     fn init(&mut self, pcb: Pcb) {
         let tf = Tf::identity();
 
-        self.bounds = self.bounds.united(&pcb.bounds());
+        self.bounds = self.bounds.united(&pcb.bounds().unwrap_or_default());
         for boundary in pcb.boundaries() {
             Self::add_shape(
                 self.bounds,
@@ -221,7 +220,7 @@ impl PlaceModel {
         tag: Tag,
         kinds: Kinds,
     ) -> Vec<PlaceId> {
-        let s = tf.shape(&ls.shape);
+        let s = tf.shape(&ls.shape).unwrap();
         let mut idxs = Vec::new();
 
         for layer in &ls.layers {
@@ -229,6 +228,7 @@ impl PlaceModel {
                 map.entry(layer)
                     .or_insert_with(|| Compound::with_bounds(&bounds))
                     .add_shape(ShapeInfo::new(s.clone(), tag, kinds))
+                    .unwrap()
                     .iter()
                     .map(|&v| (layer, v)),
             );
